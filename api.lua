@@ -1724,14 +1724,13 @@ function api.all(a)
 	end
 
 	local i = 0
-	local len = #a
+	local prev
 	return function()
-		len = len - 1
-		i = #a - len
-		while a[i] == nil and len > 0 do
-			len = len - 1
-			i = #a - len
+		if a[i] == prev then i = i + 1 end
+		while a[i] == nil and i <= #a do
+			i = i + 1
 		end
+		prev = a[i]
 		return a[i]
 	end
 end
@@ -1742,11 +1741,8 @@ function api.foreach(a, f)
 		return
 	end
 
-	local len = #a
-	for i = 1, len do
-		if a[i] ~= nil then
-			f(a[i])
-		end
+	for v in api.all(a) do
+		f(v)
 	end
 end
 
