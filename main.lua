@@ -9,6 +9,8 @@ local bit = require("bit")
 local api = require("api")
 local cart = require("cart")
 
+local tas = require("tas")
+
 cartname = nil -- used by api.reload
 local initialcartname = nil -- used by esc
 local love_args = nil -- luacheck: no unused
@@ -501,6 +503,8 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	_load(initialcartname)
 	api.run()
 	cartname = nil
+
+	tas.load()
 end
 
 function new_sandbox()
@@ -552,11 +556,7 @@ end
 
 function love.update(_)
 	update_buttons()
-	if pico8.cart._update60 then
-		pico8.cart._update60()
-	elseif pico8.cart._update then
-		pico8.cart._update()
-	end
+	tas.update()
 end
 
 function love.draw()
@@ -566,10 +566,7 @@ function love.draw()
 
 	love.graphics.setShader(pico8.draw_shader)
 
-	-- run the cart's draw function
-	if pico8.cart._draw then
-		pico8.cart._draw()
-	end
+	tas.draw()
 
 	-- draw the contents of pico screen to our screen
 	flip_screen()
@@ -862,6 +859,10 @@ function love.keypressed(key)
 	elseif key == "return" and isAltDown() then
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return
+	elseif key=='l' then
+		tas.step()
+	elseif key=='k' then
+		tas.rewind()
 	else
 		for p = 0, 1 do
 			for i = 0, #pico8.keymap[p] do
