@@ -538,23 +538,7 @@ local function inside(x, y, x0, y0, w, h) -- luacheck: no unused
 	return (x >= x0 and x < x0 + w and y >= y0 and y < y0 + h)
 end
 
-local function update_buttons()
-	for p = 0, 1 do
-		for i = 0, #pico8.keymap[p] do
-			for _, _ in pairs(pico8.keymap[p][i]) do
-				local v = pico8.keypressed[p][i]
-				if v then
-					v = v + 1
-					pico8.keypressed[p][i] = v
-					break
-				end
-			end
-		end
-	end
-end
-
 function love.update(_)
-	update_buttons()
 	tas.update()
 end
 
@@ -858,21 +842,8 @@ function love.keypressed(key)
 	elseif key == "return" and isAltDown() then
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return
-	elseif key=='l' then
-		tas.step()
-	elseif key=='k' then
-		tas.rewind()
 	else
-		for p = 0, 1 do
-			for i = 0, #pico8.keymap[p] do
-				for _, testkey in pairs(pico8.keymap[p][i]) do
-					if key == testkey then
-						pico8.keypressed[p][i] = -1 -- becomes 0 on the next frame
-						break
-					end
-				end
-			end
-		end
+		tas.keypressed(key)
 	end
 	if pico8.cart and pico8.cart._keydown then
 		return pico8.cart._keydown(key)

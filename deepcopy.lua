@@ -46,3 +46,29 @@ function deepcopy(orig, seen, upvalues)
         error(("can't copy type %q"):format(type(orig)))
     end
 end
+
+local function get_api_funcs(t, seen, visited)
+    visited=visited or {}
+    if visited[t] then
+        return
+    end
+    visited[t]=true
+    if(t==pico8) then
+        return
+    elseif seen[t] then
+        return
+    elseif type(t) == "function" then
+        seen[t]=t
+    elseif type(t) == "table" then
+        for k,v in pairs(t) do
+            get_api_funcs(v,seen, visited)
+        end
+    end
+end
+
+--deepcopy everything, except for api functions
+function deepcopy_no_api(v)
+    local api_funcs={}
+    get_api_funcs(_G, api_funcs)
+    return deepcopy(v, api_funcs)
+end
