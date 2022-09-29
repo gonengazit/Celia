@@ -502,7 +502,6 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 
 	_load(initialcartname)
 	api.run()
-	cartname = nil
 
 	tas.load()
 end
@@ -615,7 +614,7 @@ function flip_screen()
 			love.graphics.newCanvas(pico8.resolution[1], pico8.resolution[2])
 		love.graphics.setCanvas(tmp)
 		love.graphics.draw(pico8.screen, 0, 0)
-		table.insert(video_frames, tmp:getImageData())
+		table.insert(video_frames, tmp:newImageData())
 	end
 	-- get ready for next time
 	love.graphics.setShader(pico8.draw_shader)
@@ -852,7 +851,7 @@ function love.keypressed(key)
 		-- stop recording and save
 		local basename = cartname .. "-" .. os.time() .. "-"
 		for i, v in ipairs(video_frames) do
-			v:encode(string.format("%s%04d.png", basename, i))
+			v:encode("png", string.format("%s%04d.png", basename, i))
 		end
 		video_frames = nil
 		log("saved video to", basename)
