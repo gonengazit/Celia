@@ -85,12 +85,71 @@ end
 
 function tas.load()
 	pushstate()
+	tas.screen = love.graphics.newCanvas(pico8.resolution[1]+48, pico8.resolution[2])
 end
 
 function tas.update()
 end
 
+local function draw_button(x,y,i)
+	if key_pressed(i) then
+		love.graphics.setColor(unpack(pico8.palette[7+1]))
+	else
+		love.graphics.setColor(unpack(pico8.palette[1+1]))
+	end
+	love.graphics.rectangle("fill", x, y, 3, 3)
+end
+
+local function draw_input_display(x,y)
+	love.graphics.setColor(0,0,0)
+	love.graphics.rectangle("fill", x, y, 25,11)
+	draw_button(x + 12, y + 6, 0) -- l
+	draw_button(x + 20, y + 6, 1) -- r
+	draw_button(x + 16, y + 2, 2) -- u
+	draw_button(x + 16, y + 6, 3) -- d
+	draw_button(x + 2, y + 6, 4) -- z
+	draw_button(x + 6, y + 6, 5) -- x
+end
+
+--returns the width of the counter
+local function draw_frame_counter(x,y)
+	love.graphics.setColor(0,0,0)
+	local frame_count = tostring(#states)
+	local width = 4*math.max(#frame_count,3)+1
+	love.graphics.rectangle("fill", x, y, width, 7)
+	love.graphics.setColor(255,255,255)
+	love.graphics.print(frame_count, x+1,y+1)
+	return width
+
+end
 function tas.draw()
+	love.graphics.push()
+	love.graphics.setColor(255,255,255)
+	love.graphics.setCanvas(tas.screen)
+	love.graphics.setShader(pico8.display_shader)
+	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
+	love.graphics.origin()
+	love.graphics.setScissor()
+
+	love.graphics.clear(30,30,30)
+
+	local tas_w,tas_h = tas.screen:getDimensions()
+	local pico8_w,pico8_h = pico8.screen:getDimensions()
+	local hud_w = tas_w - pico8_w
+	local hud_h = tas_h - pico8_h
+	love.graphics.draw(pico8.screen, hud_w, hud_h, 0)
+	love.graphics.setShader()
+
+
+	-- tas tool ui drawing here
+	--
+
+	local frame_count_width = draw_frame_counter(1,1)
+	draw_input_display(1+frame_count_width+1,1)
+
+	love.graphics.setColor(255,255,255)
+
+	love.graphics.pop()
 end
 
 function tas.keypressed(key)

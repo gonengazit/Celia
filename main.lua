@@ -561,20 +561,23 @@ function restore_camera()
 end
 
 function flip_screen()
-	love.graphics.setShader(pico8.display_shader)
-	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
+	love.graphics.setShader()
 	love.graphics.setCanvas()
 	love.graphics.origin()
 	love.graphics.setScissor()
 
 	love.graphics.setBackgroundColor(3, 5, 10)
+	love.graphics.setColor(255,255,255)
 	love.graphics.clear()
 
+	--TODO: fix centering and scale
+
 	local screen_w, screen_h = love.graphics.getDimensions()
+	local tas_w, tas_h = tas.screen:getDimensions()
 	if screen_w > screen_h then
 		love.graphics.draw(
-			pico8.screen,
-			screen_w / 2 - 64 * scale,
+			tas.screen,
+			screen_w / 2 - (tas_w / 2 * scale),
 			ypadding * scale,
 			0,
 			scale,
@@ -582,9 +585,9 @@ function flip_screen()
 		)
 	else
 		love.graphics.draw(
-			pico8.screen,
+			tas.screen,
 			xpadding * scale,
-			screen_h / 2 - 64 * scale,
+			screen_h / 2 - (tas_h / 2 * scale),
 			0,
 			scale,
 			scale
