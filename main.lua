@@ -806,7 +806,7 @@ local function isAltDown()
 	return love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 end
 
-function love.keypressed(key)
+function love.keypressed(key, _, isrepeat)
 	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
 		api.reload()
 		api.run()
@@ -824,8 +824,8 @@ function love.keypressed(key)
 		love.event.quit()
 	elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
 		pico8.clipboard = love.system.getClipboardText()
-	elseif pico8.can_pause and (key == "pause" or key == "p") then
-		paused = not paused
+	-- elseif pico8.can_pause and (key == "pause" or key == "p") then
+	-- 	paused = not paused
 	elseif key == "f1" or key == "f6" then
 		-- screenshot
 		local screenshot = love.graphics.newScreenshot(false)
@@ -847,7 +847,7 @@ function love.keypressed(key)
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return
 	else
-		tastool:keypressed(key)
+		tastool:keypressed(key, isrepeat)
 	end
 	if pico8.cart and pico8.cart._keydown then
 		return pico8.cart._keydown(key)

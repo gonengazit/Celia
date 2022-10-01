@@ -5,6 +5,7 @@ local tas = class("tas")
 
 tas.states={}
 tas.keystates={}
+tas.realtime_playback=false
 
 --wrapper functions
 
@@ -12,14 +13,14 @@ function tas:toggle_key(i)
 	self.keystates[#self.states]=bit.bxor(self.keystates[#self.states],2^i)
 end
 
-function tas:key_pressed(i)
+function tas:key_down(i)
 	return bit.band(self.keystates[#self.states],2^i)~=0
 end
 
 function tas:update_buttons()
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
-			if self:key_pressed(i) then
+			if self:key_down(i) then
 				pico8.keypressed[0][i] = (v or -1) + 1
 			else
 				pico8.keypressed[0][i] = nil
@@ -78,16 +79,27 @@ function tas:rewind()
 	pico8=deepcopy_no_api(self:peekstate())
 end
 
+--rewind to the first frame
+function tas:full_rewind()
+	while #self.states>1 do
+		self:popstate()
+	end
+	pico8=deepcopy_no_api(self:peekstate())
+end
+
 function tas:init()
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas(pico8.resolution[1]+48, pico8.resolution[2])
 end
 
-function tas.update()
+function tas:update()
+	if self.realtime_playback then
+		self:step()
+	end
 end
 
 function tas:draw_button(x,y,i)
-	if self:key_pressed(i) then
+	if self:key_down(i) then
 		love.graphics.setColor(unpack(pico8.palette[7+1]))
 	else
 		love.graphics.setColor(unpack(pico8.palette[1+1]))
@@ -146,15 +158,22 @@ function tas:draw()
 	love.graphics.pop()
 end
 
-function tas:keypressed(key)
-	if key=='l' then
+function tas:keypressed(key, isrepeat)
+	if key=='p' then
+		self.realtime_playback = not self.realtime_playback
+	elseif self.realtime_playback then
+		-- pressing any key during realtime playback stops it during realtime playback stops it
+		self.realtime_playback = false
+	elseif key=='l' then
 		self:step()
 	elseif key=='k' then
 		self:rewind()
+	elseif key=='d' then
+		self:full_rewind()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey then
+				if key == testkey  and not isrepeat then
 					self:toggle_key(i)
 					break
 				end
