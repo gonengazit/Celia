@@ -67,10 +67,7 @@ function tas.step()
 end
 
 function tas.rewind()
-	-- takes 2 steps back, then 1 forward
-	-- the alternative is to save the screen
-	-- probably better, but i don't know how to do it.
-	if #states <= 3 then
+	if #states <= 1 then
 		return
 	end
 
@@ -78,9 +75,7 @@ function tas.rewind()
 	-- wrap this with a function so that pico8 is always a copy of the top of states without having to do it manually
 	-- or to states[curr_frame] where curr_frame is some variable
 	popstate()
-	popstate()
 	pico8=deepcopy_no_api(peekstate())
-	tas.step()
 end
 
 function tas.load()
