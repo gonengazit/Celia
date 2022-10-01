@@ -1,25 +1,25 @@
 require "deepcopy"
-local api = require("api")
+local class = require("30log")
 
-local tas = {}
+local tas = class("tas")
 
-local states={}
-local keystates={}
+tas.states={}
+tas.keystates={}
 
 --wrapper functions
 
-local function toggle_key(i)
-	keystates[#states]=bit.bxor(keystates[#states],2^i)
+function tas:toggle_key(i)
+	self.keystates[#self.states]=bit.bxor(self.keystates[#self.states],2^i)
 end
 
-local function key_pressed(i)
-	return bit.band(keystates[#states],2^i)~=0
+function tas:key_pressed(i)
+	return bit.band(self.keystates[#self.states],2^i)~=0
 end
 
-local function update_buttons()
+function tas:update_buttons()
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
-			if key_pressed(i) then
+			if self:key_pressed(i) then
 				pico8.keypressed[0][i] = (v or -1) + 1
 			else
 				pico8.keypressed[0][i] = nil
@@ -29,27 +29,27 @@ end
 
 
 -- deepcopy the current state, and push it to the stack
-local function pushstate()
+function tas:pushstate()
 	-- don't copy any non-cart functions
 	local newstate=deepcopy_no_api(pico8)
 
-	table.insert(states,newstate)
-	if keystates[#states] == nil then
-		keystates[#states] = 0
+	table.insert(self.states,newstate)
+	if self.keystates[#self.states] == nil then
+		self.keystates[#self.states] = 0
 	end
 end
 
-local function popstate()
-	return table.remove(states)
+function tas:popstate()
+	return table.remove(self.states)
 end
 
-local function peekstate()
-	return states[#states]
+function tas:peekstate()
+	return self.states[#self.states]
 end
 
-function tas.step()
+function tas:step()
 
-	update_buttons()
+	self:update_buttons()
 
 	if pico8.cart._update60 then
 		pico8.cart._update60()
@@ -63,31 +63,31 @@ function tas.step()
 
 
 	--store the state
-	pushstate()
+	self:pushstate()
 end
 
-function tas.rewind()
-	if #states <= 1 then
+function tas:rewind()
+	if #self.states <= 1 then
 		return
 	end
 
 	--TODO:
 	-- wrap this with a function so that pico8 is always a copy of the top of states without having to do it manually
 	-- or to states[curr_frame] where curr_frame is some variable
-	popstate()
-	pico8=deepcopy_no_api(peekstate())
+	self:popstate()
+	pico8=deepcopy_no_api(self:peekstate())
 end
 
-function tas.load()
-	pushstate()
+function tas:init()
+	self:pushstate()
 	tas.screen = love.graphics.newCanvas(pico8.resolution[1]+48, pico8.resolution[2])
 end
 
 function tas.update()
 end
 
-local function draw_button(x,y,i)
-	if key_pressed(i) then
+function tas:draw_button(x,y,i)
+	if self:key_pressed(i) then
 		love.graphics.setColor(unpack(pico8.palette[7+1]))
 	else
 		love.graphics.setColor(unpack(pico8.palette[1+1]))
@@ -95,21 +95,21 @@ local function draw_button(x,y,i)
 	love.graphics.rectangle("fill", x, y, 3, 3)
 end
 
-local function draw_input_display(x,y)
+function tas:draw_input_display(x,y)
 	love.graphics.setColor(0,0,0)
 	love.graphics.rectangle("fill", x, y, 25,11)
-	draw_button(x + 12, y + 6, 0) -- l
-	draw_button(x + 20, y + 6, 1) -- r
-	draw_button(x + 16, y + 2, 2) -- u
-	draw_button(x + 16, y + 6, 3) -- d
-	draw_button(x + 2, y + 6, 4) -- z
-	draw_button(x + 6, y + 6, 5) -- x
+	self:draw_button(x + 12, y + 6, 0) -- l
+	self:draw_button(x + 20, y + 6, 1) -- r
+	self:draw_button(x + 16, y + 2, 2) -- u
+	self:draw_button(x + 16, y + 6, 3) -- d
+	self:draw_button(x + 2, y + 6, 4) -- z
+	self:draw_button(x + 6, y + 6, 5) -- x
 end
 
 --returns the width of the counter
-local function draw_frame_counter(x,y)
+function tas:draw_frame_counter(x,y)
 	love.graphics.setColor(0,0,0)
-	local frame_count = tostring(#states)
+	local frame_count = tostring(#self.states)
 	local width = 4*math.max(#frame_count,3)+1
 	love.graphics.rectangle("fill", x, y, width, 7)
 	love.graphics.setColor(255,255,255)
@@ -117,7 +117,7 @@ local function draw_frame_counter(x,y)
 	return width
 
 end
-function tas.draw()
+function tas:draw()
 	love.graphics.push()
 	love.graphics.setColor(255,255,255)
 	love.graphics.setCanvas(tas.screen)
@@ -137,26 +137,25 @@ function tas.draw()
 
 
 	-- tas tool ui drawing here
-	--
 
-	local frame_count_width = draw_frame_counter(1,1)
-	draw_input_display(1+frame_count_width+1,1)
+	local frame_count_width = self:draw_frame_counter(1,1)
+	self:draw_input_display(1+frame_count_width+1,1)
 
 	love.graphics.setColor(255,255,255)
 
 	love.graphics.pop()
 end
 
-function tas.keypressed(key)
+function tas:keypressed(key)
 	if key=='l' then
-		tas.step()
+		self:step()
 	elseif key=='k' then
-		tas.rewind()
+		self:rewind()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if key == testkey then
-					toggle_key(i)
+					self:toggle_key(i)
 					break
 				end
 			end

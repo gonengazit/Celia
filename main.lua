@@ -14,6 +14,7 @@ local tas = require("tas")
 cartname = nil -- used by api.reload
 local initialcartname = nil -- used by esc
 local love_args = nil -- luacheck: no unused
+local tastool = nil
 
 pico8 = {
 	clip = nil,
@@ -503,7 +504,7 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	_load(initialcartname)
 	api.run()
 
-	tas.load()
+	tastool=tas()
 end
 
 function new_sandbox()
@@ -539,7 +540,7 @@ local function inside(x, y, x0, y0, w, h) -- luacheck: no unused
 end
 
 function love.update(_)
-	tas.update()
+	tastool:update()
 end
 
 function love.draw()
@@ -549,7 +550,7 @@ function love.draw()
 
 	love.graphics.setShader(pico8.draw_shader)
 
-	tas.draw()
+	tastool:draw()
 
 	-- draw the contents of pico screen to our screen
 	flip_screen()
@@ -573,10 +574,10 @@ function flip_screen()
 	--TODO: fix centering and scale
 
 	local screen_w, screen_h = love.graphics.getDimensions()
-	local tas_w, tas_h = tas.screen:getDimensions()
+	local tas_w, tas_h = tastool.screen:getDimensions()
 	if screen_w > screen_h then
 		love.graphics.draw(
-			tas.screen,
+			tastool.screen,
 			screen_w / 2 - (tas_w / 2 * scale),
 			ypadding * scale,
 			0,
@@ -585,7 +586,7 @@ function flip_screen()
 		)
 	else
 		love.graphics.draw(
-			tas.screen,
+			tastool.screen,
 			xpadding * scale,
 			screen_h / 2 - (tas_h / 2 * scale),
 			0,
@@ -846,7 +847,7 @@ function love.keypressed(key)
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return
 	else
-		tas.keypressed(key)
+		tastool:keypressed(key)
 	end
 	if pico8.cart and pico8.cart._keydown then
 		return pico8.cart._keydown(key)
