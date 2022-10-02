@@ -10,6 +10,7 @@ local api = require("api")
 local cart = require("cart")
 
 local tas = require("tas")
+local cctas = require("cctas")
 
 cartname = nil -- used by api.reload
 local initialcartname = nil -- used by esc
@@ -504,7 +505,7 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	_load(initialcartname)
 	api.run()
 
-	tastool=tas()
+	tastool=cctas()
 end
 
 function new_sandbox()

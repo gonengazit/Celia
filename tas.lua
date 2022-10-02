@@ -3,9 +3,6 @@ local class = require("30log")
 
 local tas = class("tas")
 
-tas.states={}
-tas.keystates={}
-tas.realtime_playback=false
 
 --wrapper functions
 
@@ -48,6 +45,11 @@ function tas:peekstate()
 	return self.states[#self.states]
 end
 
+function tas:clearstates()
+	self.states={}
+	self:pushstate()
+end
+
 function tas:step()
 
 	self:update_buttons()
@@ -88,6 +90,9 @@ function tas:full_rewind()
 end
 
 function tas:init()
+	self.states={}
+	self.keystates={}
+	self.realtime_playback=false
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas(pico8.resolution[1]+48, pico8.resolution[2])
 end
