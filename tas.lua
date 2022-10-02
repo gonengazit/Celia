@@ -41,8 +41,9 @@ function tas:popstate()
 	return table.remove(self.states)
 end
 
+--returns a deepcopy of the current state
 function tas:peekstate()
-	return self.states[#self.states]
+	return deepcopy_no_api(self.states[#self.states])
 end
 
 function tas:clearstates()
@@ -50,10 +51,8 @@ function tas:clearstates()
 	self:pushstate()
 end
 
-function tas:step()
-
-	self:update_buttons()
-
+-- advance the pico8 state ignoring buttons or backing up the state
+local function rawstep()
 	if pico8.cart._update60 then
 		pico8.cart._update60()
 	elseif pico8.cart._update then
@@ -63,8 +62,13 @@ function tas:step()
 	if pico8.cart._draw then
 		pico8.cart._draw()
 	end
+end
 
 
+function tas:step()
+
+	self:update_buttons()
+	rawstep()
 	--store the state
 	self:pushstate()
 end
@@ -78,7 +82,7 @@ function tas:rewind()
 	-- wrap this with a function so that pico8 is always a copy of the top of states without having to do it manually
 	-- or to states[curr_frame] where curr_frame is some variable
 	self:popstate()
-	pico8=deepcopy_no_api(self:peekstate())
+	pico8=self:peekstate()
 end
 
 --rewind to the first frame
@@ -86,7 +90,7 @@ function tas:full_rewind()
 	while #self.states>1 do
 		self:popstate()
 	end
-	pico8=deepcopy_no_api(self:peekstate())
+	pico8=self:peekstate()
 end
 
 function tas:init()
@@ -123,14 +127,18 @@ function tas:draw_input_display(x,y)
 	self:draw_button(x + 6, y + 6, 5) -- x
 end
 
+-- can be overloaded to define different timing methods
+function tas:frame_count()
+	return #self.states-1
+end
 --returns the width of the counter
 function tas:draw_frame_counter(x,y)
 	love.graphics.setColor(0,0,0)
-	local frame_count = tostring(#self.states)
-	local width = 4*math.max(#frame_count,3)+1
+	local frame_count_str = tostring(self:frame_count())
+	local width = 4*math.max(#frame_count_str,3)+1
 	love.graphics.rectangle("fill", x, y, width, 7)
 	love.graphics.setColor(255,255,255)
-	love.graphics.print(frame_count, x+1,y+1)
+	love.graphics.print(frame_count_str, x+1,y+1)
 	return width
 
 end
@@ -185,6 +193,60 @@ function tas:keypressed(key, isrepeat)
 			end
 		end
 	end
+end
+
+-- b is a bitmask of the inputs
+local function set_btn_state(b)
+	for i = 0, #pico8.keymap[0] do
+			local v = pico8.keypressed[0][i]
+			if bit.band(b, 2^i)~=0 then
+				pico8.keypressed[0][i] = (v or -1) + 1
+			else
+				pico8.keypressed[0][i] = nil
+			end
+	end
+end
+-- check whether the predicate returns truthy within num frames
+-- if respect_inputs is true the current inputs are used
+-- inputs has 3 options
+--  a table, in which case those inputs are used
+--  true, in which case the inputs currently inputted are used
+--  nil, in which case no inputs will be used (all neutral)
+function tas:predict(pred, num, inputs)
+	if pred() then
+		return
+	end
+
+	--Backup gfx state
+	--TODO: handle this better/clean this up
+	love.graphics.push()
+	local canvas=love.graphics.getCanvas()
+	local shader=love.graphics.getShader()
+	love.graphics.setCanvas(pico8.screen)
+
+	local ret=false
+	local input_tbl
+	if type(inputs)=="table" then
+		input_tbl=inputs
+	elseif inputs then
+		input_tbl={table.unpack(self.keystates,#self.states)}
+	else
+		input_tbl={}
+	end
+
+	for i=1,num do
+		set_btn_state(input_tbl[i] or 0)
+		rawstep()
+		if pred() then
+			ret=true
+			break
+		end
+	end
+	pico8=self:peekstate()
+	love.graphics.setCanvas(canvas)
+	love.graphics.setShader(shader)
+	love.graphics.pop()
+	return ret
 end
 
 return tas
