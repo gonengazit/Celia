@@ -25,22 +25,23 @@ function cctas:keypressed(key, isrepeat)
 	end
 end
 
-function cctas:load_level(x,y)
+function cctas:load_level(idx)
 	--TODO: support evercore style carts
-	pico8.cart.load_room(x, y)
+	pico8.cart.load_room(idx%8, math.floor(idx/8))
 	--TODO: handle loading jank here
 	pico8.cart._draw()
 
 	self.level_time=0
 	self:clearstates()
 end
+function cctas:level_index()
+	return pico8.cart.level_index()
+end
 function cctas:next_level()
-	local x,y=pico8.cart.room.x, pico8.cart.room.y
-	self:load_level((x+1)%8, y+math.floor((x+1)/8))
+	self:load_level(self:level_index()+1)
 end
 function cctas:prev_level()
-	local x,y=pico8.cart.room.x, pico8.cart.room.y
-	self:load_level((x-1)%8, y+math.floor((x-1)/8))
+	self:load_level(self:level_index()-1)
 end
 
 function cctas:find_player()
@@ -52,9 +53,17 @@ function cctas:find_player()
 end
 
 function cctas:step()
+	local lvl_idx=self:level_index()
 	self.super.step(self)
 
-	if self:find_player() then
+	if lvl_idx~=self:level_index() then
+		-- self:load_level(lvl_idx)
+		-- TODO: make it so clouds don't jump??
+		self:full_rewind()
+		return
+	end
+
+	if self.level_time>0 or self:find_player() then
 		self.level_time = self.level_time + 1
 	end
 	self:state_changed()
