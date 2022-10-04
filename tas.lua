@@ -138,6 +138,12 @@ function tas:full_rewind()
 	pico8=self:peekstate()
 end
 
+function tas:full_reset()
+	self:full_rewind()
+	self.hold=0
+	self.keystates={0}
+end
+
 function tas:init()
 	self.states={}
 	self.keystates={}
@@ -231,6 +237,8 @@ function tas:keypressed(key, isrepeat)
 		self:rewind()
 	elseif key=='d' then
 		self:full_rewind()
+	elseif key=='r' and love.keyboard.isDown('lshift','rshift') then
+		self:full_reset()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
