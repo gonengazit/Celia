@@ -245,7 +245,7 @@ end
 --  nil, in which case no inputs will be used (all neutral)
 function tas:predict(pred, num, inputs)
 	if pred() then
-		return
+		return true
 	end
 
 	--Backup gfx state
