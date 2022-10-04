@@ -13,6 +13,14 @@ function cctas:init()
 	self:state_changed()
 end
 
+function tas:toggle_key(i)
+	-- don't allow changing the inputs while the player is dead
+	if not self.inputs_active then
+		return
+	end
+	self.super.toggle_key(self, i)
+end
+
 function cctas:keypressed(key, isrepeat)
 	if self.realtime_playback then
 		self.super.keypressed(self,key,isrepeat)
@@ -95,7 +103,7 @@ function cctas:frame_count()
 end
 
 function cctas:state_changed()
-	self.inputs_active=self.level_time~=0 or self:predict(self.find_player,1)
+	self.inputs_active=self:predict(self.find_player,1)
 end
 
 function cctas:draw_button(...)
