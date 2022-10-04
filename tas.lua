@@ -6,12 +6,25 @@ local tas = class("tas")
 
 --wrapper functions
 
+function tas:key_down(i)
+	return bit.band(self.keystates[#self.states],2^i)~=0
+end
+
+function tas:key_held(i)
+	return bit.band(self.hold, 2^i)~=0
+end
+
 function tas:toggle_key(i)
 	self.keystates[#self.states]=bit.bxor(self.keystates[#self.states],2^i)
 end
 
-function tas:key_down(i)
-	return bit.band(self.keystates[#self.states],2^i)~=0
+function tas:toggle_hold(i)
+	self.hold=bit.bxor(self.hold,2^i)
+
+	-- holding a key should also set it
+	if self:key_held(i) then
+		self.keystates[#self.states]=bit.bor(self.keystates[#self.states],2^i)
+	end
 end
 
 function tas:update_buttons()
@@ -34,6 +47,17 @@ function tas:pushstate()
 	table.insert(self.states,newstate)
 	if self.keystates[#self.states] == nil then
 		self.keystates[#self.states] = 0
+	end
+	self.keystates[#self.states] = bit.bor(self.keystates[#self.states], self.hold)
+	if not self.realtime_playback then
+		for i=0, #pico8.keymap[0] do
+			for _, testkey in pairs(pico8.keymap[0][i]) do
+				if love.keyboard.isDown(testkey) then
+					self.keystates[#self.states] = bit.bor(self.keystates[#self.states], 2^i)
+					break
+				end
+			end
+		end
 	end
 end
 
@@ -97,6 +121,7 @@ function tas:init()
 	self.states={}
 	self.keystates={}
 	self.realtime_playback=false
+	self.hold = 0
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas(pico8.resolution[1]+48, pico8.resolution[2])
 end
@@ -108,7 +133,9 @@ function tas:update()
 end
 
 function tas:draw_button(x,y,i)
-	if self:key_down(i) then
+	if self:key_held(i) then
+		love.graphics.setColor(unpack(pico8.palette[8+1]))
+	elseif self:key_down(i) then
 		love.graphics.setColor(unpack(pico8.palette[7+1]))
 	else
 		love.graphics.setColor(unpack(pico8.palette[1+1]))
@@ -187,7 +214,11 @@ function tas:keypressed(key, isrepeat)
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if key == testkey  and not isrepeat then
-					self:toggle_key(i)
+					if love.keyboard.isDown("lshift", "rshift") then
+						self:toggle_hold(i)
+					else
+						self:toggle_key(i)
+					end
 					break
 				end
 			end
