@@ -27,6 +27,14 @@ function tas:toggle_hold(i)
 	end
 end
 
+function tas:reset_keys()
+	self.keystates[#self.states]=0
+end
+
+function tas:reset_hold()
+	self.hold=0
+end
+
 function tas:update_buttons()
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
@@ -39,25 +47,35 @@ function tas:update_buttons()
 end
 
 
+-- returns the keystate of the next frame
+-- depending on its current state, whether the the user is holding down inputs, and the current hold
+--
+-- i.e, if the input is currently right, and up is held, up+right will be returned
+function tas:advance_keystate(curr_keystate)
+	curr_keystate = curr_keystate or 0
+	curr_keystate= bit.bor(curr_keystate, self.hold)
+	if not self.realtime_playback then
+		for i=0, #pico8.keymap[0] do
+			for _, testkey in pairs(pico8.keymap[0][i]) do
+				if love.keyboard.isDown(testkey) then
+					curr_keystate = bit.bor(curr_keystate, 2^i)
+					break
+				end
+			end
+		end
+	end
+	return curr_keystate
+end
+
 -- deepcopy the current state, and push it to the stack
 function tas:pushstate()
 	-- don't copy any non-cart functions
 	local newstate=deepcopy_no_api(pico8)
 
 	table.insert(self.states,newstate)
+
 	if self.keystates[#self.states] == nil then
 		self.keystates[#self.states] = 0
-	end
-	self.keystates[#self.states] = bit.bor(self.keystates[#self.states], self.hold)
-	if not self.realtime_playback then
-		for i=0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if love.keyboard.isDown(testkey) then
-					self.keystates[#self.states] = bit.bor(self.keystates[#self.states], 2^i)
-					break
-				end
-			end
-		end
 	end
 end
 
@@ -95,6 +113,9 @@ function tas:step()
 	rawstep()
 	--store the state
 	self:pushstate()
+
+	--advance the state of pressed keys
+	self.keystates[#self.states] = self:advance_keystate(self.keystates[#self.states])
 end
 
 function tas:rewind()
