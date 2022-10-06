@@ -28,9 +28,15 @@ function cctas:keypressed(key, isrepeat)
 		self:next_level()
 	elseif key=='s' then
 		self:prev_level()
+	elseif key=='d' and love.keyboard.isDown('lshift', 'rshift') then
+		self:player_rewind()
 	else
 		self.super.keypressed(self,key,isrepeat)
 	end
+end
+
+function cctas:reset_vars()
+	self.hold=0
 end
 
 function cctas:load_level(idx)
@@ -41,6 +47,7 @@ function cctas:load_level(idx)
 
 	self.level_time=0
 	self:clearstates()
+	self:reset_vars()
 end
 function cctas:level_index()
 	return pico8.cart.level_index()
@@ -90,6 +97,23 @@ function cctas:full_rewind()
 
 	self.level_time=0
 	self:state_changed()
+	self:reset_vars()
+end
+
+function cctas:player_rewind()
+	if self.level_time>0 or self.inputs_active then
+		for _ = 1, self.level_time do
+			self:popstate()
+			self.level_time = self.level_time- 1
+		end
+		pico8=self:peekstate()
+	else
+		while not self.inputs_active do
+			--TODO: make this performant, animated, or remove this
+			self:step()
+		end
+	end
+	self:reset_vars()
 end
 
 function cctas:clearstates()

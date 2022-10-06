@@ -109,6 +109,7 @@ end
 
 function tas:step()
 
+	love.graphics.setCanvas(pico8.screen)
 	self:update_buttons()
 	rawstep()
 	--store the state
