@@ -230,6 +230,7 @@ function love.resize(w, h)
 	else
 		scale = w / (pico8.resolution[1] + xpadding * 2)
 	end
+	scale = scale / tas_scale
 end
 
 local function note_to_hz(note)
