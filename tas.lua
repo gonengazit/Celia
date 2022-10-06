@@ -197,7 +197,6 @@ function tas:draw_frame_counter(x,y)
 
 end
 function tas:draw()
-	love.graphics.push()
 	love.graphics.setColor(255,255,255)
 	love.graphics.setCanvas(tas.screen)
 	love.graphics.setShader(pico8.display_shader)
@@ -222,7 +221,6 @@ function tas:draw()
 
 	love.graphics.setColor(255,255,255)
 
-	love.graphics.pop()
 end
 
 function tas:keypressed(key, isrepeat)
