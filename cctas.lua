@@ -114,5 +114,20 @@ function cctas:draw_button(...)
 	self.super.draw_button(self,...)
 end
 
+function cctas:hud()
+	local p=self:find_player()
+	if p == nil then
+		return ""
+	end
+	return ("%6s%7s\npos:% -7g% g\nrem:% -7.3f% .3f\nspd:% -7.3f% .3f\n\ngrace: %d"):format("x","y",p.x,p.y,p.rem.x,p.rem.y, p.spd.x, p.spd.y, p.grace)
+end
+
+function cctas:draw()
+	self.super.draw(self)
+
+	love.graphics.print(self:hud(),1,13,0,2/3,2/3)
+
+end
+
 return cctas
 
