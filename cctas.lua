@@ -13,7 +13,7 @@ function cctas:init()
 	self:state_changed()
 end
 
-function tas:toggle_key(i)
+function cctas:toggle_key(i)
 	-- don't allow changing the inputs while the player is dead
 	if not self.inputs_active then
 		return
