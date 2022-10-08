@@ -211,7 +211,6 @@ function cctas:draw()
 			end
 		end
 		love.graphics.pop()
-		love.graphics.setCanvas(tas.screen)
 
 		love.graphics.setColor(255,255,255)
 		love.graphics.printf(('loading jank offset: %+d'):format(self.loading_jank_offset),1,100,48,"left",0,2/3,2/3)
