@@ -203,12 +203,7 @@ function cctas:draw()
 
 	if self.modify_loading_jank then
 		love.graphics.push()
-		--TODO: make some of these class variables
-		local tas_w,tas_h = tas.screen:getDimensions()
-		local pico8_w,pico8_h = pico8.screen:getDimensions()
-		local hud_w = tas_w/tas_scale - pico8_w
-		local hud_h = tas_h/tas_scale - pico8_h
-		love.graphics.translate(hud_w,hud_h)
+		love.graphics.translate(self.hud_w,self.hud_h)
 
 		for i = self.prev_obj_count + self.loading_jank_offset, #pico8.cart.objects do
 			local obj = pico8.cart.objects[i]

@@ -2,6 +2,9 @@ require "deepcopy"
 local class = require("30log")
 
 local tas = class("tas")
+tas.hud_w = 48
+tas.hud_h = 0
+tas.scale = 6
 
 
 --wrapper functions
@@ -145,15 +148,14 @@ function tas:full_reset()
 	self.keystates={0}
 end
 
-tas_scale = 6
-scale = scale / tas_scale
 function tas:init()
+	scale = scale / self.scale -- scale for drawing to the screen
 	self.states={}
 	self.keystates={}
 	self.realtime_playback=false
 	self.hold = 0
 	self:pushstate()
-	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+48)*tas_scale, (pico8.resolution[2])*tas_scale)
+	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 end
 
 function tas:update()
@@ -209,12 +211,8 @@ function tas:draw()
 
 	love.graphics.clear(30,30,30)
 
-	love.graphics.scale(tas_scale,tas_scale)
-	local tas_w,tas_h = tas.screen:getDimensions()
-	local pico8_w,pico8_h = pico8.screen:getDimensions()
-	local hud_w = tas_w/tas_scale - pico8_w
-	local hud_h = tas_h/tas_scale - pico8_h
-	love.graphics.draw(pico8.screen, hud_w, hud_h, 0)
+	love.graphics.scale(tas.scale,tas.scale)
+	love.graphics.draw(pico8.screen, self.hud_w, self.hud_h, 0)
 	love.graphics.setShader()
 
 
