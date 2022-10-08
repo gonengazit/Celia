@@ -68,8 +68,15 @@ end
 function cctas:load_level(idx, reset_loading_jank)
 	--apply loading jank
 	load_room_wrap(idx-1)
-	-- TODO: counts are wrong because of room title (?)
-	self.prev_obj_count=#pico8.cart.objects
+	self.prev_obj_count=0
+	for _,obj in ipairs(pico8.cart.objects) do
+		-- assume room title is destroyed before you exit the level
+		-- assume no other objects will be destroyed before you exit the level
+		-- (this is easy to tweak with the offset variable)
+		if obj.type ~= pico8.cart.room_title or pico8.cart.room_title==nil then
+			self.prev_obj_count = self.prev_obj_count + 1
+		end
+	end
 	load_room_wrap(idx)
 	if reset_loading_jank then
 		-- for the first level, assume no objects get loading janked by default
