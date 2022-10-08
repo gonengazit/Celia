@@ -11,8 +11,9 @@ function cctas:init()
 	self.level_time=0
 
 	self.prev_obj_count=0
-	self.loading_jank_offset=0
 	self.modify_loading_jank=false
+	self.first_level=self:level_index()
+	self.loading_jank_offset=#pico8.cart.objects+1
 
 	self:state_changed()
 end
@@ -51,7 +52,7 @@ function cctas:loading_jank_keypress(key,isrepeat)
 		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, math.min(-self.prev_obj_count+1,0))
 	elseif key == 'a' and not isrepeat then
 		self.modify_loading_jank = false
-		self:load_level(self:level_index())
+		self:load_level(self:level_index(),false)
 	end
 
 end
@@ -64,18 +65,20 @@ local function load_room_wrap(idx)
 	--TODO: support evercore style carts
 	pico8.cart.load_room(idx%8, math.floor(idx/8))
 end
-function cctas:load_level(idx)
+function cctas:load_level(idx, reset_loading_jank)
 	--apply loading jank
-	--TODO: don't apply loading jank on the first level
 	load_room_wrap(idx-1)
 	-- TODO: counts are wrong because of room title (?)
-	self.prev_obj_count=#pico8.cart.objects + self.loading_jank_offset
+	self.prev_obj_count=#pico8.cart.objects
 	load_room_wrap(idx)
-	for i = self.prev_obj_count, #pico8.cart.objects do
+	if reset_loading_jank then
+		-- for the first level, assume no objects get loading janked by default
+		self.loading_jank_offset = self:level_index() == self.first_level and #pico8.cart.objects + 1 or 0
+	end
+
+	for i = self.prev_obj_count+ self.loading_jank_offset, #pico8.cart.objects do
 		local obj = pico8.cart.objects[i]
-		if obj == nil then
-			break
-		else
+		if obj ~= nil then
 			obj.move(obj.spd.x,obj.spd.y)
 			if obj.type.update~=nil then
 				obj.type.update(obj)
@@ -93,12 +96,10 @@ function cctas:level_index()
 	return pico8.cart.level_index()
 end
 function cctas:next_level()
-	self.loading_jank_offset=0
-	self:load_level(self:level_index()+1)
+	self:load_level(self:level_index()+1,true)
 end
 function cctas:prev_level()
-	self.loading_jank_offset=0
-	self:load_level(self:level_index()-1)
+	self:load_level(self:level_index()-1,true)
 end
 
 function cctas:find_player()
@@ -204,11 +205,10 @@ function cctas:draw()
 
 		for i = self.prev_obj_count + self.loading_jank_offset, #pico8.cart.objects do
 			local obj = pico8.cart.objects[i]
-			if not obj then
-				break
+			if obj~=nil then
+				love.graphics.setColor(unpack(pico8.palette[6+1]))
+				love.graphics.rectangle('line', obj.x-1, obj.y-1, 10,10)
 			end
-			love.graphics.setColor(unpack(pico8.palette[6+1]))
-			love.graphics.rectangle('line', obj.x-1, obj.y-1, 10,10)
 		end
 		love.graphics.pop()
 		love.graphics.setCanvas(tas.screen)
