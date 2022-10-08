@@ -45,11 +45,10 @@ function cctas:keypressed(key, isrepeat)
 end
 
 function cctas:loading_jank_keypress(key,isrepeat)
-	--TODO: always allow approaching 0 when clamping
 	if key=='up' then
-		self.loading_jank_offset = math.min(self.loading_jank_offset +1, #pico8.cart.objects-self.prev_obj_count + 1)
+		self.loading_jank_offset = math.min(self.loading_jank_offset +1, math.max(#pico8.cart.objects-self.prev_obj_count + 1,0))
 	elseif key == 'down' then
-		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, -self.prev_obj_count+1)
+		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, math.min(-self.prev_obj_count+1,0))
 	elseif key == 'a' and not isrepeat then
 		self.modify_loading_jank = false
 		self:load_level(self:level_index())
