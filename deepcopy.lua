@@ -11,9 +11,11 @@ local handle_funcs = {
         local ret={}
         seen[orig]=ret
         for k,v in pairs(orig) do
-            -- print(k)
-            -- print(deepcopy(v,seen,upvalues))
-            rawset(ret,deepcopy(k,seen,upvalues),deepcopy(v,seen,upvalues))
+            if k == "__tas_id" then
+                ret[k]=v
+            else
+                rawset(ret,deepcopy(k,seen,upvalues),deepcopy(v,seen,upvalues))
+            end
         end
         setmetatable(ret, deepcopy(getmetatable(orig), seen, upvalues))
         return ret
@@ -95,9 +97,13 @@ local function deepcopy_debug(orig, seen, upvalues, path)
         for k,v in pairs(orig) do
             -- print(k)
             -- print(deepcopy(v,seen,upvalues))
-            table.insert(path,k)
-            rawset(ret,deepcopy_debug(k,seen,upvalues,{"key "..tostring(k)}),deepcopy_debug(v,seen,upvalues,path))
-            table.remove(path)
+            if k == "__tas_id" then
+                ret[k]=v
+            else
+                table.insert(path,k)
+                rawset(ret,deepcopy_debug(k,seen,upvalues,{"key "..tostring(k)}),deepcopy_debug(v,seen,upvalues,path))
+                table.remove(path)
+            end
         end
         setmetatable(ret, deepcopy_debug(getmetatable(orig), seen, upvalues))
         return ret
@@ -116,8 +122,8 @@ local function deepcopy_debug(orig, seen, upvalues, path)
                 break
             end
 
-            table.insert(path,"up_"..tostring(i))
-            debug.setupvalue(ret,i,deepcopy_debug(val,seen,upvalues))
+            table.insert(path,"up_"..tostring(name))
+            debug.setupvalue(ret,i,deepcopy_debug(val,seen,upvalues,path))
             table.remove(path)
             local uid = debug.upvalueid(orig, i)
             if upvalues[uid] then
