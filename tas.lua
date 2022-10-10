@@ -96,6 +96,17 @@ function tas:clearstates()
 	self:pushstate()
 end
 
+function tas:state_iter()
+	local i = 0
+	local n = #self.states
+	return function()
+		i = i + 1
+		if (i <= n) then
+			return self.states[i]
+		end
+	end
+end
+
 -- advance the pico8 state ignoring buttons or backing up the state
 local function rawstep()
 	if pico8.cart._update60 then
