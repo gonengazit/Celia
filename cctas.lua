@@ -2,10 +2,17 @@ local tas = require("tas")
 
 local cctas = tas:extend("cctas")
 
+local vanilla_seeds = require("vanilla_seeds")
+
 function cctas:init()
 	--this seems hacky, but is actually how updation order behaves in vanilla
 	pico8.cart.begin_game()
 	pico8.cart._draw()
+
+	--TODO: make it so init_seed_objs can be called after super.init?
+	--right now it doens't work because super.init pushes to the state stack, which isn't updated by init_seed_objs
+	--maybe change the representation back to pushing before step and not after?
+	self:init_seed_objs()
 	self.super.init(self)
 
 	self.level_time=0
@@ -14,6 +21,9 @@ function cctas:init()
 	self.modify_loading_jank=false
 	self.first_level=self:level_index()
 	self.loading_jank_offset=#pico8.cart.objects+1
+
+	self.modify_rng_seeds=false
+	self.rng_seed_idx = -1
 
 	self:state_changed()
 end
@@ -31,9 +41,17 @@ function cctas:keypressed(key, isrepeat)
 		self.super.keypressed(self,key,isrepeat)
 	elseif self.modify_loading_jank then
 		self:loading_jank_keypress(key,isrepeat)
+	elseif self.modify_rng_seeds then
+		self:rng_seed_keypress(key,isrepeat)
 	elseif key=='a' and not isrepeat then
 		self.modify_loading_jank = true
 		self:full_rewind()
+	elseif key=='b' and not isrepeat then
+		self.rng_seed_idx = -1
+		-- don't enable rng mode if no seedable objects exist
+		if self:advance_seeded_obj(1) then
+			self.modify_rng_seeds = true
+		end
 	elseif key=='f' then
 		self:next_level()
 	elseif key=='s' then
@@ -55,6 +73,58 @@ function cctas:loading_jank_keypress(key,isrepeat)
 		self:load_level(self:level_index(),false)
 	end
 
+end
+
+function cctas:rng_seed_keypress(key,isrepeat)
+	-- TODO: make seed visually update in the current frame, and make rewinding not visually broken
+	if key=='up' or key == 'down' then
+		local obj = pico8.cart.objects[self.rng_seed_idx]
+		for type, seed in pairs(vanilla_seeds) do
+			if pico8.cart[type] ~= nil and
+			   pico8.cart[type] == obj.type then
+				if key=='up' then
+					seed.increase_seed(obj)
+				else
+					seed.decrease_seed(obj)
+				end
+				for state in self:state_iter() do
+					for _, pobj in ipairs(state.cart.objects) do
+						if pobj.__tas_id == obj.__tas_id then
+							seed.set_seed(pobj, obj.__tas_seed)
+						end
+					end
+				end
+				-- self:rewind()
+				-- self:step()
+			end
+		end
+	elseif key == 'right' then
+		self:advance_seeded_obj(1)
+	elseif key == 'left' then
+		self:advance_seeded_obj(-1)
+	elseif key == 'b' and not isrepeat then
+		self.modify_rng_seeds = false
+	end
+end
+
+-- cycle the rng seed index forward if dir is 1 and backward if it is -1
+-- returns true if a seedable object exists
+function cctas:advance_seeded_obj(dir)
+	local i = self.rng_seed_idx == -1 and #pico8.cart.objects or self.rng_seed_idx
+	local start = i
+	repeat
+		-- advance i by 1 cyclically (darn 1-indexed lua...)
+		i = (i + dir - 1) % #pico8.cart.objects + 1
+		local obj = pico8.cart.objects[i]
+		for type, seed in pairs(vanilla_seeds) do
+			if pico8.cart[type] ~= nil and
+				pico8.cart[type] == obj.type then
+				self.rng_seed_idx = i
+				return true
+			end
+		end
+	until i == start
+	return false
 end
 
 function cctas:reset_vars()
@@ -150,6 +220,11 @@ function cctas:full_rewind()
 	self:reset_vars()
 end
 
+function cctas:full_reset()
+	self.super.full_rewind(self)
+	self:init_seed_objs()
+end
+
 function cctas:player_rewind()
 	if self.level_time>0 or self.inputs_active then
 		for _ = 1, self.level_time do
@@ -167,6 +242,7 @@ function cctas:player_rewind()
 end
 
 function cctas:clearstates()
+	self:init_seed_objs()
 	self.super.clearstates(self)
 
 	self:state_changed()
@@ -178,6 +254,21 @@ end
 
 function cctas:state_changed()
 	self.inputs_active=self:predict(self.find_player,1)
+end
+
+--loads rng seeds for the current state
+--should (probably be called when there's no states pushed state)
+--TODO: consider whether this should affect all states (probably yes?)
+function cctas:init_seed_objs()
+	for _, obj in ipairs(pico8.cart.objects) do
+		obj.__tas_id = {}
+		for type, seed in pairs(vanilla_seeds) do
+			if pico8.cart[type] ~= nil and
+			   pico8.cart[type] == obj.type then
+					seed.init(obj)
+			end
+		end
+	end
 end
 
 function cctas:draw_button(...)
@@ -216,6 +307,21 @@ function cctas:draw()
 
 		love.graphics.setColor(255,255,255)
 		love.graphics.printf(('loading jank offset: %+d'):format(self.loading_jank_offset),1,100,48,"left",0,2/3,2/3)
+	elseif self.modify_rng_seeds then
+		love.graphics.push()
+		love.graphics.translate(self.hud_w,self.hud_h)
+
+		local obj = pico8.cart.objects[self.rng_seed_idx]
+		for type, seed in pairs(vanilla_seeds) do
+			if pico8.cart[type] ~= nil and
+				pico8.cart[type] == obj.type then
+				seed.draw(obj)
+			end
+		end
+		love.graphics.pop()
+
+		love.graphics.setColor(255,255,255)
+		love.graphics.print("rng manip mode",1,100,0,2/3,2/3)
 	end
 
 end
