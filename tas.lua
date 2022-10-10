@@ -19,6 +19,10 @@ end
 
 function tas:toggle_key(i)
 	self.keystates[#self.states]=bit.bxor(self.keystates[#self.states],2^i)
+
+	if not self:key_down(i) then
+		self.hold=bit.band(self.hold,bit.bnot(2^i))
+	end
 end
 
 function tas:toggle_hold(i)
