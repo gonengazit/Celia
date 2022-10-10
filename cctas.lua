@@ -5,9 +5,17 @@ local cctas = tas:extend("cctas")
 local vanilla_seeds = require("vanilla_seeds")
 
 function cctas:init()
+
+	for type, seed in pairs(vanilla_seeds) do
+		if pico8.cart[type] ~= nil then
+			seed.inject(pico8)
+		end
+	end
+
 	--this seems hacky, but is actually how updation order behaves in vanilla
 	pico8.cart.begin_game()
 	pico8.cart._draw()
+
 
 	--TODO: make it so init_seed_objs can be called after super.init?
 	--right now it doens't work because super.init pushes to the state stack, which isn't updated by init_seed_objs
