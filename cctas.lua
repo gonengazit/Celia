@@ -229,7 +229,7 @@ function cctas:full_rewind()
 end
 
 function cctas:full_reset()
-	self.super.full_rewind(self)
+	self.super.full_reset(self)
 	self:init_seed_objs()
 end
 
