@@ -254,6 +254,10 @@ function tas:keypressed(key, isrepeat)
 		self:full_rewind()
 	elseif key=='r' and love.keyboard.isDown('lshift','rshift') then
 		self:full_reset()
+	elseif key=='m' then
+		self:save_input_file()
+	elseif key=='w' then
+		self:load_input_file(love.filesystem.newFile(cartname .. ".tas"))
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -322,6 +326,38 @@ function tas:predict(pred, num, inputs)
 	love.graphics.setShader(shader)
 	love.graphics.pop()
 	return ret
+end
+
+function tas:load_input_str(input_str)
+	local new_inputs={}
+	for input in input_str:gmatch("[^,]+") do
+		if tonumber(input) == nil then
+			print("invalid input file")
+			return
+		else
+			table.insert(new_inputs, tonumber(input))
+		end
+	end
+	self:full_reset()
+	self.keystates = new_inputs
+end
+
+function tas:get_input_str()
+	return table.concat(self.keystates, ",")
+end
+
+function tas:save_input_file()
+	local stripped_cartname = cartname:match("[^.]+")
+	local filename = stripped_cartname .. ".tas"
+	local f =love.filesystem.newFile(filename)
+	f:open("w")
+	f:write(self:get_input_str())
+	print("saved file to ".. love.filesystem.getRealDirectory(filename).."/"..filename)
+end
+
+function tas:load_input_file(f)
+	f:open("r")
+	self:load_input_str(f:read())
 end
 
 return tas
