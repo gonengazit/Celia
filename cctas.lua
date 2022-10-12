@@ -288,6 +288,20 @@ function cctas:init_seed_objs()
 	end
 end
 
+function cctas:get_input_file_obj()
+	local stripped_cartname = cartname:match("[^.]+")
+	local dirname = stripped_cartname
+	if not love.filesystem.isDirectory(dirname) then
+		if not love.filesystem.createDirectory(dirname) then
+			print("error creating save directory")
+			return nil
+		end
+	end
+
+	local filename = ("%s/TAS%d.tas"):format(dirname, self:level_index()+1)
+	return love.filesystem.newFile(filename)
+end
+
 function cctas:draw_button(...)
 
 	if not self.inputs_active then
