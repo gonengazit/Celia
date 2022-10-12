@@ -617,6 +617,10 @@ function love.focus(f)
 	focus = f
 end
 
+function love.filedropped(file)
+	tastool:load_input_file(file)
+end
+
 local function lowpass(y0, y1, cutoff) -- luacheck: no unused
 	local RC = 1.0 / (cutoff * 2 * 3.14)
 	local dt = 1.0 / __sample_rate

@@ -257,8 +257,8 @@ function tas:keypressed(key, isrepeat)
 		self:full_reset()
 	elseif key=='m' then
 		self:save_input_file()
-	elseif key=='w' then
-		self:load_input_file(love.filesystem.newFile(cartname .. ".tas"))
+	elseif key=='w' and love.keyboard.isDown('lshift', 'rshift') then
+		self:load_input_file()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -347,18 +347,37 @@ function tas:get_input_str()
 	return table.concat(self.keystates, ",")
 end
 
-function tas:save_input_file()
+-- get the file object of the input file
+-- overloads should returns nil if the file cannot be created
+function tas:get_input_file_obj()
 	local stripped_cartname = cartname:match("[^.]+")
 	local filename = stripped_cartname .. ".tas"
-	local f =love.filesystem.newFile(filename)
-	f:open("w")
-	f:write(self:get_input_str())
-	print("saved file to ".. love.filesystem.getRealDirectory(filename).."/"..filename)
+	return love.filesystem.newFile(filename)
+end
+
+function tas:save_input_file()
+	local f = self:get_input_file_obj()
+	if not f then
+		return
+	end
+	if f:open("w") then
+		f:write(self:get_input_str())
+		print("saved file to ".. love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename())
+	else
+		print("error saving input file")
+	end
 end
 
 function tas:load_input_file(f)
-	f:open("r")
-	self:load_input_str(f:read())
+	f = f or self:get_input_file_obj()
+	if not f then
+		return
+	end
+	if f:open("r") then
+		self:load_input_str(f:read())
+	else
+		print("error opening input file")
+	end
 end
 
 return tas
