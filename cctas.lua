@@ -16,14 +16,13 @@ function cctas:init()
 	pico8.cart.begin_game()
 	pico8.cart._draw()
 
+	self.level_time=0
 
 	--TODO: make it so init_seed_objs can be called after super.init?
 	--right now it doens't work because super.init pushes to the state stack, which isn't updated by init_seed_objs
 	--maybe change the representation back to pushing before step and not after?
 	self:init_seed_objs()
 	self.super.init(self)
-
-	self.level_time=0
 
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
@@ -135,6 +134,7 @@ function cctas:advance_seeded_obj(dir)
 	return false
 end
 
+--TODO: rename this
 function cctas:reset_vars()
 	self.hold=0
 end
@@ -173,7 +173,6 @@ function cctas:load_level(idx, reset_loading_jank)
 
 	pico8.cart._draw()
 
-	self.level_time=0
 	self:clearstates()
 	self:reset_vars()
 end
@@ -195,6 +194,20 @@ function cctas:find_player()
 	end
 end
 
+function cctas:pushstate()
+	if self.level_time>0 or self:find_player() then
+		self.level_time = self.level_time + 1
+	end
+	self.super.pushstate(self)
+end
+
+function cctas:popstate()
+	if self.level_time>0 then
+		self.level_time = self.level_time-1
+	end
+	self.super.popstate(self)
+end
+
 function cctas:step()
 	local lvl_idx=self:level_index()
 	self.super.step(self)
@@ -206,38 +219,33 @@ function cctas:step()
 		return
 	end
 
-	if self.level_time>0 or self:find_player() then
-		self.level_time = self.level_time + 1
-	end
 	self:state_changed()
 end
 
 function cctas:rewind()
 	self.super.rewind(self)
-	if self.level_time>0 then
-		self.level_time= self.level_time-1
-	end
 	self:state_changed()
 end
 
 function cctas:full_rewind()
 	self.super.full_rewind(self)
 
-	self.level_time=0
 	self:state_changed()
 	self:reset_vars()
 end
 
 function cctas:full_reset()
 	self.super.full_reset(self)
+
+	self:reset_vars()
 	self:init_seed_objs()
+	self:state_changed()
 end
 
 function cctas:player_rewind()
 	if self.level_time>0 or self.inputs_active then
 		for _ = 1, self.level_time do
 			self:popstate()
-			self.level_time = self.level_time- 1
 		end
 		pico8=self:peekstate()
 	else
@@ -252,6 +260,7 @@ end
 function cctas:clearstates()
 	self:init_seed_objs()
 	self.super.clearstates(self)
+	self.level_time = 0
 
 	self:state_changed()
 end

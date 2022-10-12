@@ -10,7 +10,7 @@ tas.scale = 6
 --wrapper functions
 
 function tas:key_down(i)
-	return bit.band(self.keystates[#self.states],2^i)~=0
+	return bit.band(self.keystates[self:frame_count()+1],2^i)~=0
 end
 
 function tas:key_held(i)
@@ -18,7 +18,7 @@ function tas:key_held(i)
 end
 
 function tas:toggle_key(i)
-	self.keystates[#self.states]=bit.bxor(self.keystates[#self.states],2^i)
+	self.keystates[self:frame_count()+1]=bit.bxor(self.keystates[self:frame_count()+1],2^i)
 
 	if not self:key_down(i) then
 		self.hold=bit.band(self.hold,bit.bnot(2^i))
@@ -30,12 +30,12 @@ function tas:toggle_hold(i)
 
 	-- holding a key should also set it
 	if self:key_held(i) then
-		self.keystates[#self.states]=bit.bor(self.keystates[#self.states],2^i)
+		self.keystates[self:frame_count()+1]=bit.bor(self.keystates[self:frame_count()+1],2^i)
 	end
 end
 
 function tas:reset_keys()
-	self.keystates[#self.states]=0
+	self.keystates[self:frame_count()+1]=0
 end
 
 function tas:reset_hold()
@@ -75,14 +75,15 @@ function tas:advance_keystate(curr_keystate)
 end
 
 -- deepcopy the current state, and push it to the stack
+-- if frame_count is overloaded, it must be updated/increased *before* calling pushstate
 function tas:pushstate()
 	-- don't copy any non-cart functions
 	local newstate=deepcopy_no_api(pico8)
 
 	table.insert(self.states,newstate)
 
-	if self.keystates[#self.states] == nil then
-		self.keystates[#self.states] = 0
+	if self.keystates[self:frame_count()+1] == nil then
+		self.keystates[self:frame_count()+1] = 0
 	end
 end
 
@@ -134,7 +135,7 @@ function tas:step()
 	self:pushstate()
 
 	--advance the state of pressed keys
-	self.keystates[#self.states] = self:advance_keystate(self.keystates[#self.states])
+	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
 end
 
 function tas:rewind()
@@ -308,7 +309,7 @@ function tas:predict(pred, num, inputs)
 	if type(inputs)=="table" then
 		input_tbl=inputs
 	elseif inputs then
-		input_tbl={table.unpack(self.keystates,#self.states)}
+		input_tbl={table.unpack(self.keystates,self:frame_count()+1)}
 	else
 		input_tbl={}
 	end
