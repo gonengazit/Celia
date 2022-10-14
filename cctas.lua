@@ -77,7 +77,6 @@ function cctas:loading_jank_keypress(key,isrepeat)
 		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, math.min(-self.prev_obj_count+1,0))
 	elseif key == 'a' and not isrepeat then
 		self.modify_loading_jank = false
-		-- TODO: make this not reset rng seeds
 		self:load_level(self:level_index(),false)
 	end
 
@@ -144,7 +143,11 @@ local function load_room_wrap(idx)
 	--TODO: support evercore style carts
 	pico8.cart.load_room(idx%8, math.floor(idx/8))
 end
-function cctas:load_level(idx, reset_loading_jank)
+
+-- if reset changes is false, loading jank and rng seeds will not be touched
+-- otherwise, they will be reset
+function cctas:load_level(idx, reset_changes)
+	local seeds = self:get_rng_seeds()
 	--apply loading jank
 	load_room_wrap(idx-1)
 	self.prev_obj_count=0
@@ -157,7 +160,7 @@ function cctas:load_level(idx, reset_loading_jank)
 		end
 	end
 	load_room_wrap(idx)
-	if reset_loading_jank then
+	if reset_changes then
 		-- for the first level, assume no objects get loading janked by default
 		self.loading_jank_offset = self:level_index() == self.first_level and #pico8.cart.objects + 1 or 0
 	end
@@ -174,8 +177,14 @@ function cctas:load_level(idx, reset_loading_jank)
 
 	pico8.cart._draw()
 
+	self:init_seed_objs()
 	self:clearstates()
 	self:reset_vars()
+
+	if not reset_changes then
+		self:load_rng_seeds(seeds)
+	end
+
 end
 function cctas:level_index()
 	return pico8.cart.level_index()
@@ -259,7 +268,6 @@ function cctas:player_rewind()
 end
 
 function cctas:clearstates()
-	self:init_seed_objs()
 	self.super.clearstates(self)
 	self.level_time = 0
 
