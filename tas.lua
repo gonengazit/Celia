@@ -329,18 +329,20 @@ function tas:predict(pred, num, inputs)
 	return ret
 end
 
+--returns true on success, false if the input_str is invalid
 function tas:load_input_str(input_str)
 	local new_inputs={}
 	for input in input_str:gmatch("[^,]+") do
 		if tonumber(input) == nil then
 			print("invalid input file")
-			return
+			return false
 		else
 			table.insert(new_inputs, tonumber(input))
 		end
 	end
 	self:full_reset()
 	self.keystates = new_inputs
+	return true
 end
 
 function tas:get_input_str()

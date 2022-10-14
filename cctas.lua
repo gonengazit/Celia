@@ -77,6 +77,7 @@ function cctas:loading_jank_keypress(key,isrepeat)
 		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, math.min(-self.prev_obj_count+1,0))
 	elseif key == 'a' and not isrepeat then
 		self.modify_loading_jank = false
+		-- TODO: make this not reset rng seeds
 		self:load_level(self:level_index(),false)
 	end
 
@@ -288,6 +289,55 @@ function cctas:init_seed_objs()
 	end
 end
 
+function cctas:get_rng_seeds()
+
+	local seeds = {}
+	local initial_state = self:state_iter()()
+	for _, obj in ipairs(initial_state.cart.objects) do
+		if obj.__tas_seed then
+			-- compatibility hack for old balloon seed format
+			if obj.type == initial_state.cart.balloon then
+				table.insert(seeds, obj.__tas_seed/vanilla_seeds.balloon.granularity)
+			else
+				table.insert(seeds, obj.__tas_seed)
+			end
+		end
+	end
+	return seeds
+end
+
+-- loads the seed for the current frame and its copy in the state stack
+-- seeds not given will not be left at the default value
+-- TODO: change repr so it only needs to be done for one of them?
+--
+function cctas:load_rng_seeds(t)
+	local i=1
+	for _, obj in ipairs(pico8.cart.objects) do
+		if i > #t then
+			break
+		end
+		--TODO: use set_seed
+		for type, seed in pairs(vanilla_seeds) do
+			if pico8.cart[type] ~= nil and
+			   pico8.cart[type] == obj.type then
+				if type == "balloon" then
+					--compatibility hack
+					-- TODO: change seed repr for balloons to just be this, it's better
+					seed.set_seed(obj, math.floor(t[i] * vanilla_seeds.balloon.granularity + 0.5))
+				else
+					seed.set_seed(obj, i)
+				end
+				i = i+1
+				break
+			end
+		end
+	end
+
+	--hacky way to sync with the stack
+	self:popstate()
+	self:pushstate()
+end
+
 function cctas:get_input_file_obj()
 	local stripped_cartname = cartname:match("[^.]+")
 	local dirname = stripped_cartname
@@ -300,6 +350,38 @@ function cctas:get_input_file_obj()
 
 	local filename = ("%s/TAS%d.tas"):format(dirname, self:level_index()+1)
 	return love.filesystem.newFile(filename)
+end
+
+function cctas:get_input_str()
+	return ("[%s]%s"):format(table.concat(self:get_rng_seeds(),","),self.super.get_input_str(self))
+end
+
+function cctas:load_input_str(str)
+	local seeds,inputs = str:match("%[([^%]]*)%](.*)")
+	print(seeds)
+	if not seeds then -- try loading without rng seeds
+		return self.super.load_input_str(self, str)
+	elseif not inputs then
+		print("invalid input file")
+		return false
+	end
+
+	local seeds_tbl={}
+
+	for seed in seeds:gmatch("[^,]+") do
+		if tonumber(seed) == nil then
+			print("invalid input file")
+			return false
+		else
+			table.insert(seeds_tbl, tonumber(seed))
+		end
+	end
+
+	if not self.super.load_input_str(self, inputs) then
+		return false
+	end
+	self:load_rng_seeds(seeds_tbl)
+	return true
 end
 
 function cctas:draw_button(...)
