@@ -3,7 +3,11 @@ local tas = require("tas")
 local cctas = tas:extend("cctas")
 
 local vanilla_seeds = require("vanilla_seeds")
+local api = require("api")
 
+
+--TODO: probably call load_level directly
+--or at least make sure rng seeds are set etc
 function cctas:init()
 
 	for type, seed in pairs(vanilla_seeds) do
@@ -32,6 +36,8 @@ function cctas:init()
 	self.modify_rng_seeds=false
 	self.rng_seed_idx = -1
 
+	self.full_game_playback = false
+
 	self:state_changed()
 end
 
@@ -44,7 +50,10 @@ function cctas:toggle_key(i)
 end
 
 function cctas:keypressed(key, isrepeat)
-	if self.realtime_playback then
+	if self.full_game_playback then
+		self.full_game_playback = false
+		self.realtime_playback = false
+	elseif self.realtime_playback then
 		self.super.keypressed(self,key,isrepeat)
 	elseif self.modify_loading_jank then
 		self:loading_jank_keypress(key,isrepeat)
@@ -65,6 +74,8 @@ function cctas:keypressed(key, isrepeat)
 		self:prev_level()
 	elseif key=='d' and love.keyboard.isDown('lshift', 'rshift') then
 		self:player_rewind()
+	elseif key == 'n' and love.keyboard.isDown('lshift', 'rshift') then
+		self:begin_full_game_playback()
 	else
 		self.super.keypressed(self,key,isrepeat)
 	end
@@ -134,6 +145,20 @@ function cctas:advance_seeded_obj(dir)
 	return false
 end
 
+function cctas:begin_full_game_playback()
+	api.reload()
+	api.run()
+	pico8.cart.begin_game()
+	pico8.cart._draw()
+
+	self:init_seed_objs()
+	self:clearstates()
+	self:load_input_file()
+
+	self.realtime_playback = true
+	self.full_game_playback = true
+
+end
 --TODO: rename this
 function cctas:reset_vars()
 	self.hold=0
@@ -223,9 +248,16 @@ function cctas:step()
 	self.super.step(self)
 
 	if lvl_idx~=self:level_index() then
-		-- self:load_level(lvl_idx)
-		-- TODO: make it so clouds don't jump??
-		self:full_rewind()
+		print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
+		if self.full_game_playback then
+			--TODO: if the input file could not be loaded, reset the inputs
+			self:init_seed_objs()
+			self:clearstates()
+			self:load_input_file()
+		else
+			-- TODO: make it so clouds don't jump??
+			self:full_rewind()
+		end
 		return
 	end
 
@@ -366,7 +398,6 @@ end
 
 function cctas:load_input_str(str)
 	local seeds,inputs = str:match("%[([^%]]*)%](.*)")
-	print(seeds)
 	if not seeds then -- try loading without rng seeds
 		return self.super.load_input_str(self, str)
 	elseif not inputs then
