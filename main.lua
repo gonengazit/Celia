@@ -12,6 +12,9 @@ local cart = require("cart")
 local tas = require("tas")
 local cctas = require("cctas")
 
+local console = require("console")
+
+
 cartname = nil -- used by api.reload
 local initialcartname = nil -- used by esc
 local love_args = nil -- luacheck: no unused
@@ -300,9 +303,9 @@ function love.load(argv)
 		love.graphics.newCanvas(pico8.resolution[1], pico8.resolution[2])
 	pico8.screen:setFilter("linear", "nearest")
 
-	local font = love.graphics.newImageFont("font.png", glyphs, 1)
-	love.graphics.setFont(font)
-	font:setFilter("nearest", "nearest")
+	pico8.font = love.graphics.newImageFont("font.png", glyphs, 1)
+	love.graphics.setFont(pico8.font)
+	pico8.font:setFilter("nearest", "nearest")
 
 	love.mouse.setVisible(false)
 	love.keyboard.setKeyRepeat(true)
@@ -523,6 +526,8 @@ function love.update(_)
 end
 
 function love.draw()
+
+	love.graphics.setFont(pico8.font)
 	love.graphics.setCanvas(pico8.screen)
 	restore_clip()
 	restore_camera()
@@ -572,6 +577,10 @@ function flip_screen()
 			scale,
 			scale
 		)
+	end
+
+	if console.isEnabled() then
+		console.draw()
 	end
 
 	love.graphics.present()
@@ -790,7 +799,12 @@ local function isAltDown()
 	return love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 end
 
-function love.keypressed(key, _, isrepeat)
+function love.keypressed(key, scancode, isrepeat)
+	console.keypressed(key, scancode, isrepeat)
+	if console.isEnabled() then
+		return
+	end
+
 	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
 		api.reload()
 		api.run()
@@ -854,6 +868,11 @@ function love.keyreleased(key)
 end
 
 function love.textinput(text)
+	console.textinput(text)
+	if console.isEnabled() then
+		return
+	end
+
 	text = text:lower()
 	local validchar = false
 	for i = 1, #glyphs do

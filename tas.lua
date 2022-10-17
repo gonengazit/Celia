@@ -2,6 +2,7 @@ require "deepcopy"
 local class = require("30log")
 
 local tas = class("tas")
+local console = require("console")
 tas.hud_w = 48
 tas.hud_h = 0
 tas.scale = 6
@@ -173,6 +174,8 @@ function tas:init()
 	self.hold = 0
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
+
+	console.ENV = setmetatable({print=print}, {__index = function(table,key) return pico8.cart[key] end})
 end
 
 function tas:update()
