@@ -1,4 +1,4 @@
-.PHONY: run all 9 10 11 lint build clean format test
+.PHONY: run all lint build clean format test
 
 project_name := "picolove"
 
@@ -9,14 +9,6 @@ all: format lint test build
 
 # run specific love version
 # setup environment variable with path to love executable first
-9:
-	@echo "Love 9 support is WIP"
-	@"${LOVE9}" . --test
-10:
-	@"${LOVE10}" . --test
-11:
-	@echo "Love 11 support is WIP"
-	@"${LOVE11}" . --test
 
 lint:
 	luacheck .

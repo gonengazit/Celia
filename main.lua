@@ -21,10 +21,11 @@ pico8 = {
 	clip = nil,
 	fps = 30,
 	frametime = 1 / 30,
+	frames = 0,
 	resolution = __pico_resolution,
 	screen = nil,
 	palette = {
-		{ 0, 0, 0, 255 },
+		[0] = { 0, 0, 0, 255 },
 		{ 29, 43, 83, 255 },
 		{ 126, 37, 83, 255 },
 		{ 0, 135, 81, 255 },
@@ -56,6 +57,7 @@ pico8 = {
 		[0] = {},
 		[1] = {},
 	},
+	kbdbuffer={},
 	keymap = {
 		[0] = {
 			[0] = { "left", "kp4" },
@@ -104,7 +106,6 @@ local __audio_buffer_size = 1024
 
 local video_frames = nil
 local osc
-host_time = 0
 local paused = false
 local focus = true
 
@@ -114,8 +115,13 @@ local channels = 1
 local bits = 16
 
 currentDirectory = "/"
-local glyphs =
-	"abcdefghijklmnopqrstuvwxyz\"'`-_/1234567890!?[](){}.,;:<>+=%#^*~ "
+local glyphs=""
+for i=32, 127 do
+	glyphs=glyphs..string.char(i)
+end
+for i=128, 153 do
+	glyphs=glyphs..string.char(194, i)
+end
 
 local function _allow_pause(value)
 	if type(value) ~= "boolean" then
@@ -132,38 +138,9 @@ local function _allow_shutdown(value)
 end
 
 log = print
--- TODO: move into separate file
-local major, minor, revision = love.getVersion()
 
--- fixes for 0.10.2
-if major == 0 and minor == 10 and revision == 2 then
-	-- workaround love2d 0.10.2 shader bug
-	function shdr_unpack(thing)
-		return unpack(thing, 1, table.maxn(thing) + 1)
-	end
-else
-	shdr_unpack = unpack
-end
-
--- minimal fixes for 0.9.2 to make picolove work
-if major == 0 and minor == 9 then
-	love.graphics.isActive = function()
-		return true
-	end
-
-	local newCanvasOrg = love.graphics.newCanvas
-	love.graphics.newCanvas = function(width, height) -- luacheck: ignore 122
-		local ret = newCanvasOrg(width, height)
-		local mt = getmetatable(ret)
-		mt.newImageData = mt.getImageData
-		return ret
-	end
-
-	love.graphics.points = function(points) -- luacheck: ignore 122
-		for _, point in ipairs(points) do
-			love.graphics.point(point[1], point[2])
-		end
-	end
+function shdr_unpack(thing)
+	return unpack(thing, 0, 15)
 end
 
 function restore_clip()
@@ -175,7 +152,7 @@ function restore_clip()
 end
 
 function setColor(c)
-	love.graphics.setColor(c * 16, 0, 0, 255)
+	love.graphics.setColor(c / 15, 0, 0, 1)
 end
 
 function _load(_cartname)
@@ -199,7 +176,7 @@ function _load(_cartname)
 
 	local file_found = false
 	for i = 1, #exts do
-		if love.filesystem.isFile(currentDirectory .. cart_no_ext .. exts[i]) then
+		if love.filesystem.getInfo(currentDirectory .. cart_no_ext .. exts[i],'file') ~= nil then
 			file_found = true
 			_cartname = cart_no_ext .. exts[i]
 			break
@@ -340,9 +317,9 @@ function love.load(argv)
 	pico8.draw_palette = {}
 	pico8.display_palette = {}
 	pico8.pal_transparent = {}
-	for i = 1, 16 do
+	for i = 0, 15 do
 		pico8.draw_palette[i] = i
-		pico8.pal_transparent[i] = i == 1 and 0 or 1
+		pico8.pal_transparent[i] = i == 0 and 0 or 1
 		pico8.display_palette[i] = pico8.palette[i]
 	end
 
@@ -350,8 +327,8 @@ function love.load(argv)
 extern float palette[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-	int index = int(color.r*16.0);
-	return vec4(vec3(palette[index]/16.0),1.0);
+	int index = int(color.r*15.0+0.5);
+	return vec4(palette[index]/15.0, 0.0, 0.0, 1.0);
 }]])
 	pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -360,9 +337,9 @@ extern float palette[16];
 extern float transparent[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-	int index = int(floor(Texel(texture, texture_coords).r*16.0));
+	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
 	float alpha = transparent[index];
-	return vec4(vec3(palette[index]/16.0),alpha);
+	return vec4(palette[index]/15.0, 0.0, 0.0 ,alpha);
 }]])
 	pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
 	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
@@ -375,9 +352,9 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	if(texcolor.a == 0.0) {
 		return vec4(0.0,0.0,0.0,0.0);
 	}
-	int index = int(color.r*16.0);
+	int index = int(color.r*15.0+0.5);
 	// lookup the color in the palette by index
-	return vec4(vec3(palette[index]/16.0),1.0);
+	return vec4(palette[index]/15.0, 0.0, 0.0, texcolor.a);
 }]])
 	pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -385,9 +362,9 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 extern vec4 palette[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-	int index = int(Texel(texture, texture_coords).r*15.0);
+	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
 	// lookup the color in the palette by index
-	return palette[index]/256.0;
+	return palette[index]/255.0;
 }]])
 	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 
@@ -398,10 +375,10 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	api.color(6)
 
 	local argc = #argv
-	local argpos = 2
+	local argpos = 1
 	local paramcount = 0
 
-	if argc > 1 then
+	if argc >= 1 then
 		-- TODO: implement commandline options
 		while argpos <= argc do
 			if argv[argpos] == "-width" then
@@ -569,7 +546,7 @@ function flip_screen()
 	love.graphics.origin()
 	love.graphics.setScissor()
 
-	love.graphics.setBackgroundColor(3, 5, 10)
+	love.graphics.setBackgroundColor(3/255, 5/255, 10/255)
 	love.graphics.setColor(255,255,255)
 	love.graphics.clear()
 
@@ -604,6 +581,7 @@ function flip_screen()
 			love.graphics.newCanvas(pico8.resolution[1], pico8.resolution[2])
 		love.graphics.setCanvas(tmp)
 		love.graphics.draw(pico8.screen, 0, 0)
+		love.graphics.setCanvas()
 		table.insert(video_frames, tmp:newImageData())
 	end
 	-- get ready for next time
@@ -834,9 +812,8 @@ function love.keypressed(key, _, isrepeat)
 	-- 	paused = not paused
 	elseif key == "f1" or key == "f6" then
 		-- screenshot
-		local screenshot = love.graphics.newScreenshot(false)
 		local filename = cartname .. "-" .. os.time() .. ".png"
-		screenshot:encode("png", filename)
+		local screenshot = love.graphics.captureScreenshot(filename)
 		log("saved screenshot to", filename)
 	elseif key == "f3" or key == "f8" then
 		-- start recording
@@ -911,19 +888,8 @@ function love.graphics.point(x, y)
 end
 
 function love.run()
-	if love.math then
-		love.math.setRandomSeed(os.time())
-		for _ = 1, 3 do
-			love.math.random()
-		end
-	end
-
-	if love.event then
-		love.event.pump()
-	end
-
 	if love.load then
-		love.load(arg)
+		love.load(love.arg.parseGameArguments(arg), arg)
 	end
 
 	-- We don't want the first frame's dt to include time taken by love.load.
@@ -934,7 +900,7 @@ function love.run()
 	local dt = 0
 
 	-- Main loop time.
-	while true do
+	return function()
 		-- Process events.
 		if love.event then
 			love.graphics.setCanvas() -- TODO: Rework this
@@ -943,10 +909,7 @@ function love.run()
 			for name, a, b, c, d, e, f in love.event.poll() do
 				if name == "quit" then
 					if not love.quit or not love.quit() then
-						if love.audio then
-							love.audio.stop()
-						end
-						return
+						return a or 0
 					end
 				end
 				love.handlers[name](a, b, c, d, e, f)
@@ -955,17 +918,12 @@ function love.run()
 
 		-- Update dt, as we'll be passing it to update
 		if love.timer then
-			love.timer.step()
-			dt = dt + love.timer.getDelta()
+			dt = dt + love.timer.step()
 		end
 
 		-- Call update and draw
 		local render = false
 		while dt > pico8.frametime do
-			host_time = host_time + dt
-			if host_time > 65536 then
-				host_time = host_time - 65536
-			end
 			if paused or not focus then -- luacheck: ignore 542
 				-- nop
 			else

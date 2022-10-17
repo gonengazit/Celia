@@ -114,6 +114,7 @@ end
 
 -- advance the pico8 state ignoring buttons or backing up the state
 local function rawstep()
+	pico8.frames = pico8.frames + 1
 	if pico8.cart._update60 then
 		pico8.cart._update60()
 	elseif pico8.cart._update then
@@ -180,19 +181,24 @@ function tas:update()
 	end
 end
 
+local function setColor(c)
+	local r,g,b,a = unpack(pico8.palette[c])
+	love.graphics.setColor(r/255, g/255, b/255, a/255)
+end
+
 function tas:draw_button(x,y,i)
 	if self:key_held(i) then
-		love.graphics.setColor(unpack(pico8.palette[8+1]))
+		setColor(8)
 	elseif self:key_down(i) then
-		love.graphics.setColor(unpack(pico8.palette[7+1]))
+		setColor(7)
 	else
-		love.graphics.setColor(unpack(pico8.palette[1+1]))
+		setColor(1)
 	end
 	love.graphics.rectangle("fill", x, y, 3, 3)
 end
 
 function tas:draw_input_display(x,y)
-	love.graphics.setColor(0,0,0)
+	setColor(0)
 	love.graphics.rectangle("fill", x, y, 25,11)
 	self:draw_button(x + 12, y + 6, 0) -- l
 	self:draw_button(x + 20, y + 6, 1) -- r
@@ -208,24 +214,23 @@ function tas:frame_count()
 end
 --returns the width of the counter
 function tas:draw_frame_counter(x,y)
-	love.graphics.setColor(0,0,0)
+	setColor(0)
 	local frame_count_str = tostring(self:frame_count())
 	local width = 4*math.max(#frame_count_str,3)+1
 	love.graphics.rectangle("fill", x, y, width, 7)
-	love.graphics.setColor(255,255,255)
+	setColor(7)
 	love.graphics.print(frame_count_str, x+1,y+1)
 	return width
 
 end
 function tas:draw()
-	love.graphics.setColor(255,255,255)
+	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(tas.screen)
 	love.graphics.setShader(pico8.display_shader)
-	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 	love.graphics.origin()
 	love.graphics.setScissor()
 
-	love.graphics.clear(30,30,30)
+	love.graphics.clear(0.1, 0.1, 0.1)
 
 	love.graphics.scale(tas.scale,tas.scale)
 	love.graphics.draw(pico8.screen, self.hud_w, self.hud_h, 0)
@@ -237,7 +242,7 @@ function tas:draw()
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
 
-	love.graphics.setColor(255,255,255)
+	love.graphics.setColor(1,1,1,1)
 
 end
 

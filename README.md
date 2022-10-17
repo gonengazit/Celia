@@ -5,7 +5,7 @@ Run PICO-8 games and computer programs with free and open-source software.
 
 On github at: https://github.com/picolove/picolove
 
-Requires LÖVE 0.10.2
+Requires LÖVE 11.x
 
 What it is:
 
@@ -64,6 +64,6 @@ Extra features:
 
 Android Packaging:
 
-Replace the default cartridge (nocart.p8) with your game. Text (P8) or PNG (P8.PNG) is supported.  
-Follow the [Android Game Packaging](https://bitbucket.org/MartinFelis/love-android-sdl2/wiki/Game_Packaging) steps.  
+Replace the default cartridge (nocart.p8) with your game. Text (P8) or PNG (P8.PNG) is supported.
+Follow the [Android Game Packaging](https://bitbucket.org/MartinFelis/love-android-sdl2/wiki/Game_Packaging) steps.
 Optionally, for orientation rotation support (Portrait and Landscape), remove ```android:screenOrientation="landscape"``` in the AndroidManifest.xml
