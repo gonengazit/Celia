@@ -119,9 +119,8 @@ end
 
 function api.cls(col)
 	col = flr(tonumber(col) or 0) % 16
-	col = col + 1 -- TODO: fix workaround
 
-	love.graphics.clear(col * 16, 0, 0, 255)
+	love.graphics.clear(col / 15, 0, 0, 1)
 	pico8.cursor = { 0, 0 }
 end
 
@@ -171,7 +170,7 @@ function api._completecommand(command, path)
 		result = path
 	elseif #files == 1 then
 		if
-			love.filesystem.isDirectory(currentDirectory .. startDir .. files[1])
+			love.filesystem.getInfo(currentDirectory .. startDir .. files[1], "directory") ~= nil
 		then
 			result = files[1]:lower() .. "/"
 		else
@@ -202,7 +201,7 @@ function api._completecommand(command, path)
 			-- TODO: remove duplicate code (see api.ls())
 			local output = {}
 			for _, file in ipairs(files) do
-				if love.filesystem.isDirectory(currentDirectory .. file) then
+				if love.filesystem.getInfo(currentDirectory .. file, "directory") ~= nil then
 					output[#output + 1] = { name = file:lower(), color = 14 }
 				elseif file:sub(-3) == ".p8" or file:sub(-4) == ".png" then
 					output[#output + 1] = { name = file:lower(), color = 6 }
@@ -254,7 +253,7 @@ function api.ls()
 	api.print("directory: " .. currentDirectory, 12)
 	local output = {}
 	for _, file in ipairs(files) do
-		if love.filesystem.isDirectory(currentDirectory .. file) then
+		if love.filesystem.getInfo(currentDirectory .. file, "directory") ~= nil then
 			output[#output + 1] = { name = file:lower(), color = 14 }
 		elseif file:sub(-3) == ".p8" or file:sub(-4) == ".png" then
 			output[#output + 1] = { name = file:lower(), color = 6 }
@@ -341,7 +340,7 @@ function api.cd(name)
 		else
 			output = "directory not found"
 		end
-	elseif love.filesystem.exists(newDirectory) then
+	elseif love.filesystem.getInfo(newDirectory) ~= nil then
 		currentDirectory = newDirectory
 		output = currentDirectory
 	else
@@ -411,7 +410,7 @@ function api.pget(x, y)
 		local __screen_img = pico8.screen:newImageData()
 		love.graphics.setCanvas(pico8.screen)
 		local r = __screen_img:getPixel(flr(x), flr(y))
-		return flr(r / 17.0)
+		return r * 15
 	end
 	warning(string.format("pget out of screen %d, %d", x, y))
 	return 0
@@ -848,56 +847,71 @@ function api.line(x0, y0, x1, y1, col)
 	love.graphics.points(points)
 end
 
-local __palette_modified = true
 
 function api.pal(c0, c1, p)
+	local __palette_modified = false
+	local __display_modified = false
 	if type(c0) ~= "number" then
-		if __palette_modified == false then
-			return
+		for i = 0, 15 do
+			if pico8.draw_palette[i] ~= i then
+				pico8.draw_palette[i] = i
+				__palette_modified = true
+			end
+			if pico8.display_palette[i] ~= pico8.palette[i] then
+				pico8.display_palette[i] = pico8.palette[i]
+				__display_modified = true
+			end
 		end
-		for i = 1, 16 do
-			pico8.draw_palette[i] = i
-			pico8.display_palette[i] = pico8.palette[i]
+		if __palette_modified then
+			pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
+			pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
+			pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
 		end
-		pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
-		__palette_modified = false
+		if __display_modified then
+			pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
+		end
 		-- According to PICO-8 manual:
 		-- pal() to reset to system defaults (including transparency values)
 		api.palt()
 	elseif p == 1 and c1 ~= nil then
 		c0 = flr(c0) % 16
 		c1 = flr(c1) % 16
-		c1 = c1 + 1
-		c0 = c0 + 1
 		pico8.display_palette[c0] = pico8.palette[c1]
 		pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
-		__palette_modified = true
 	elseif c1 ~= nil then
 		c0 = flr(c0) % 16
 		c1 = flr(c1) % 16
-		c1 = c1 + 1
-		c0 = c0 + 1
-		pico8.draw_palette[c0] = c1
-		pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
-		__palette_modified = true
+		if pico8.draw_palette[c0] ~= c1 then
+			pico8.draw_palette[c0] = c1
+			pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
+			pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
+			pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
+		end
 	end
 end
 
 function api.palt(c, t)
-	if type(c) ~= "number" then
-		for i = 1, 16 do
-			pico8.pal_transparent[i] = i == 1 and 0 or 1
+	local __alpha_modified=false
+	c = tonumber(c)
+	if c == nil then
+		for i = 0, 15 do
+			local v = i == 0 and 0 or 1
+			if pico8.pal_transparent[i] ~= v then
+				pico8.pal_transparent[i] = v
+				__alpha_modified = true
+			end
 		end
 	else
 		c = flr(c) % 16
-		pico8.pal_transparent[c + 1] = t and 0 or 1
+		local v = t and 0 or 1
+		if pico8.pal_transparent[c] ~= v then
+			pico8.pal_transparent[c] = v
+			__alpha_modified = true
+		end
 	end
-	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
+	if __alpha_modified then
+		pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
+	end
 end
 
 function api.fillp(_)
@@ -906,13 +920,13 @@ end
 
 function api.map(cel_x, cel_y, sx, sy, cel_w, cel_h, bitmask)
 	love.graphics.setShader(pico8.sprite_shader)
-	love.graphics.setColor(255, 255, 255, 255)
 	cel_x = flr(cel_x or 0)
 	cel_y = flr(cel_y or 0)
 	sx = flr(sx or 0)
 	sy = flr(sy or 0)
 	cel_w = flr(cel_w or 128)
 	cel_h = flr(cel_h or 64)
+	love.graphics.setColor(1, 1, 1, 1)
 	for y = 0, cel_h - 1 do
 		if cel_y + y < 64 and cel_y + y >= 0 then
 			for x = 0, cel_w - 1 do
@@ -1006,8 +1020,8 @@ function api.sget(x, y)
 	y = flr(tonumber(y) or 0)
 
 	if x >= 0 and x < 128 and y >= 0 and y < 128 then
-		local c = pico8.spritesheet_data:getPixel(x, y)
-		return flr(c / 16)
+		local c = pico8.spritesheet_data:getPixel(x, y)*15
+		return c
 	end
 	return 0
 end
@@ -1016,8 +1030,11 @@ function api.sset(x, y, c)
 	x = flr(tonumber(x) or 0)
 	y = flr(tonumber(y) or 0)
 	c = flr(tonumber(c) or 0)
-	pico8.spritesheet_data:setPixel(x, y, c * 16, 0, 0, 255)
-	pico8.spritesheet:refresh()
+	c = flr(tonumber(c) or 0)%16
+	if x>=0 and x<128 and y>=0 and y<128 then
+		pico8.spritesheet_data:setPixel(x, y, c / 15, 0, 0, 1)
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
+	end
 end
 
 function api.music(n, fade_len, channel_mask) -- luacheck: no unused

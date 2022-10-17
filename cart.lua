@@ -55,6 +55,7 @@ function cart.load_p8(filename)
 	local lua = ""
 	pico8.quads = {}
 	pico8.spritesheet_data = love.image.newImageData(128, 128)
+	pico8.spritesheet_data:mapPixel(function() return 0, 0, 0, 1 end)
 	pico8.map = {}
 	for y = 0, 63 do
 		pico8.map[y] = {}
@@ -116,10 +117,10 @@ function cart.load_p8(filename)
 				data:setPixel(
 					x,
 					y,
-					bit.lshift(r, 6),
-					bit.lshift(g, 6),
-					bit.lshift(b, 6),
-					255
+					bit.lshift(r, 6)/255,
+					bit.lshift(g, 6)/255,
+					bit.lshift(b, 6)/255,
+					1
 				)
 				local byte = bit.lshift(a, 6) + bit.lshift(r, 4) + bit.lshift(g, 2) + b
 				local lo = bit.band(byte, 0x0f)
@@ -134,9 +135,9 @@ function cart.load_p8(filename)
 							mapY = mapY + 1
 						end
 					end
-					pico8.spritesheet_data:setPixel(outX, outY, lo * 16, lo * 16, lo * 16)
+					pico8.spritesheet_data:setPixel(outX, outY, lo/15, 0, 0, 1)
 					outX = outX + 1
-					pico8.spritesheet_data:setPixel(outX, outY, hi * 16, hi * 16, hi * 16)
+					pico8.spritesheet_data:setPixel(outX, outY, hi/15, 0, 0, 1)
 					outX = outX + 1
 					if outX == 128 then
 						outY = outY + 1
@@ -276,8 +277,6 @@ function cart.load_p8(filename)
 		-- generate a quad for each sprite index
 		local gfxdata = data:match("\n__gfx__.-\n(.-\n)\n-__")
 
-		local shared = 0
-
 		if gfxdata then
 			local row = 0
 
@@ -285,7 +284,7 @@ function cart.load_p8(filename)
 				local col = 0
 				for v in line:gmatch(".") do
 					v = tonumber(v, 16)
-					pico8.spritesheet_data:setPixel(col, row, v * 16, v * 16, v * 16, 255)
+					pico8.spritesheet_data:setPixel(col, row, v / 15, 0, 0, 1)
 
 					col = col + 1
 					if col == 128 then
@@ -300,13 +299,15 @@ function cart.load_p8(filename)
 			end
 		end
 
+		local shared = 0
+
 		if version > 3 then
 			local tx, ty = 0, 32
 			for sy = 64, 127 do
 				for sx = 0, 127, 2 do
 					-- get the two pixel values and merge them
-					local lo = api.flr(pico8.spritesheet_data:getPixel(sx, sy) / 16)
-					local hi = api.flr(pico8.spritesheet_data:getPixel(sx + 1, sy) / 16)
+					local lo = pico8.spritesheet_data:getPixel(sx, sy) * 15
+					local hi = pico8.spritesheet_data:getPixel(sx + 1, sy) * 15
 					local v = bit.bor(bit.lshift(hi, 4), lo)
 					pico8.map[ty][tx] = v
 					shared = shared + 1
