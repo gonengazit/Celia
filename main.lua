@@ -477,7 +477,6 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 
 	_load(initialcartname)
 	api.run()
-	cartname = nil
 end
 
 function new_sandbox()
