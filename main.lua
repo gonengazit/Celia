@@ -17,6 +17,7 @@ pico8 = {
 	clip = nil,
 	fps = 30,
 	frametime = 1 / 30,
+	frames = 0,
 	resolution = __pico_resolution,
 	screen = nil,
 	palette = {
@@ -52,6 +53,7 @@ pico8 = {
 		[0] = {},
 		[1] = {},
 	},
+	kbdbuffer={},
 	keymap = {
 		[0] = {
 			[0] = { "left", "kp4" },
@@ -100,7 +102,6 @@ local __audio_buffer_size = 1024
 
 local video_frames = nil
 local osc
-host_time = 0
 local paused = false
 local focus = true
 
@@ -527,6 +528,7 @@ local function update_buttons()
 end
 
 function love.update(_)
+	pico8.frames=pico8.frames+1
 	update_buttons()
 	if pico8.cart._update60 then
 		pico8.cart._update60()
@@ -558,7 +560,6 @@ end
 
 function flip_screen()
 	love.graphics.setShader(pico8.display_shader)
-	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 	love.graphics.setCanvas()
 	love.graphics.origin()
 	love.graphics.setScissor()
@@ -942,10 +943,6 @@ function love.run()
 		-- Call update and draw
 		local render = false
 		while dt > pico8.frametime do
-			host_time = host_time + dt
-			if host_time > 65536 then
-				host_time = host_time - 65536
-			end
 			if paused or not focus then -- luacheck: ignore 542
 				-- nop
 			else

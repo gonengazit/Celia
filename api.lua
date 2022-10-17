@@ -120,6 +120,8 @@ end
 function api.cls(col)
 	col = flr(tonumber(col) or 0) % 16
 
+	pico8.clip = nil
+	love.graphics.setScissor()
 	love.graphics.clear(col / 15, 0, 0, 1)
 	pico8.cursor = { 0, 0 }
 end
@@ -400,6 +402,8 @@ function api.pset(x, y, col)
 end
 
 function api.pget(x, y)
+	x= x - pico8.camera_x
+	y= y - pico8.camera_y
 	if
 		x >= 0
 		and x < pico8.resolution[1]
@@ -598,10 +602,11 @@ end
 
 function api.spr(n, x, y, w, h, flip_x, flip_y)
 	love.graphics.setShader(pico8.sprite_shader)
-	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
-	n = flr(n)
-	w = w or 1
-	h = h or 1
+	n = flr(tonumber(n) or 0)
+	x = tonumber(x) or 0
+	y = tonumber(y) or 0
+	w = tonumber(w) or 1
+	h = tonumber(h) or 1
 	local q
 	if w == 1 and h == 1 then
 		q = pico8.quads[n]
@@ -653,7 +658,6 @@ function api.sspr(sx, sy, sw, sh, dx, dy, dw, dh, flip_x, flip_y)
 	local q =
 		love.graphics.newQuad(sx, sy, sw, sh, pico8.spritesheet:getDimensions())
 	love.graphics.setShader(pico8.sprite_shader)
-	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
 	love.graphics.draw(
 		pico8.spritesheet,
 		q,
@@ -771,15 +775,11 @@ function api.line(x0, y0, x1, y1, col)
 		color(col)
 	end
 
-	if x0 ~= x0 or y0 ~= y0 or x1 ~= x1 or y1 ~= y1 then
-		warning("line has NaN value")
-		return
-	end
 
-	x0 = flr(x0) + 1
-	y0 = flr(y0) + 1
-	x1 = flr(x1) + 1
-	y1 = flr(y1) + 1
+	x0 = flr(tonumber(x0) or 0) + 1
+	y0 = flr(tonumber(y0) or 0) + 1
+	x1 = flr(tonumber(x1) or 0) + 1
+	y1 = flr(tonumber(y1) or 0) + 1
 
 	local dx = x1 - x0
 	local dy = y1 - y0
@@ -920,35 +920,28 @@ end
 
 function api.map(cel_x, cel_y, sx, sy, cel_w, cel_h, bitmask)
 	love.graphics.setShader(pico8.sprite_shader)
-	cel_x = flr(cel_x or 0)
-	cel_y = flr(cel_y or 0)
-	sx = flr(sx or 0)
-	sy = flr(sy or 0)
-	cel_w = flr(cel_w or 128)
-	cel_h = flr(cel_h or 64)
 	love.graphics.setColor(1, 1, 1, 1)
+	cel_x = flr(tonumber(cel_x) or 0)
+	cel_y = flr(tonumber(cel_y) or 0)
+	sx = flr(tonumber(sx) or 0)
+	sy = flr(tonumber(sy) or 0)
+	cel_w = flr(tonumber(cel_w) or 128)
+	cel_h = flr(tonumber(cel_h) or 64)
+	bitmask = tonumber(bitmask) or 0
 	for y = 0, cel_h - 1 do
 		if cel_y + y < 64 and cel_y + y >= 0 then
 			for x = 0, cel_w - 1 do
 				if cel_x + x < 128 and cel_x + x >= 0 then
 					local v = pico8.map[flr(cel_y + y)][flr(cel_x + x)]
 					if v > 0 then
-						if bitmask == nil or bitmask == 0 then
+						if bitmask == 0 or
+							bit.band(pico8.spriteflags[v], bitmask) ~= 0 then
 							love.graphics.draw(
 								pico8.spritesheet,
 								pico8.quads[v],
 								sx + 8 * x,
 								sy + 8 * y
 							)
-						else
-							if bit.band(pico8.spriteflags[v], bitmask) ~= 0 then
-								love.graphics.draw(
-									pico8.spritesheet,
-									pico8.quads[v],
-									sx + 8 * x,
-									sy + 8 * y
-								)
-							end
 						end
 					end
 				end
@@ -961,8 +954,8 @@ end
 api.mapdraw = api.map
 
 function api.mget(x, y)
-	x = flr(x or 0)
-	y = flr(y or 0)
+	x = flr(tonumber(x) or 0)
+	y = flr(tonumber(y) or 0)
 	if x >= 0 and x < 128 and y >= 0 and y < 64 then
 		return pico8.map[y][x]
 	end
@@ -970,9 +963,9 @@ function api.mget(x, y)
 end
 
 function api.mset(x, y, v)
-	x = flr(x or 0)
-	y = flr(y or 0)
-	v = flr(v or 0) % 256
+	x = flr(tonumber(x) or 0)
+	y = flr(tonumber(y) or 0)
+	v = flr(tonumber(v) or 0) % 256
 	if x >= 0 and x < 128 and y >= 0 and y < 64 then
 		pico8.map[y][x] = v
 	end
@@ -982,25 +975,32 @@ function api.fget(n, f)
 	if n == nil then
 		return nil
 	end
+	n = flr(tonumber(n) or 0)
 	if f ~= nil then
+		f = flr(tonumber(f) or 0)
 		-- return just that bit as a boolean
 		if not pico8.spriteflags[flr(n)] then
 			warning(string.format("fget(%d, %d)", n, f))
 			return false
 		end
-		return bit.band(pico8.spriteflags[flr(n)], bit.lshift(1, flr(f))) ~= 0
+		return bit.band(pico8.spriteflags[n], bit.lshift(1, f)) ~= 0
 	end
-	return pico8.spriteflags[flr(n)] or 0
+	return pico8.spriteflags[n] or 0
 end
 
 function api.fset(n, f, v)
 	-- fset n [f] v
 	-- f is the flag index 0..7
 	-- v is boolean
+	if n == nil then
+		return
+	end
+	n = flr(tonumber(n) or 0)
 	if v == nil then
 		v, f = f, nil
 	end
 	if f then
+		f = flr(tonumber(f) or 0)
 		-- set specific bit to v (true or false)
 		if v then
 			pico8.spriteflags[n] = bit.bor(pico8.spriteflags[n], bit.lshift(1, f))
@@ -1009,6 +1009,7 @@ function api.fset(n, f, v)
 				bit.band(pico8.spriteflags[n], bit.bnot(bit.lshift(1, f)))
 		end
 	else
+		v = flr(tonumber(v) or 0)
 		-- set bitfield to v (number)
 		pico8.spriteflags[n] = v
 	end
@@ -1029,7 +1030,6 @@ end
 function api.sset(x, y, c)
 	x = flr(tonumber(x) or 0)
 	y = flr(tonumber(y) or 0)
-	c = flr(tonumber(c) or 0)
 	c = flr(tonumber(c) or 0)%16
 	if x>=0 and x<128 and y>=0 and y<128 then
 		pico8.spritesheet_data:setPixel(x, y, c / 15, 0, 0, 1)
@@ -1117,8 +1117,10 @@ function api.peek(addr)
 	addr = flr(tonumber(addr) or 0)
 	if addr < 0 then
 		return 0
-	elseif addr < 0x2000 then -- luacheck: ignore 542
-		-- TODO: spritesheet data
+	elseif addr < 0x2000 then
+		local lo = pico8.spritesheet_data:getPixel(addr*2%128, flr(addr/64))*15
+		local hi = pico8.spritesheet_data:getPixel(addr*2%128+1, flr(addr/64))*15
+		return hi*16+lo
 	elseif addr < 0x3000 then
 		addr = addr - 0x2000
 		return pico8.map[flr(addr / 128)][addr % 128]
@@ -1187,8 +1189,17 @@ function api.poke(addr, val)
 	if addr < 0 or addr >= 0x8000 then
 		error("bad memory access")
 	elseif addr < 0x1000 then -- luacheck: ignore 542
-	elseif addr < 0x2000 then -- luacheck: ignore 542
-		-- TODO: spritesheet data
+		local lo=val%16
+		local hi=flr(val/16)
+		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
+		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
+		--GTODO: replacePixels?
+	elseif addr < 0x2000 then
+		local lo=val%16
+		local hi=flr(val/16)
+		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
+		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
+		pico8.map[flr(addr/128)][addr%128]=val
 	elseif addr < 0x3000 then
 		addr = addr - 0x2000
 		pico8.map[flr(addr / 128)][addr % 128] = val
@@ -1201,7 +1212,10 @@ function api.poke(addr, val)
 	elseif addr < 0x5e00 then
 		pico8.usermemory[addr - 0x4300] = val
 	elseif addr < 0x5f00 then -- luacheck: ignore 542
-		-- TODO: cart data
+		local ind=math.floor((addr-0x5e00)/4)
+		local oval=pico8.cartdata[ind]*0x10000
+		local shift=(addr%4)*8
+		pico8.cartdata[ind]=bit.bor(bit.band(oval, bit.bnot(bit.lshift(0xFF, shift))), bit.lshift(val, shift))/0x10000
 	elseif addr < 0x5f40 then -- luacheck: ignore 542
 		-- TODO: draw state
 		if addr == 0x5f26 then
@@ -1329,7 +1343,7 @@ function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
 end
 
 function api.rnd(x)
-	return love.math.random() * (x or 1)
+	return love.math.random() * (tonumber(x) or 1)
 end
 
 function api.srand(seed)
@@ -1387,12 +1401,41 @@ end
 
 local bit = require("bit")
 
-api.band = bit.band
-api.bor = bit.bor
-api.bxor = bit.bxor
-api.bnot = bit.bnot
-api.shl = bit.lshift
-api.shr = bit.rshift
+function api.band(x, y)
+	return bit.band(x*0x10000, y*0x10000)/0x10000
+end
+
+function api.bor(x, y)
+	return bit.bor(x*0x10000, y*0x10000)/0x10000
+end
+
+function api.bxor(x, y)
+	return bit.bxor(x*0x10000, y*0x10000)/0x10000
+end
+
+function api.bnot(x)
+	return bit.bnot(x*0x10000)/0x10000
+end
+
+function api.shl(x, y)
+	return bit.lshift(x*0x10000, y)/0x10000
+end
+
+function api.shr(x, y)
+	return bit.arshift(x*0x10000, y)/0x10000
+end
+
+function api.lshr(x, y)
+	return bit.rshift(x*0x10000, y)/0x10000
+end
+
+function api.rotl(x, y)
+	return bit.rol(x*0x10000, y)/0x10000
+end
+
+function api.rotr(x, y)
+	return bit.ror(x*0x10000, y)/0x10000
+end
 
 function api.load(filename)
 	local hasloaded = _load(filename)
@@ -1525,7 +1568,7 @@ function api.help()
 end
 
 function api.time()
-	return host_time
+	return pico8.frames/30
 end
 api.t = api.time
 
@@ -1554,8 +1597,9 @@ function api.radio()
 end
 
 function api.btn(i, p)
-	if type(i) == "number" then
-		p = p or 0
+	if i ~= nil or p ~= nil then
+		i = flr(tonumber(i) or 0)
+		p = flr(tonumber(p) or 0)
 		if pico8.keymap[p] and pico8.keymap[p][i] then
 			return pico8.keypressed[p][i] ~= nil
 		end
@@ -1577,9 +1621,11 @@ function api.btn(i, p)
 	end
 end
 
+
 function api.btnp(i, p)
-	if type(i) == "number" then
-		p = p or 0
+	if i~= nil or p~=nil then
+		i = flr(tonumber(i) or 0)
+		p = flr(tonumber(p) or 0)
 		if pico8.keymap[p] and pico8.keymap[p][i] then
 			local v = pico8.keypressed[p][i]
 			if v and (v == 0 or (v >= 12 and v % 4 == 0)) then
@@ -1616,7 +1662,7 @@ end
 function api.dget(index)
 	-- TODO: handle global cartdata properly
 	-- TODO: handle missing cartdata(id) call
-	index = flr(index)
+	index = flr(tonumber(index) or 0)
 	if not pico8.can_cartdata then
 		api.print("** dget called before cartdata()", 6)
 		return ""
@@ -1631,7 +1677,7 @@ end
 function api.dset(index, value)
 	-- TODO: handle global cartdata properly
 	-- TODO: handle missing cartdata(id) call
-	index = flr(index)
+	index = flr(tonumber(index) or 0)
 	if not pico8.can_cartdata then
 		api.print("** dget called before cartdata()", 6)
 		return ""
@@ -1667,6 +1713,10 @@ function api.stat(x)
 		return pico8.fps -- target fps
 	elseif x == 9 then
 		return love.timer.getFPS()
+	elseif x == 30 then
+		return #pico8.kbdbuffer ~= 0
+	elseif x == 31 then
+		return (table.remove(pico8.kbdbuffer, 1) or "")
 	elseif x == 32 then
 		return getmousex()
 	elseif x == 33 then
@@ -1741,14 +1791,13 @@ function api.all(a)
 	end
 
 	local i = 0
-	local len = #a
+	local prev
 	return function()
-		len = len - 1
-		i = #a - len
-		while a[i] == nil and len > 0 do
-			len = len - 1
-			i = #a - len
+		if a[i] == prev then i = i + 1 end
+		while a[i] == nil and i <= #a do
+			i = i + 1
 		end
+		prev = a[i]
 		return a[i]
 	end
 end
@@ -1759,11 +1808,8 @@ function api.foreach(a, f)
 		return
 	end
 
-	local len = #a
-	for i = 1, len do
-		if a[i] ~= nil then
-			f(a[i])
-		end
+	for v in api.all(a) do
+		f(v)
 	end
 end
 
@@ -1771,7 +1817,7 @@ end
 function api.count(a, val)
 	if val ~= nil then
 		local count = 0
-		for _, v in pairs(a) do
+		for _, v in ipairs(a) do
 			if v == val then
 				count = count + 1
 			end
@@ -1789,7 +1835,7 @@ function api.add(a, v, index)
 	elseif index == nil then
 		table.insert(a, v)
 	else
-		table.insert(a, index, v)
+		table.insert(a, tonumber(index), v)
 	end
 	return v
 end
@@ -1806,6 +1852,7 @@ function api.del(a, dv)
 		end
 	end
 end
+
 function api.deli(...)
 	local argc = select("#", ...)
 	local a = select(1, ...)
