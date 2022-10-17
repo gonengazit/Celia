@@ -110,8 +110,13 @@ local channels = 1
 local bits = 16
 
 currentDirectory = "/"
-local glyphs =
-	"abcdefghijklmnopqrstuvwxyz\"'`-_/1234567890!?[](){}.,;:<>+=%#^*~ "
+local glyphs=""
+for i=32, 127 do
+	glyphs=glyphs..string.char(i)
+end
+for i=128, 153 do
+	glyphs=glyphs..string.char(194, i)
+end
 
 local function _allow_pause(value)
 	if type(value) ~= "boolean" then
