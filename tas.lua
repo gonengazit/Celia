@@ -175,7 +175,10 @@ function tas:init()
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
-	console.ENV = setmetatable({print=print}, {__index = function(table,key) return pico8.cart[key] end})
+	console.ENV = setmetatable({print=print}, {
+		__index = function(table,key) return pico8.cart[key] end,
+		__newindex = function(table, key, val) pico8.cart[key] = val end
+	})
 end
 
 function tas:update()
