@@ -5,6 +5,8 @@ local cctas = tas:extend("cctas")
 local vanilla_seeds = require("vanilla_seeds")
 local api = require("api")
 
+local console = require("console")
+
 
 --TODO: probably call load_level directly
 --or at least make sure rng seeds are set etc
@@ -14,6 +16,26 @@ function cctas:init()
 		if pico8.cart[type] ~= nil then
 			seed.inject(pico8)
 		end
+	end
+
+	-- add tostring metamethod to objects, for use with the console
+	local init_object = pico8.cart.init_object
+	pico8.cart.init_object = function(...)
+		local o = init_object(...)
+
+		local mt = getmetatable(o) or {}
+		mt.__tostring = function(obj)
+			local type = "object"
+			for k,v in pairs(pico8.cart) do
+				if obj.type == v then
+					type = k
+					break
+				end
+			end
+			return ("[%s] x: %g, y: %g, rem: {%g, %g}, spd: {%g, %g}"):format(type, obj.x, obj.y, obj.rem.x, obj.rem.y, obj.spd.x, obj.spd.y)
+		end
+		setmetatable(o, mt)
+		return o
 	end
 
 	--this seems hacky, but is actually how updation order behaves in vanilla
@@ -27,6 +49,8 @@ function cctas:init()
 	--maybe change the representation back to pushing before step and not after?
 	self:init_seed_objs()
 	self.super.init(self)
+
+	console.ENV.find_player = self.find_player
 
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
