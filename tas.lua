@@ -173,7 +173,7 @@ function tas:init()
 	self.realtime_playback=false
 	self.hold = 0
 	self:pushstate()
-	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
+	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + 64)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
 	console.ENV = setmetatable({print=print}, {
 		__index = function(table,key) return pico8.cart[key] end,
@@ -229,6 +229,71 @@ function tas:draw_frame_counter(x,y)
 	return width
 
 end
+
+--tbl is a table of coloredTexts, of the entries of the table
+local function draw_inputs_row(tbl, x, y, c, frame_num)
+	local box_w = 48/#tbl
+
+	-- draw the frame number
+	setColor(c)
+	love.graphics.rectangle("fill", x, y, 16, 7)
+	setColor(0)
+	love.graphics.rectangle("line", x, y, 16, 7)
+	love.graphics.printf(frame_num, x, y+1, 16, "right")
+
+	for i=1, #tbl do
+		setColor(c)
+		love.graphics.rectangle("fill", x+(i-1)*box_w+16, y, box_w, 7)
+		setColor(0)
+		love.graphics.rectangle("line", x+(i-1)*box_w+16, y, box_w, 7)
+		love.graphics.setColor(1,1,1,1)
+		love.graphics.printf(tbl[i], x+(i-1)*box_w+16, y+1, box_w, "center")
+	end
+end
+
+function tas:draw_piano_roll()
+	local x=pico8.resolution[1] + self.hud_w+0.5
+	local y=0
+
+	local inputs={"x","z","d","u","r","l"}
+
+
+	local header={}
+	for i,v in ipairs(inputs) do
+		header[i]={{0,0,0},v}
+	end
+	draw_inputs_row(header,x,y,10,"idx")
+
+	local num_rows= math.floor(pico8.resolution[2]/7)-1
+	local frame_count = self:frame_count() + 1
+
+	--use 1/3rd of the rows for frames before, and 2/3rds for the frames after the curr frame
+	--use make sure to use all the rows on the edges
+	local start_row = math.max(frame_count - math.floor(num_rows/3),1)
+	if start_row + num_rows - 1 > #self.keystates then
+		start_row = math.max(#self.keystates - num_rows + 1, 1)
+	end
+
+	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
+		local current_frame = i == frame_count
+		local s={}
+		for j=1, #inputs do
+			if bit.band(self.keystates[i], 2^(#inputs-j)) ~= 0 then
+				if current_frame and self:key_held(#inputs-j) then
+					local r,g,b,a=unpack(pico8.palette[8])
+					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+				else
+					s[j]={{0,0,0},inputs[j]}
+				end
+
+			else
+				s[j]=" "
+			end
+		end
+		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or 7, i-1)
+	end
+
+end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(tas.screen)
@@ -247,6 +312,8 @@ function tas:draw()
 
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
+
+	self:draw_piano_roll()
 
 	love.graphics.setColor(1,1,1,1)
 
