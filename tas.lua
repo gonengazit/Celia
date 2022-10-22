@@ -255,7 +255,7 @@ function tas:draw_piano_roll()
 	local x=pico8.resolution[1] + self.hud_w+0.5
 	local y=0
 
-	local inputs={"x","z","d","u","r","l"}
+	local inputs={"l","r","u","d","z","x"}
 
 
 	local header={}
@@ -278,8 +278,8 @@ function tas:draw_piano_roll()
 		local current_frame = i == frame_count
 		local s={}
 		for j=1, #inputs do
-			if bit.band(self.keystates[i], 2^(#inputs-j)) ~= 0 then
-				if current_frame and self:key_held(#inputs-j) then
+			if bit.band(self.keystates[i], 2^(j-1)) ~= 0 then
+				if current_frame and self:key_held(j-1) then
 					local r,g,b,a=unpack(pico8.palette[8])
 					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
 				else
