@@ -10,18 +10,23 @@ tas.scale = 6
 
 --wrapper functions
 
-function tas:key_down(i)
-	return bit.band(self.keystates[self:frame_count()+1],2^i)~=0
+-- recieves the index of the frame to check the key state of
+-- index defaults to the current frame if nil
+function tas:key_down(i, frame)
+	frame = frame or self:frame_count() + 1
+	return bit.band(self.keystates[frame],2^i)~=0
 end
 
 function tas:key_held(i)
 	return bit.band(self.hold, 2^i)~=0
 end
 
-function tas:toggle_key(i)
-	self.keystates[self:frame_count()+1]=bit.bxor(self.keystates[self:frame_count()+1],2^i)
+function tas:toggle_key(i, frame)
+	frame = frame or self:frame_count() + 1
+	self.keystates[frame]=bit.bxor(self.keystates[frame],2^i)
 
-	if not self:key_down(i) then
+	--disabling a key on the current frame should also disable that hold
+	if not self:key_down(i) and frame == self:frame_count() + 1 then
 		self.hold=bit.band(self.hold,bit.bnot(2^i))
 	end
 end
@@ -37,6 +42,15 @@ end
 
 function tas:reset_keys()
 	self.keystates[self:frame_count()+1]=0
+end
+
+function tas:insert_keystate()
+	--TODO: respect hold?
+	table.insert(self.keystates, self:frame_count() + 1, 0)
+end
+
+function tas:delete_keystate()
+	table.remove(self.keystates, self:frame_count() + 1)
 end
 
 function tas:reset_hold()
@@ -175,6 +189,8 @@ function tas:init()
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + 64)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
+	self.last_selected_frame = -1
+
 	console.ENV = setmetatable({print=print}, {
 		__index = function(table,key) return pico8.cart[key] end,
 		__newindex = function(table, key, val) pico8.cart[key] = val end
@@ -278,7 +294,7 @@ function tas:draw_piano_roll()
 		local current_frame = i == frame_count
 		local s={}
 		for j=1, #inputs do
-			if bit.band(self.keystates[i], 2^(j-1)) ~= 0 then
+			if self:key_down(j-1, i) then
 				if current_frame and self:key_held(j-1) then
 					local r,g,b,a=unpack(pico8.palette[8])
 					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
@@ -290,7 +306,7 @@ function tas:draw_piano_roll()
 				s[j]=" "
 			end
 		end
-		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or 7, i-1)
+		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
 	end
 
 end
@@ -325,8 +341,17 @@ function tas:keypressed(key, isrepeat)
 	elseif self.realtime_playback then
 		-- pressing any key during realtime playback stops it during realtime playback stops it
 		self.realtime_playback = false
+	--TODO: block keypresses even when overloading this func
+	elseif self.last_selected_frame ~= -1 then
+		self:selection_keypress(key, isrepeat)
 	elseif key=='l' then
-		self:step()
+		if love.keyboard.isDown('lshift', 'rshift') then
+			if self:frame_count() + 1 < #self.keystates then
+				self.last_selected_frame = self:frame_count() + 2
+			end
+		else
+			self:step()
+		end
 	elseif key=='k' then
 		self:rewind()
 	elseif key=='d' then
@@ -337,6 +362,10 @@ function tas:keypressed(key, isrepeat)
 		self:save_input_file()
 	elseif key=='w' and love.keyboard.isDown('lshift', 'rshift') then
 		self:load_input_file()
+	elseif key=='insert' then
+		self:insert_keystate()
+	elseif key=='delete' then
+		self:delete_keystate()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -345,6 +374,36 @@ function tas:keypressed(key, isrepeat)
 						self:toggle_hold(i)
 					else
 						self:toggle_key(i)
+					end
+					break
+				end
+			end
+		end
+	end
+end
+
+function tas:selection_keypress(key, isrepeat)
+	if key == 'l' then
+		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
+	elseif key == 'k' then
+		self.last_selected_frame = self.last_selected_frame - 1
+		if self.last_selected_frame <= self:frame_count() + 1 then
+			self.last_selected_frame = -1
+		end
+	elseif key == 'escape' then
+		self.last_selected_frame = -1
+	elseif not isrepeat then
+		-- change the state of the key in all selected frames
+		-- if alt is held, toggle the state in all the frames
+		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
+		for i = 0, #pico8.keymap[0] do
+			for _, testkey in pairs(pico8.keymap[0][i]) do
+				if key == testkey then
+					self:toggle_key(i)
+					for frame = self:frame_count() + 2, self.last_selected_frame do
+						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
+							self:toggle_key(i, frame)
+						end
 					end
 					break
 				end
