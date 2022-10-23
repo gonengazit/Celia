@@ -51,11 +51,14 @@ end
 
 function tas:delete_keystate()
 	table.remove(self.keystates, self:frame_count() + 1)
+	if self:frame_count() + 1 > #self.keystates then
+		table.insert(self.keystates, 0)
+	end
 end
 
 function tas:delete_selection()
 	for i=self:frame_count()+1, self.last_selected_frame do
-		table.remove(self.keystates, self:frame_count() + 1)
+		self:delete_keystate()
 	end
 	self.last_selected_frame = -1
 end
@@ -292,7 +295,7 @@ function tas:draw_piano_roll()
 
 	--use 1/3rd of the rows for frames before, and 2/3rds for the frames after the curr frame
 	--use make sure to use all the rows on the edges
-	local start_row = math.max(frame_count - math.floor(num_rows/3),1)
+	local start_row = math.max(frame_count - math.floor(num_rows/3), self.last_selected_frame - num_rows + 2,1)
 	if start_row + num_rows - 1 > #self.keystates then
 		start_row = math.max(#self.keystates - num_rows + 1, 1)
 	end
