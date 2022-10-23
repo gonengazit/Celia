@@ -53,6 +53,13 @@ function tas:delete_keystate()
 	table.remove(self.keystates, self:frame_count() + 1)
 end
 
+function tas:delete_selection()
+	for i=self:frame_count()+1, self.last_selected_frame do
+		table.remove(self.keystates, self:frame_count() + 1)
+	end
+	self.last_selected_frame = -1
+end
+
 function tas:reset_hold()
 	self.hold=0
 end
@@ -366,6 +373,8 @@ function tas:keypressed(key, isrepeat)
 		self:insert_keystate()
 	elseif key=='delete' then
 		self:delete_keystate()
+	elseif key == 'v' and love.keyboard.isDown('lctrl', 'rctrl', 'lgui', 'rgui') then
+		self:paste_inputs()
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -383,6 +392,7 @@ function tas:keypressed(key, isrepeat)
 end
 
 function tas:selection_keypress(key, isrepeat)
+	local ctrl = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
 	if key == 'l' then
 		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
 	elseif key == 'k' then
@@ -392,6 +402,16 @@ function tas:selection_keypress(key, isrepeat)
 		end
 	elseif key == 'escape' then
 		self.last_selected_frame = -1
+
+	elseif key=='delete' then
+		self:delete_selection()
+	elseif key == 'c' and ctrl then
+		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
+	elseif key == 'x' and ctrl then
+		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
+		self:delete_selection()
+	elseif key == 'v' and ctrl then
+		self:delete_selection()
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
@@ -466,24 +486,34 @@ function tas:predict(pred, num, inputs)
 	return ret
 end
 
---returns true on success, false if the input_str is invalid
-function tas:load_input_str(input_str)
+--returns number of loaded frames on success, nil if the input_str is invalid
+--i is the index to insert the inputs at
+--if i is nil, the current inputs will be replaced by the new ones
+function tas:load_input_str(input_str, i)
 	local new_inputs={}
 	for input in input_str:gmatch("[^,]+") do
 		if tonumber(input) == nil then
 			print("invalid input file")
-			return false
+			return
 		else
 			table.insert(new_inputs, tonumber(input))
 		end
 	end
-	self:full_reset()
-	self.keystates = new_inputs
-	return true
+	if i == nil then
+		self:full_reset()
+		self.keystates = new_inputs
+	else
+		--insert the new inputs before index i
+		for j,v in ipairs(new_inputs) do
+			table.insert(self.keystates, i+j-1, v)
+		end
+	end
+	return #new_inputs
 end
 
-function tas:get_input_str()
-	return table.concat(self.keystates, ",")
+-- i,j optional indices for start and end
+function tas:get_input_str(i,j)
+	return table.concat(self.keystates, ",", i, j)
 end
 
 -- get the file object of the input file
@@ -513,10 +543,16 @@ function tas:load_input_file(f)
 		return
 	end
 	if f:open("r") then
-		self:load_input_str(f:read())
+		local data = f:read()
+		self:load_input_str(data)
 	else
 		print("error opening input file")
 	end
+end
+
+function tas:paste_inputs()
+	local cnt = self:load_input_str(love.system.getClipboardText(), self:frame_count() + 1)
+	self.last_selected_frame = self:frame_count() + 1 + cnt
 end
 
 return tas

@@ -417,14 +417,18 @@ function cctas:get_input_file_obj()
 	return love.filesystem.newFile(filename)
 end
 
-function cctas:get_input_str()
+function cctas:get_input_str(i,j)
+	--only include the seeds in the string for a full level input
+	if i ~= nil then
+		return self.super.get_input_str(self,i,j)
+	end
 	return ("[%s]%s"):format(table.concat(self:get_rng_seeds(),","),self.super.get_input_str(self))
 end
 
-function cctas:load_input_str(str)
+function cctas:load_input_str(str, i)
 	local seeds,inputs = str:match("%[([^%]]*)%](.*)")
 	if not seeds then -- try loading without rng seeds
-		return self.super.load_input_str(self, str)
+		return self.super.load_input_str(self, str, i)
 	elseif not inputs then
 		print("invalid input file")
 		return false
@@ -441,7 +445,7 @@ function cctas:load_input_str(str)
 		end
 	end
 
-	if not self.super.load_input_str(self, inputs) then
+	if not self.super.load_input_str(self, inputs, i) then
 		return false
 	end
 	self:load_rng_seeds(seeds_tbl)

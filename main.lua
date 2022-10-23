@@ -808,20 +808,20 @@ function love.keypressed(key, scancode, isrepeat)
 	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
 		api.reload()
 		api.run()
-	elseif
-		key == "escape"
-		and cartname ~= nil
-		and cartname ~= initialcartname
-		and cartname ~= "nocart.p8"
-		and cartname ~= "editor.p8"
-	then
-		api.load(initialcartname)
-		api.run()
-		return
+	-- elseif
+	-- 	key == "escape"
+	-- 	and cartname ~= nil
+	-- 	and cartname ~= initialcartname
+	-- 	and cartname ~= "nocart.p8"
+	-- 	and cartname ~= "editor.p8"
+	-- then
+	-- 	api.load(initialcartname)
+	-- 	api.run()
+	-- 	return
 	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
 		love.event.quit()
-	elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
-		pico8.clipboard = love.system.getClipboardText()
+	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
+	-- 	pico8.clipboard = love.system.getClipboardText()
 	-- elseif pico8.can_pause and (key == "pause" or key == "p") then
 	-- 	paused = not paused
 	elseif key == "f1" or key == "f6" then
