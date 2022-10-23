@@ -273,8 +273,8 @@ function cctas:step()
 	self.super.step(self)
 
 	if lvl_idx~=self:level_index() then
-		print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
 		if self.full_game_playback then
+			print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
 			--TODO: if the input file could not be loaded, reset the inputs
 			self:init_seed_objs()
 			self:clearstates()
