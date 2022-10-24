@@ -94,6 +94,7 @@ function cctas:keypressed(key, isrepeat)
 			self.modify_rng_seeds = true
 		end
 	elseif key=='f' then
+		--TODO: undoable? what about other ops (loading jank)
 		self:next_level()
 	elseif key=='s' then
 		self:prev_level()
@@ -339,6 +340,23 @@ function cctas:state_changed()
 	self.inputs_active=self:predict(self.find_player,1)
 end
 
+function cctas:get_editor_state()
+	--TODO: seeds
+	local s = self.super.get_editor_state(self)
+	s.prev_obj_count = self.prev_obj_count
+	s.loading_jank_offset=self.loading_jank_offset
+	s.level_time = self.level_time
+	return s
+end
+
+function cctas:load_editor_state(state)
+	self.super.load_editor_state(self,state)
+	self.prev_obj_count = state.prev_obj_count
+	self.loading_jank_offset=state.loading_jank_offset
+	self.level_time = state.level_time
+end
+
+
 --loads rng seeds for the current state
 --should (probably be called when there's no states pushed state)
 --TODO: consider whether this should affect all states (probably yes?)
@@ -406,7 +424,7 @@ end
 function cctas:get_input_file_obj()
 	local stripped_cartname = cartname:match("[^.]+")
 	local dirname = stripped_cartname
-	if not love.filesystem.isDirectory(dirname) then
+	if not love.filesystem.getInfo(dirname, "directory") then
 		if not love.filesystem.createDirectory(dirname) then
 			print("error creating save directory")
 			return nil

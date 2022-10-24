@@ -185,6 +185,7 @@ function tas:full_rewind()
 end
 
 function tas:full_reset()
+	self:push_undo_state()
 	self:full_rewind()
 	self.hold=0
 	self.keystates={0}
@@ -201,6 +202,10 @@ function tas:init()
 
 	self.last_selected_frame = -1
 
+	self.undo_states = {}
+	self.undo_idx = 0
+	self:push_undo_state()
+
 	console.ENV = setmetatable({print=print}, {
 		__index = function(table,key) return pico8.cart[key] end,
 		__newindex = function(table, key, val) pico8.cart[key] = val end
@@ -211,6 +216,61 @@ function tas:update()
 	if self.realtime_playback then
 		self:step()
 	end
+end
+
+
+local function shallow_copy(t)
+	local r={}
+	for k,v in pairs(t) do
+		r[k]=v
+	end
+	return r
+end
+-- states are shallow copyied (for perf reasons), meaning mutating them directly will cause undo to desync
+function tas:get_editor_state()
+	return {states = shallow_copy(self.states), keystates = deepcopy(self.keystates)}
+end
+
+function tas:load_editor_state(state)
+	self.states = shallow_copy(state.states)
+	self.keystates = deepcopy(state.keystates)
+	pico8 = self:peekstate()
+end
+
+--undo_idx points the state to be loaded if undo is preformed
+--places past it are stored to support redo
+function tas:push_undo_state()
+	self.undo_idx = self.undo_idx + 1
+	while #self.undo_states >= self.undo_idx do
+		table.remove(self.undo_states)
+	end
+	table.insert(self.undo_states, self:get_editor_state())
+end
+
+function tas:preform_undo()
+	if self.undo_idx == 0 then
+		return
+	end
+	local new_state = self.undo_states[self.undo_idx]
+	local curr_state = self:get_editor_state()
+	self:load_editor_state(new_state)
+	self.undo_states[self.undo_idx] = curr_state
+	self.undo_idx = self.undo_idx - 1
+	self.hold = 0
+	self.last_selected_frame = -1
+end
+
+function tas:perform_redo()
+	if self.undo_idx == #self.undo_states then
+		return
+	end
+	self.undo_idx = self.undo_idx + 1
+	local new_state = self.undo_states[self.undo_idx]
+	local curr_state = self:get_editor_state()
+	self:load_editor_state(new_state)
+	self.undo_states[self.undo_idx] = curr_state
+	self.hold = 0
+	self.last_selected_frame = -1
 end
 
 local function setColor(c)
@@ -346,6 +406,7 @@ function tas:draw()
 end
 
 function tas:keypressed(key, isrepeat)
+	local ctrl = love.keyboard.isDown('lctrl', 'rctrl', 'lgui', 'rgui')
 	if key=='p' then
 		self.realtime_playback = not self.realtime_playback
 	elseif self.realtime_playback then
@@ -373,11 +434,20 @@ function tas:keypressed(key, isrepeat)
 	elseif key=='w' and love.keyboard.isDown('lshift', 'rshift') then
 		self:load_input_file()
 	elseif key=='insert' then
+		self:push_undo_state()
 		self:insert_keystate()
 	elseif key=='delete' then
+		self:push_undo_state()
 		self:delete_keystate()
-	elseif key == 'v' and love.keyboard.isDown('lctrl', 'rctrl', 'lgui', 'rgui') then
+	elseif key == 'v' and ctrl then
+		self:push_undo_state()
 		self:paste_inputs()
+	elseif key == 'z' and ctrl then
+		if love.keyboard.isDown('lshift', 'rshift') then
+			self:perform_redo()
+		else
+			self:preform_undo()
+		end
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -385,6 +455,7 @@ function tas:keypressed(key, isrepeat)
 					if love.keyboard.isDown("lshift", "rshift") then
 						self:toggle_hold(i)
 					else
+						self:push_undo_state()
 						self:toggle_key(i)
 					end
 					break
@@ -407,14 +478,24 @@ function tas:selection_keypress(key, isrepeat)
 		self.last_selected_frame = -1
 
 	elseif key=='delete' then
+		self:push_undo_state()
 		self:delete_selection()
 	elseif key == 'c' and ctrl then
 		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
 	elseif key == 'x' and ctrl then
 		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
+		self:push_undo_state()
 		self:delete_selection()
 	elseif key == 'v' and ctrl then
+		self:push_undo_state()
 		self:delete_selection()
+		self:paste_inputs()
+	elseif key == 'z' and ctrl then
+		if love.keyboard.isDown('lshift', 'rshift') then
+			self:perform_redo()
+		else
+			self:preform_undo()
+		end
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
@@ -422,6 +503,7 @@ function tas:selection_keypress(key, isrepeat)
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if key == testkey then
+					self:push_undo_state()
 					self:toggle_key(i)
 					for frame = self:frame_count() + 2, self.last_selected_frame do
 						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
