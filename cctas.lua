@@ -286,10 +286,11 @@ function cctas:step()
 	if lvl_idx~=self:level_index() then
 		if self.full_game_playback then
 			print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
-			--TODO: if the input file could not be loaded, reset the inputs
 			self:init_seed_objs()
 			self:clearstates()
-			self:load_input_file()
+			if self:load_input_file() == nil then
+				self:full_reset()
+			end
 		else
 			-- TODO: make it so clouds don't jump??
 			self:full_rewind()

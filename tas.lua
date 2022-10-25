@@ -620,6 +620,7 @@ function tas:save_input_file()
 	end
 end
 
+--returns number of loaded frames on success, nil if loading failed
 function tas:load_input_file(f)
 	f = f or self:get_input_file_obj()
 	if not f then
@@ -627,7 +628,7 @@ function tas:load_input_file(f)
 	end
 	if f:open("r") then
 		local data = f:read()
-		self:load_input_str(data)
+		return self:load_input_str(data)
 	else
 		print("error opening input file")
 	end
