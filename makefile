@@ -1,6 +1,6 @@
 .PHONY: run all lint build clean format test
 
-project_name := "picolove"
+project_name := "Celia"
 
 run:
 	@love . --test

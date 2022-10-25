@@ -6,11 +6,11 @@ __pico_resolution = { 128, 128 }
 function love.conf(t)
 	t.console = true
 
-	t.identity = "picolove"
+	t.identity = "Celia"
 
 	t.version = "11.3"
 
-	t.window.title = "PICOLÖVE"
+	t.window.title = "Celia"
 	t.window.icon = "icon.png"
 	t.window.width = 1344
 	t.window.height = 768

@@ -1440,7 +1440,7 @@ end
 function api.load(filename)
 	local hasloaded = _load(filename)
 	if hasloaded then
-		love.window.setTitle(string.upper(cartname) .. " (PICOLÖVE)")
+		love.window.setTitle(string.upper(cartname) .. " (Celia)")
 	end
 	return hasloaded
 end
@@ -1508,7 +1508,7 @@ function api.stop(message, x, y, col) -- luacheck: no unused
 end
 
 function api.reboot()
-	love.window.setTitle("UNTITLED.P8 (PICOLÖVE)")
+	love.window.setTitle("UNTITLED.P8 (Celia)")
 	_load("nocart.p8")
 	api.run()
 	cartname = nil
