@@ -68,11 +68,17 @@ end
 
 function cctas:toggle_key(i ,frame)
 	-- don't allow changing the inputs while the player is dead
-	-- TODO: also do this for hold
 	if not self.inputs_active then
 		return
 	end
 	self.super.toggle_key(self, i, frame)
+end
+
+function cctas:toggle_hold(i)
+	if not self.inputs_active then
+		return
+	end
+	self.super.toggle_hold(self, i)
 end
 
 function cctas:keypressed(key, isrepeat)
