@@ -498,13 +498,13 @@ function cctas:draw()
 		for i = self.prev_obj_count + self.loading_jank_offset, #pico8.cart.objects do
 			local obj = pico8.cart.objects[i]
 			if obj~=nil then
-				love.graphics.setColor(unpack(pico8.palette[6+1]))
+				setPicoColor(6)
 				love.graphics.rectangle('line', obj.x-1, obj.y-1, 10,10)
 			end
 		end
 		love.graphics.pop()
 
-		love.graphics.setColor(255,255,255)
+		love.graphics.setColor(1,1,1)
 		love.graphics.printf(('loading jank offset: %+d'):format(self.loading_jank_offset),1,100,48,"left",0,2/3,2/3)
 	elseif self.modify_rng_seeds then
 		love.graphics.push()
@@ -519,7 +519,7 @@ function cctas:draw()
 		end
 		love.graphics.pop()
 
-		love.graphics.setColor(255,255,255)
+		love.graphics.setColor(1,1,1)
 		love.graphics.print("rng manip mode",1,100,0,2/3,2/3)
 	end
 

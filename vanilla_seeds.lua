@@ -26,7 +26,7 @@ end
 
 
 function balloon_seed.draw(obj)
-	love.graphics.setColor(unpack(pico8.palette[1+9]))
+	setPicoColor(9)
 	local x,y = math.floor(obj.x), math.floor(obj.y)
 	love.graphics.rectangle("line", x-1, y-1, 10, 10)
 	love.graphics.printf(tostring(obj.__tas_seed),x,y+11, 8 ,"center")
@@ -66,7 +66,7 @@ end
 
 
 function chest_seed.draw(obj)
-	love.graphics.setColor(unpack(pico8.palette[1+9]))
+	setPicoColor(9)
 	local x,y = math.floor(obj.x) + obj.__tas_seed, math.floor(obj.y)
 	love.graphics.rectangle("line", x-1, y-1, 10, 10)
 	love.graphics.printf(tostring(obj.__tas_seed),x,y+11, 8 ,"center")

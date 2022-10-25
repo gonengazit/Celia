@@ -58,7 +58,7 @@ local handle_funcs = {
                 love.graphics.setShader()
                 love.graphics.origin()
                 love.graphics.setScissor()
-                love.graphics.setColor(255,255,255)
+                love.graphics.setColor(1,1,1)
                 love.graphics.draw(orig, 0, 0)
             end)
             seen[orig]=ret
@@ -142,7 +142,7 @@ local function deepcopy_debug(orig, seen, upvalues, path)
                 love.graphics.setShader()
                 love.graphics.origin()
                 love.graphics.setScissor()
-                love.graphics.setColor(255,255,255)
+                love.graphics.setColor(1,1,1)
                 love.graphics.draw(orig, 0, 0)
             end)
             return ret

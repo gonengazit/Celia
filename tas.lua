@@ -270,24 +270,24 @@ function tas:perform_redo()
 	self.last_selected_frame = -1
 end
 
-local function setColor(c)
+function setPicoColor(c)
 	local r,g,b,a = unpack(pico8.palette[c])
 	love.graphics.setColor(r/255, g/255, b/255, a/255)
 end
 
 function tas:draw_button(x,y,i)
 	if self:key_held(i) then
-		setColor(8)
+		setPicoColor(8)
 	elseif self:key_down(i) then
-		setColor(7)
+		setPicoColor(7)
 	else
-		setColor(1)
+		setPicoColor(1)
 	end
 	love.graphics.rectangle("fill", x, y, 3, 3)
 end
 
 function tas:draw_input_display(x,y)
-	setColor(0)
+	setPicoColor(0)
 	love.graphics.rectangle("fill", x, y, 25,11)
 	self:draw_button(x + 12, y + 6, 0) -- l
 	self:draw_button(x + 20, y + 6, 1) -- r
@@ -303,11 +303,11 @@ function tas:frame_count()
 end
 --returns the width of the counter
 function tas:draw_frame_counter(x,y)
-	setColor(0)
+	setPicoColor(0)
 	local frame_count_str = tostring(self:frame_count())
 	local width = 4*math.max(#frame_count_str,3)+1
 	love.graphics.rectangle("fill", x, y, width, 7)
-	setColor(7)
+	setPicoColor(7)
 	love.graphics.print(frame_count_str, x+1,y+1)
 	return width
 
@@ -318,16 +318,16 @@ local function draw_inputs_row(tbl, x, y, c, frame_num)
 	local box_w = 48/#tbl
 
 	-- draw the frame number
-	setColor(c)
+	setPicoColor(c)
 	love.graphics.rectangle("fill", x, y, 16, 7)
-	setColor(0)
+	setPicoColor(0)
 	love.graphics.rectangle("line", x, y, 16, 7)
 	love.graphics.printf(frame_num, x, y+1, 16, "right")
 
 	for i=1, #tbl do
-		setColor(c)
+		setPicoColor(c)
 		love.graphics.rectangle("fill", x+(i-1)*box_w+16, y, box_w, 7)
-		setColor(0)
+		setPicoColor(0)
 		love.graphics.rectangle("line", x+(i-1)*box_w+16, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
 		love.graphics.printf(tbl[i], x+(i-1)*box_w+16, y+1, box_w, "center")
