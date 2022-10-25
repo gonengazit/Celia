@@ -189,8 +189,8 @@ function cctas:begin_full_game_playback()
 	self.full_game_playback = true
 
 end
---TODO: rename this
-function cctas:reset_vars()
+
+function cctas:reset_editor_state()
 	self.hold=0
 end
 
@@ -234,7 +234,7 @@ function cctas:load_level(idx, reset_changes)
 
 	self:init_seed_objs()
 	self:clearstates()
-	self:reset_vars()
+	self:reset_editor_state()
 
 	if not reset_changes then
 		self:load_rng_seeds(seeds)
@@ -303,13 +303,13 @@ function cctas:full_rewind()
 	self.super.full_rewind(self)
 
 	self:state_changed()
-	self:reset_vars()
+	self:reset_editor_state()
 end
 
 function cctas:full_reset()
 	self.super.full_reset(self)
 
-	self:reset_vars()
+	self:reset_editor_state()
 	self:init_seed_objs()
 	self:state_changed()
 end
@@ -326,7 +326,7 @@ function cctas:player_rewind()
 			self:step()
 		end
 	end
-	self:reset_vars()
+	self:reset_editor_state()
 end
 
 function cctas:clearstates()
