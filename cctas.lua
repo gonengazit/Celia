@@ -208,6 +208,9 @@ end
 -- if reset changes is false, loading jank and rng seeds will not be touched
 -- otherwise, they will be reset
 function cctas:load_level(idx, reset_changes)
+	-- load the room from the initial state of the level, to reset variables like berries
+	self:full_rewind()
+
 	local seeds = self:get_rng_seeds()
 	--apply loading jank
 	load_room_wrap(idx-1)
