@@ -119,6 +119,9 @@ end
 --loads a deepcopy of the current state to the pico8 instance
 function tas:loadstate()
 	pico8 = deepcopy_no_api(self.states[#self.states])
+	love.graphics.setCanvas(pico8.screen)
+	restore_clip()
+	restore_camera()
 end
 
 function tas:clearstates()
@@ -542,6 +545,9 @@ function tas:predict(pred, num, inputs)
 	love.graphics.push()
 	local canvas=love.graphics.getCanvas()
 	local shader=love.graphics.getShader()
+	local p8state = pico8
+
+	self:loadstate()
 	love.graphics.setCanvas(pico8.screen)
 
 	local ret=false
@@ -562,7 +568,7 @@ function tas:predict(pred, num, inputs)
 			break
 		end
 	end
-	self:loadstate()
+	pico8 = p8state
 	love.graphics.setCanvas(canvas)
 	love.graphics.setShader(shader)
 	love.graphics.pop()
