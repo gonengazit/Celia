@@ -205,12 +205,8 @@ end
 
 function love.resize(w, h)
 	-- adjust stuff to fit the screen
-	if w > h then
-		scale = h / (pico8.resolution[2] + ypadding * 2)
-	else
-		scale = w / (pico8.resolution[1] + xpadding * 2)
-	end
-	scale = scale / tastool.scale
+	local tas_w, tas_h = tastool.screen:getDimensions()
+	scale = math.min(w/tas_w, h/tas_h)
 end
 
 local function note_to_hz(note)
@@ -559,11 +555,11 @@ function flip_screen()
 
 	local screen_w, screen_h = love.graphics.getDimensions()
 	local tas_w, tas_h = tastool.screen:getDimensions()
-	if screen_w > screen_h then
+	if screen_w/tas_w > screen_h/tas_h then
 		love.graphics.draw(
 			tastool.screen,
 			screen_w / 2 - (tas_w / 2 * scale),
-			ypadding * scale,
+			0,
 			0,
 			scale,
 			scale
@@ -571,7 +567,7 @@ function flip_screen()
 	else
 		love.graphics.draw(
 			tastool.screen,
-			xpadding * scale,
+			0,
 			screen_h / 2 - (tas_h / 2 * scale),
 			0,
 			scale,

@@ -191,13 +191,17 @@ function tas:full_reset()
 end
 
 function tas:init()
-	scale = scale / self.scale -- scale for drawing to the screen
 	self.states={}
 	self.keystates={}
 	self.realtime_playback=false
 	self.hold = 0
 	self:pushstate()
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + 64)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
+
+	-- duplicated code is kinda eh but i am lazy
+	local tas_w, tas_h = tas.screen:getDimensions()
+	local screen_w, screen_h = love.graphics.getDimensions()
+	scale = math.min(screen_w/tas_w, screen_h/tas_h) -- scale for drawing to the screen
 
 	self.last_selected_frame = -1
 
