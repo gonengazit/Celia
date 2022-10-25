@@ -378,12 +378,7 @@ function cctas:get_rng_seeds()
 	local initial_state = self:state_iter()()
 	for _, obj in ipairs(initial_state.cart.objects) do
 		if obj.__tas_seed then
-			-- compatibility hack for old balloon seed format
-			if obj.type == initial_state.cart.balloon then
-				table.insert(seeds, obj.__tas_seed/vanilla_seeds.balloon.granularity)
-			else
-				table.insert(seeds, obj.__tas_seed)
-			end
+			table.insert(seeds, obj.__tas_seed)
 		end
 	end
 	return seeds
@@ -399,17 +394,10 @@ function cctas:load_rng_seeds(t)
 		if i > #t then
 			break
 		end
-		--TODO: use set_seed
 		for type, seed in pairs(vanilla_seeds) do
 			if pico8.cart[type] ~= nil and
 			   pico8.cart[type] == obj.type then
-				if type == "balloon" then
-					--compatibility hack
-					-- TODO: change seed repr for balloons to just be this, it's better
-					seed.set_seed(obj, math.floor(t[i] * vanilla_seeds.balloon.granularity + 0.5))
-				else
-					seed.set_seed(obj, i)
-				end
+				seed.set_seed(obj, t[i])
 				i = i+1
 				break
 			end
