@@ -182,7 +182,6 @@ function tas:full_rewind()
 end
 
 function tas:full_reset()
-	self:push_undo_state()
 	self:full_rewind()
 	self.hold=0
 	self.keystates={0}
@@ -425,10 +424,12 @@ function tas:keypressed(key, isrepeat)
 	elseif key=='d' then
 		self:full_rewind()
 	elseif key=='r' and love.keyboard.isDown('lshift','rshift') then
+		self:push_undo_state()
 		self:full_reset()
 	elseif key=='m' then
 		self:save_input_file()
 	elseif key=='w' and love.keyboard.isDown('lshift', 'rshift') then
+		self:push_undo_state()
 		self:load_input_file()
 	elseif key=='insert' then
 		self:push_undo_state()
