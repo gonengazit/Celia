@@ -116,9 +116,9 @@ function tas:popstate()
 	return table.remove(self.states)
 end
 
---returns a deepcopy of the current state
-function tas:peekstate()
-	return deepcopy_no_api(self.states[#self.states])
+--loads a deepcopy of the current state to the pico8 instance
+function tas:loadstate()
+	pico8 = deepcopy_no_api(self.states[#self.states])
 end
 
 function tas:clearstates()
@@ -169,11 +169,8 @@ function tas:rewind()
 		return
 	end
 
-	--TODO:
-	-- wrap this with a function so that pico8 is always a copy of the top of states without having to do it manually
-	-- or to states[curr_frame] where curr_frame is some variable
 	self:popstate()
-	pico8=self:peekstate()
+	self:loadstate()
 end
 
 --rewind to the first frame
@@ -181,7 +178,7 @@ function tas:full_rewind()
 	while #self.states>1 do
 		self:popstate()
 	end
-	pico8=self:peekstate()
+	self:loadstate()
 end
 
 function tas:full_reset()
@@ -234,7 +231,7 @@ end
 function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
 	self.keystates = deepcopy(state.keystates)
-	pico8 = self:peekstate()
+	self:loadstate()
 end
 
 --undo_idx points the state to be loaded if undo is preformed
@@ -564,7 +561,7 @@ function tas:predict(pred, num, inputs)
 			break
 		end
 	end
-	pico8=self:peekstate()
+	self:loadstate()
 	love.graphics.setCanvas(canvas)
 	love.graphics.setShader(shader)
 	love.graphics.pop()

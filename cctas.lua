@@ -315,7 +315,7 @@ function cctas:player_rewind()
 		for _ = 1, self.level_time do
 			self:popstate()
 		end
-		pico8=self:peekstate()
+		self:loadstate()
 	else
 		while not self.inputs_active do
 			--TODO: make this performant, animated, or remove this
