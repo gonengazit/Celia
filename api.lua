@@ -526,6 +526,7 @@ function api.tonum(val, format)
 end
 
 function api.chr(num)
+	--GTODO: stuff
 	local n = tonumber(num)
 	if n == nil then
 		return
@@ -671,6 +672,7 @@ function api.sspr(sx, sy, sw, sh, dx, dy, dw, dh, flip_x, flip_y)
 end
 
 function api.rect(x0, y0, x1, y1, col)
+	-- GTODO: x0=x1
 	if col then
 		color(col)
 	end
@@ -849,6 +851,8 @@ end
 
 
 function api.pal(c0, c1, p)
+	-- GTODO: 0 vs 1 indexing
+	-- GTODO: support other variants of this func
 	local __palette_modified = false
 	local __display_modified = false
 	if type(c0) ~= "number" then
@@ -1288,6 +1292,7 @@ function api.poke4(addr, val)
 end
 
 function api.memcpy(dest_addr, source_addr, len)
+	--GTODO
 	if len < 1 or dest_addr == source_addr then
 		return
 	end
@@ -1649,6 +1654,7 @@ function api.btnp(i, p)
 		return bitfield
 	end
 end
+-- GTODO: button glyphs
 
 function api.cartdata(id) -- luacheck: no unused
 	-- TODO: handle global cartdata properly

@@ -2,9 +2,9 @@ require'ParseLua'
 local util = require'Util'
 
 local function debug_printf(...)
-	--[[
+--[[
 	util.printf(...)
-	--]]
+	-- ]]
 end
 
 --
@@ -35,10 +35,12 @@ local function Format_Identity(ast)
 			end
 		end,
 
-		appendToken = function(self, token)
-			self:appendWhite(token)
+		appendToken = function(self, token, no_whitespace)
+			if not no_whitespace then
+				self:appendWhite(token)
+			end
 			--[*[
-			--debug_printf("appendToken(%q)", token.Data)
+			debug_printf("appendToken(%q)", util.PrintTable(token))
 			local data  = token.Data
 			local lines = util.splitLines(data)
 			while self.line + #lines < token.Line do
@@ -51,9 +53,9 @@ local function Format_Identity(ast)
 			self:appendStr(token.Data)
 		end,
 
-		appendTokens = function(self, tokens)
+		appendTokens = function(self, tokens, no_whitespace)
 			for _,token in ipairs(tokens) do
-				self:appendToken( token )
+				self:appendToken( token, no_whitespace)
 			end
 		end,
 
@@ -67,18 +69,23 @@ local function Format_Identity(ast)
 
 	local formatStatlist, formatExpr;
 
-	formatExpr = function(expr)
+	local patch_binary_ops=
+	{
+		['\\'] = {'flr(', '/', ')'}
+	}
+
+	formatExpr = function(expr, no_leading_white)
 		local tok_it = 1
-		local function appendNextToken(str)
+		local function appendNextToken(str, no_whitespace)
 			local tok = expr.Tokens[tok_it];
 			if str and tok.Data ~= str then
 				error("Expected token '" .. str .. "'. Tokens: " .. util.PrintTable(expr.Tokens))
 			end
-			out:appendToken( tok )
+			out:appendToken( tok , no_whitespace)
 			tok_it = tok_it + 1
 		end
-		local function appendToken(token)
-			out:appendToken( token )
+		local function appendToken(token, no_whitespace)
+			out:appendToken( token , no_whitespace)
 			tok_it = tok_it + 1
 		end
 		local function appendWhite()
@@ -87,8 +94,12 @@ local function Format_Identity(ast)
 			out:appendWhite( tok )
 			tok_it = tok_it + 1
 		end
-		local function appendStr(str)
-			appendWhite()
+		local function appendStr(str, no_whitespace)
+			if not no_whitespace then
+				appendWhite()
+			else
+				tok_it = tok_it + 1
+			end
 			out:appendStr(str)
 		end
 		local function peek()
@@ -117,37 +128,40 @@ local function Format_Identity(ast)
 
 		if expr.AstType == 'VarExpr' then
 			if expr.Variable then
-				appendStr( expr.Variable.Name )
+				appendStr( expr.Variable.Name , no_leading_white)
 			else
-				appendStr( expr.Name )
+				appendStr( expr.Name , no_leading_white)
 			end
 
 		elseif expr.AstType == 'NumberExpr' then
-			appendToken( expr.Value )
+			appendToken( expr.Value , no_leading_white)
 
 		elseif expr.AstType == 'StringExpr' then
-			appendToken( expr.Value )
+			appendToken( expr.Value , no_leading_white)
 
 		elseif expr.AstType == 'BooleanExpr' then
-			appendNextToken( expr.Value and "true" or "false" )
+			appendNextToken( expr.Value and "true" or "false" , no_leading_white)
 
 		elseif expr.AstType == 'NilExpr' then
-			appendNextToken( "nil" )
+			appendNextToken( "nil" , no_leading_white)
 
 		elseif expr.AstType == 'BinopExpr' then
-			formatExpr(expr.Lhs)
-			appendStr( expr.Op )
+			-- patch pico8 operations like x\y to flr(x/y)
+			local patch = patch_binary_ops[expr.Op] or {"", expr.Op, ""}
+			out:appendStr(patch[1])
+			formatExpr(expr.Lhs, no_leading_white)
+			appendStr(patch[2])
 			formatExpr(expr.Rhs)
-
+			out:appendStr(patch[3])
 		elseif expr.AstType == 'UnopExpr' then
-			appendStr( expr.Op )
+			appendStr( expr.Op , no_leading_white)
 			formatExpr(expr.Rhs)
 
 		elseif expr.AstType == 'DotsExpr' then
-			appendNextToken( "..." )
+			appendNextToken( "..." , no_leading_white)
 
 		elseif expr.AstType == 'CallExpr' then
-			formatExpr(expr.Base)
+			formatExpr(expr.Base, no_leading_white)
 			appendNextToken( "(" )
 			for i,arg in ipairs( expr.Arguments ) do
 				formatExpr(arg)
@@ -156,27 +170,27 @@ local function Format_Identity(ast)
 			appendNextToken( ")" )
 
 		elseif expr.AstType == 'TableCallExpr' then
-			formatExpr( expr.Base )
+			formatExpr( expr.Base , no_leading_white)
 			formatExpr( expr.Arguments[1] )
 
 		elseif expr.AstType == 'StringCallExpr' then
-			formatExpr(expr.Base)
+			formatExpr(expr.Base, no_leading_white)
 			appendToken( expr.Arguments[1] )
 
 		elseif expr.AstType == 'IndexExpr' then
-			formatExpr(expr.Base)
+			formatExpr(expr.Base, no_leading_white)
 			appendNextToken( "[" )
 			formatExpr(expr.Index)
 			appendNextToken( "]" )
 
 		elseif expr.AstType == 'MemberExpr' then
-			formatExpr(expr.Base)
+			formatExpr(expr.Base, no_leading_white)
 			appendNextToken()  -- . or :
 			appendToken(expr.Ident)
 
 		elseif expr.AstType == 'Function' then
 			-- anonymous function
-			appendNextToken( "function" )
+			appendNextToken( "function" , no_leading_white)
 			appendNextToken( "(" )
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do
@@ -196,7 +210,7 @@ local function Format_Identity(ast)
 			appendNextToken("end")
 
 		elseif expr.AstType == 'ConstructorExpr' then
-			appendNextToken( "{" )
+			appendNextToken( "{" , no_leading_white)
 			for i = 1, #expr.EntryList do
 				local entry = expr.EntryList[i]
 				if entry.Type == 'Key' then
@@ -217,7 +231,7 @@ local function Format_Identity(ast)
 			appendNextToken( "}" )
 
 		elseif expr.AstType == 'Parentheses' then
-			appendNextToken( "(" )
+			appendNextToken( "(" , no_leading_white)
 			formatExpr(expr.Inner)
 			appendNextToken( ")" )
 
@@ -270,9 +284,29 @@ local function Format_Identity(ast)
 				appendComma( i ~= #statement.Lhs )
 			end
 			if #statement.Rhs > 0 then
-				appendNextToken( "=" )
+				--patch pico8 compound operators
+				--a,b += exp1, exp2 - > a,b = b + (exp1), exp2
+				local compound = statement.Operator ~= ""
+				if not compound then
+					appendNextToken( "=" )
+				else
+					appendWhite()
+					out:appendStr("=")
+				end
 				for i,v in ipairs(statement.Rhs) do
-					formatExpr(v)
+					if i == 1 and compound then
+						-- patch pico8 operations like x\=y to x=flr(x\(y))
+						local patch = patch_binary_ops[statement.Operator] or {"", statement.Operator, ""}
+						out:appendStr(patch[1])
+						formatExpr(statement.Lhs[#statement.Lhs], true)
+						out:appendStr(patch[2])
+						out:appendStr("(")
+						formatExpr(v)
+						out:appendStr(")")
+						out:appendStr(patch[3])
+					else
+						formatExpr(v)
+					end
 					appendComma( i ~= #statement.Rhs )
 				end
 			end
@@ -287,17 +321,38 @@ local function Format_Identity(ast)
 				appendComma( i ~= #statement.LocalList )
 			end
 			if #statement.InitList > 0 then
-				appendNextToken( "=" )
+				local compound = statement.Operator ~= ""
+				if not compound then
+					appendNextToken( "=" )
+				else
+					appendWhite()
+					out:appendStr("=")
+				end
+
 				for i = 1, #statement.InitList do
-					formatExpr(statement.InitList[i])
+					if i == 1 then
+						out:appendStr(statement.LocalList[#statement.LocalList].Name)
+						out:appendStr(statement.Operator)
+						out:appendStr("(")
+						formatExpr(statement.InitList[i])
+						out:appendStr(")")
+
+					else
+						formatExpr(statement.InitList[i])
+					end
 					appendComma( i ~= #statement.InitList )
 				end
 			end
 
 		elseif statement.AstType == 'IfStatement' then
+			-- add then and end to pico8 shorthand if
 			appendNextToken( "if" )
 			formatExpr( statement.Clauses[1].Condition )
-			appendNextToken( "then" )
+			if statement.shorthand then
+				out:appendStr(" then ")
+			else
+			 appendNextToken( "then" )
+			end
 			formatStatlist( statement.Clauses[1].Body )
 			for i = 2, #statement.Clauses do
 				local st = statement.Clauses[i]
@@ -310,7 +365,11 @@ local function Format_Identity(ast)
 				end
 				formatStatlist(st.Body)
 			end
-			appendNextToken( "end" )
+			if statement.shorthand then
+				out:appendStr(" end ")
+			else
+				appendNextToken( "end" )
+			end
 
 		elseif statement.AstType == 'WhileStatement' then
 			appendNextToken( "while" )

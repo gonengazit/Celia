@@ -24,7 +24,9 @@ local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 							'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
-local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
+local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
+local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\'}
+
 local Scope = require'Scope'
 
 local Keywords = lookupify{
@@ -33,6 +35,8 @@ local Keywords = lookupify{
 	'in', 'local', 'nil', 'not', 'or', 'repeat',
 	'return', 'then', 'true', 'until', 'while',
 };
+
+local compound_ops = {}
 
 local function LexLua(src)
 	--token dump
@@ -355,6 +359,13 @@ local function LexLua(src)
 					toEmit = {Type = 'Symbol', Data = '::'}
 				else
 					toEmit = {Type = 'Symbol', Data = ':'}
+				end
+			elseif Operators[c] then
+				get()
+				if consume('=') then
+					toEmit = {Type = 'Symbol', Data = c..'='}
+				else
+					toEmit = {Type = 'Symbol', Data = c}
 				end
 
 			elseif Symbols[c] then
@@ -939,6 +950,7 @@ local function ParseLua(src)
 		['%'] = {7,7};
 		['/'] = {7,7};
 		['*'] = {7,7};
+		['\\'] = {7,7};
 		['^'] = {10,9};
 		['..'] = {5,4};
 		['=='] = {3,3};
@@ -1013,7 +1025,7 @@ local function ParseLua(src)
 			--clauses
 
 			-- support pico8 shorthand if (x) stmt else stmnt2
-			local shorthand = false
+			local shorthand_line = nil
 			repeat
 				local st, nodeCond = ParseExpr(scope)
 				if not st then return false, nodeCond end
@@ -1024,13 +1036,24 @@ local function ParseLua(src)
 						Condition = nodeCond;
 						Body = nodeBody;
 					}
+				--shorthand for if
+				elseif #nodeIfStat.Clauses == 0 and tok:Peek(-1).Type == 'Symbol' and tok:Peek(-1).Data == ')' then
+					shorthand_line = tok:Peek(-1).Line
+					local st, nodeBody = ParseStatementList(scope, shorthand_line)
+					if not st then return false, nodeBody end
+					nodeIfStat.Clauses[#nodeIfStat.Clauses+1] = {
+						Condition = nodeCond;
+						Body = nodeBody;
+					}
+					break
+				else
+					return false, GenerateError("`then` or shorthand expected.")
 				end
-					return false, GenerateError("`then` expected.")
 			until not tok:ConsumeKeyword('elseif', tokenList)
 
 			--else clause
 			if tok:ConsumeKeyword('else', tokenList) then
-				local st, nodeBody = ParseStatementList(scope)
+				local st, nodeBody = ParseStatementList(scope, shorthand_line)
 				if not st then return false, nodeBody end
 				nodeIfStat.Clauses[#nodeIfStat.Clauses+1] = {
 					Body = nodeBody;
@@ -1038,11 +1061,12 @@ local function ParseLua(src)
 			end
 
 			--end
-			if not tok:ConsumeKeyword('end', tokenList) then
+			if not shorthand_line and not tok:ConsumeKeyword('end', tokenList) then
 				return false, GenerateError("`end` expected.")
 			end
 
 			nodeIfStat.Tokens = tokenList
+			nodeIfStat.shorthand = shorthand_line ~= nil
 			stat = nodeIfStat
 
 		elseif tok:ConsumeKeyword('while', tokenList) then
@@ -1217,7 +1241,14 @@ local function ParseLua(src)
 				end
 
 				local initList = {}
-				if tok:ConsumeSymbol('=', tokenList) then
+
+				-- pico8 compound assignment operators
+				local assignment_tok =tok:ConsumeSymbol('=', tokenList) and ''
+				for _,s in ipairs(Operators) do
+					assignment_tok = assignment_tok or (tok:ConsumeSymbol(s..'=', tokenList) and s)
+				end
+
+				if assignment_tok then
 					repeat
 						local st, ex = ParseExpr(scope)
 						if not st then return false, ex end
@@ -1237,6 +1268,7 @@ local function ParseLua(src)
 				nodeLocal.LocalList = varList
 				nodeLocal.InitList  = initList
 				nodeLocal.Tokens    = tokenList
+				nodeLocal.Operator = assignment_tok
 				--
 				stat = nodeLocal
 
@@ -1314,8 +1346,14 @@ local function ParseLua(src)
 			local st, suffixed = ParseSuffixedExpr(scope)
 			if not st then return false, suffixed end
 
+			-- pico8 compound assignment operators
+			local assignment_tok =tok:IsSymbol('=')
+			for _,s in ipairs(Operators) do
+				assignment_tok = assignment_tok or tok:IsSymbol(s..'=')
+			end
+
 			--assignment or call?
-			if tok:IsSymbol(',') or tok:IsSymbol('=') then
+			if tok:IsSymbol(',') or assignment_tok then
 				--check that it was not parenthesized, making it not an lvalue
 				if (suffixed.ParenCount or 0) > 0 then
 					return false, GenerateError("Can not assign to parenthesized expression, is not an lvalue")
@@ -1330,7 +1368,13 @@ local function ParseLua(src)
 				end
 
 				--equals
-				if not tok:ConsumeSymbol('=', tokenList) then
+
+			  --pico8 compound assignment operators
+				local assignment_tok =tok:ConsumeSymbol('=', tokenList) and ''
+				for _,s in ipairs(Operators) do
+					assignment_tok = assignment_tok or (tok:ConsumeSymbol(s..'=', tokenList) and s)
+				end
+				if not assignment_tok then
 					return false, GenerateError("`=` Expected.")
 				end
 
@@ -1351,6 +1395,7 @@ local function ParseLua(src)
 				nodeAssign.Lhs     = lhs
 				nodeAssign.Rhs     = rhs
 				nodeAssign.Tokens  = tokenList
+				nodeAssign.Operator = assignment_tok
 				stat = nodeAssign
 
 			elseif suffixed.AstType == 'CallExpr' or
@@ -1386,7 +1431,7 @@ local function ParseLua(src)
 		--
 		--local stats = {}
 		--
-		while not statListCloseKeywords[tok:Peek().Data] and not tok:IsEof() and (not line or tok:Peek().line <= line) do
+		while not statListCloseKeywords[tok:Peek().Data] and not tok:IsEof() and (not line or tok:Peek().Line <= line) do
 			local st, nodeStatement = ParseStatement(nodeStatlist.Scope)
 			if not st then return false, nodeStatement end
 			--stats[#stats+1] = nodeStatement
@@ -1402,6 +1447,11 @@ local function ParseLua(src)
 
 		--
 		--nodeStatlist.Body = stats
+		if line then
+			for k,v in ipairs(nodeStatlist.Tokens) do
+				print(v.Print())
+			end
+		end
 		return true, nodeStatlist
 	end
 
