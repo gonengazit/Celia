@@ -24,7 +24,7 @@ local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 							'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
-local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#'}
+local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?'}
 local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\'}
 
 local Scope = require'Scope'
@@ -1340,6 +1340,21 @@ local function ParseLua(src)
 			nodeGoto.Label   = label
 			nodeGoto.Tokens  = tokenList
 			stat = nodeGoto
+
+		--support pico-8 ? shorthand for printing
+		elseif tok:ConsumeSymbol('?', tokenList) then
+			local args = {}
+			repeat
+				local st, ex = ParseExpr(scope)
+				if not st then return false, ex end
+				args[#args+1] = ex
+			until not tok:ConsumeSymbol(',', tokenList)
+			local nodePrint = {}
+			nodePrint.AstType = 'PrintStatement'
+			nodePrint.Tokens = tokenList
+			nodePrint.Arguments = args
+			stat = nodePrint
+
 
 		else
 			--statementParseExpr

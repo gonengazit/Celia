@@ -330,12 +330,16 @@ local function Format_Identity(ast)
 				end
 
 				for i = 1, #statement.InitList do
-					if i == 1 then
+					if i == 1 and compound then
+
+						local patch = patch_binary_ops[statement.Operator] or {"", statement.Operator, ""}
+						out:appendStr(patch[1])
 						out:appendStr(statement.LocalList[#statement.LocalList].Name)
-						out:appendStr(statement.Operator)
+						out:appendStr(patch[2])
 						out:appendStr("(")
 						formatExpr(statement.InitList[i])
 						out:appendStr(")")
+						out:appendStr(patch[3])
 
 					else
 						formatExpr(statement.InitList[i])
@@ -469,6 +473,13 @@ local function Format_Identity(ast)
 			appendNextToken( "goto" )
 			appendStr( statement.Label )
 
+		elseif statement.AstType == 'PrintStatement' then
+			appendStr("print(")
+			for i, arg in ipairs(statement.Arguments) do
+				formatExpr(arg)
+				appendComma(i ~= #statement.Arguments)
+			end
+			out:appendStr(")")
 		elseif statement.AstType == 'Eof' then
 			appendWhite()
 
