@@ -378,9 +378,16 @@ local function Format_Identity(ast)
 		elseif statement.AstType == 'WhileStatement' then
 			appendNextToken( "while" )
 			formatExpr(statement.Condition)
-			appendNextToken( "do" )
-			formatStatlist(statement.Body)
-			appendNextToken( "end" )
+			if not statement.shorthand then
+				appendNextToken( "do" )
+				formatStatlist(statement.Body)
+				appendNextToken( "end" )
+			else
+				-- add do and end to pico8 shorthand if
+				out:appendStr( " do " )
+				formatStatlist(statement.Body)
+				out:appendStr( " end " )
+			end
 
 		elseif statement.AstType == 'DoStatement' then
 			appendNextToken( "do" )

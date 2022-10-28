@@ -1074,21 +1074,30 @@ local function ParseLua(src)
 			local nodeWhileStat = {}
 			nodeWhileStat.AstType = 'WhileStatement'
 
+			--support pico8 shortthand while(x) stmt
+			local shorthand = false
+
 			--condition
 			local st, nodeCond = ParseExpr(scope)
 			if not st then return false, nodeCond end
 
+			local st, nodeBody
 			--do
-			if not tok:ConsumeKeyword('do', tokenList) then
-				return false, GenerateError("`do` expected.")
+			if tok:ConsumeKeyword('do', tokenList) then
+				--body
+				st, nodeBody = ParseStatementList(scope)
+				if not st then return false, nodeBody end
+			elseif tok:Peek(-1).Type == 'Symbol' and tok:Peek(-1).Data == ')' then
+				shorthand = true
+				st, nodeBody = ParseStatementList(scope, tok:Peek(-1).Line)
+				if not st then return false, nodeBody end
+			else
+
+				return false, GenerateError("`do` or shorthand expected.")
 			end
 
-			--body
-			local st, nodeBody = ParseStatementList(scope)
-			if not st then return false, nodeBody end
-
 			--end
-			if not tok:ConsumeKeyword('end', tokenList) then
+			if not shorthand and not tok:ConsumeKeyword('end', tokenList) then
 				return false, GenerateError("`end` expected.")
 			end
 
@@ -1096,6 +1105,7 @@ local function ParseLua(src)
 			nodeWhileStat.Condition = nodeCond
 			nodeWhileStat.Body      = nodeBody
 			nodeWhileStat.Tokens    = tokenList
+			nodeWhileStat.shorthand = shorthand
 			stat = nodeWhileStat
 
 		elseif tok:ConsumeKeyword('do', tokenList) then
