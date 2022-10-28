@@ -23,6 +23,7 @@ local UpperChars = lookupify{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 							'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
+local BinDigits = lookupify{'0', '1'}
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|', '@', '$'}
 local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>'}
@@ -291,6 +292,11 @@ local function LexLua(src)
 						consume('+-')
 						while Digits[peek()] do get() end
 					end
+				--support pico8 binary literals
+				elseif c=='0' and peek(1)=='b' then
+					get();get()
+					while BinDigits[peek()] do get() end
+
 				else
 					while Digits[peek()] do get() end
 					if consume('.') then
