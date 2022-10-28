@@ -24,8 +24,8 @@ local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 							'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
-local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?'}
-local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\'}
+local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|'}
+local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>'}
 
 local Scope = require'Scope'
 
@@ -322,25 +322,39 @@ local function LexLua(src)
 					toEmit = {Type = 'Symbol', Data = '['}
 				end
 
-			elseif consume('>=<') then
+			elseif consume('=') then
 				if consume('=') then
-					toEmit = {Type = 'Symbol', Data = c..'='}
+					toEmit = {Type = 'Symbol', Data = '=='}
 				else
-					toEmit = {Type = 'Symbol', Data = c}
+					toEmit = {Type = 'Symbol', Data = '='}
 				end
-
+			-- pico8 bitwise shift operators
+			elseif consume('><') then
+				local data = c
+				if consume(c) then
+					data = data .. c
+					local nx = consume(c=='>' and '><' or '>')
+					if nx then
+						data = data .. nx
+					end
+				end
+				if consume('=') then
+					toEmit = {Type = 'Symbol', Data = data..'='}
+				else
+					toEmit = {Type = 'Symbol', Data = data}
+				end
 			elseif consume('~') then
 				if consume('=') then
 					toEmit = {Type = 'Symbol', Data = '~='}
 				else
-					generateError("Unexpected symbol `~` in source.", 2)
+					toEmit = {Type = 'Symbol', Data = '~'}
 				end
 			-- pico-8 != syntax
 			elseif consume('!') then
 				if consume('=') then
 					toEmit = {Type = 'Symbol', Data = '~='}
 				else
-					generateError("Unexpected symbol `~` in source.", 2)
+					generateError("Unexpected symbol `!` in source.", 2)
 				end
 
 			elseif consume('.') then
@@ -359,6 +373,17 @@ local function LexLua(src)
 					toEmit = {Type = 'Symbol', Data = '::'}
 				else
 					toEmit = {Type = 'Symbol', Data = ':'}
+				end
+			-- pico8 ^^ xor operator
+			elseif consume('^') then
+				local data = '^'
+				if consume('^') then
+					data = '^^'
+				end
+				if consume('=') then
+					toEmit = {Type = 'Symbol', Data = data..'='}
+				else
+					toEmit = {Type = 'Symbol', Data = data}
 				end
 			elseif Operators[c] then
 				get()
@@ -942,17 +967,26 @@ local function ParseLua(src)
 	end
 
 
-	local unops = lookupify{'-', 'not', '#'}
-	local unopprio = 8
+	local unops = lookupify{'-', 'not', '#', '~'}
+	local unopprio = 12
 	local priority = {
-		['+'] = {6,6};
-		['-'] = {6,6};
-		['%'] = {7,7};
-		['/'] = {7,7};
-		['*'] = {7,7};
-		['\\'] = {7,7};
-		['^'] = {10,9};
-		['..'] = {5,4};
+		['+'] = {10,10};
+		['-'] = {10,10};
+		['%'] = {11,11};
+		['/'] = {11,11};
+		['*'] = {11,11};
+		['\\'] = {11,11};
+		['^'] = {14,13};
+		['..'] = {9,8};
+		['<<>'] = {7,7};
+		['>><'] = {7,7};
+		['>>>'] = {7,7};
+		['<<'] = {7,7};
+		['>>'] = {7,7};
+		['&'] = {6,6};
+		['~'] = {5,5};
+		['^^'] = {5,5};
+		['|'] = {4,4};
 		['=='] = {3,3};
 		['<'] = {3,3};
 		['<='] = {3,3};

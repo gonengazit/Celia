@@ -69,9 +69,23 @@ local function Format_Identity(ast)
 
 	local formatStatlist, formatExpr;
 
+	--patch pico8 operators like \ and bitwise ops
 	local patch_binary_ops=
 	{
-		['\\'] = {'flr(', '/', ')'}
+		['\\'] = {'flr(', '/', ')'},
+		['&'] = {'band(', ',', ')'},
+		['|'] = {'bor(', ',', ')'},
+		['^^'] = {'bxor(', ',', ')'},
+		['~'] = {'bxor(', ',', ')'},
+		['<<'] = {'shl(', ',', ')'},
+		['>>'] = {'shr(', ',', ')'},
+		['>>>'] = {'lshr(', ',', ')'},
+		['<<>'] = {'rotl(', ',', ')'},
+		['>><'] = {'rotr(', ',', ')'},
+	}
+
+	local patch_unary_ops={
+		['~'] = {'bnot(', ')'}
 	}
 
 	formatExpr = function(expr, no_leading_white)
@@ -154,8 +168,10 @@ local function Format_Identity(ast)
 			formatExpr(expr.Rhs)
 			out:appendStr(patch[3])
 		elseif expr.AstType == 'UnopExpr' then
-			appendStr( expr.Op , no_leading_white)
+			local patch = patch_unary_ops[expr.Op] or {expr.Op, ""}
+			appendStr( patch[1] , no_leading_white)
 			formatExpr(expr.Rhs)
+			out:appendStr(patch[2])
 
 		elseif expr.AstType == 'DotsExpr' then
 			appendNextToken( "..." , no_leading_white)
