@@ -212,12 +212,21 @@ local function LexLua(src)
 						leadingWhite = ""
 					end
 					table.insert(leading, { Type = 'Whitespace', Line = line, Char = char, Data = nl })
-				elseif c == '-' and peek(1) == '-' then
+				--support pico-8 c-style comments //
+				elseif (c == '-'  or c == '/')  and peek(1) == c then
 					--comment
 					get()
 					get()
 					leadingWhite = leadingWhite .. '--'
-					local _, wholeText = tryGetLongString()
+					if c == '/' then
+						--make sure that // comments won't turn into long comments
+						leadingWhite = leadingWhite .. ' '
+					end
+					local wholeText
+					-- only -- comments support long comments
+					if c=='-' then
+						_, wholeText = tryGetLongString()
+					end
 					if wholeText then
 						leadingWhite = leadingWhite..wholeText
 						longStr = true
