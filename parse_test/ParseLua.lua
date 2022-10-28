@@ -24,7 +24,7 @@ local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 							'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
-local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|'}
+local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|', '@', '$'}
 local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>'}
 
 local Scope = require'Scope'
@@ -967,7 +967,7 @@ local function ParseLua(src)
 	end
 
 
-	local unops = lookupify{'-', 'not', '#', '~'}
+	local unops = lookupify{'-', 'not', '#', '~', '%', '@', '$'}
 	local unopprio = 12
 	local priority = {
 		['+'] = {10,10};

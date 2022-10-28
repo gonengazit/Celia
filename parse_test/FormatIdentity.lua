@@ -85,7 +85,10 @@ local function Format_Identity(ast)
 	}
 
 	local patch_unary_ops={
-		['~'] = {'bnot(', ')'}
+		['~'] = {'bnot(', ')'},
+		['@'] = {'peek(', ')'},
+		['%'] = {'peek2(', ')'},
+		['$'] = {'peek4(', ')'}
 	}
 
 	formatExpr = function(expr, no_leading_white)
