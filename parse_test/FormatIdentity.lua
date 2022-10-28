@@ -145,7 +145,11 @@ local function Format_Identity(ast)
 
 		if expr.AstType == 'VarExpr' then
 			if expr.Variable then
-				appendStr( expr.Variable.Name , no_leading_white)
+				if expr.Variable.IsGlobal then
+					appendStr( "_ENV."..expr.Variable.Name , no_leading_white)
+				else
+					appendStr( expr.Variable.Name , no_leading_white)
+				end
 			else
 				appendStr( expr.Name , no_leading_white)
 			end
