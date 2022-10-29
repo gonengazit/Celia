@@ -9,7 +9,7 @@
 --
 
 
-local util = require'Util'
+local util = require'parser/Util'
 local lookupify = util.lookupify
 
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
@@ -28,7 +28,7 @@ local BinDigits = lookupify{'0', '1'}
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|', '@', '$'}
 local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>'}
 
-local Scope = require'Scope'
+local Scope = require'parser/Scope'
 
 local Keywords = lookupify{
 	'and', 'break', 'do', 'else', 'elseif',
@@ -223,7 +223,7 @@ local function LexLua(src)
 						--make sure that // comments won't turn into long comments
 						leadingWhite = leadingWhite .. ' '
 					end
-					local wholeText
+					local wholeText,_
 					-- only -- comments support long comments
 					if c=='-' then
 						_, wholeText = tryGetLongString()

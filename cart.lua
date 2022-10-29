@@ -1,5 +1,8 @@
 local api = require("api")
 
+local parse = require("parser/ParseLua")
+local format = require("parser/FormatPico8")
+
 local compression_map = {}
 for entry in
 	("\n 0123456789abcdefghijklmnopqrstuvwxyz!#%(){}[]<>+=/*:;.,~_"):gmatch(".")
@@ -454,6 +457,22 @@ function cart.load_p8(filename)
 	loaded_code = lua
 
 	return true
+end
+
+function patch_lua(lua)
+	-- not strictly required, but should help improve performance
+	lua = "local _ENV = _ENV " .. lua
+
+	local status, ast =parse.ParseLua(lua)
+	if not status then
+		error(ast)
+	end
+	local status, patched = format(ast)
+	if not status then
+		error(patched)
+	end
+	print(patched)
+	return patched
 end
 
 return cart
