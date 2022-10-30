@@ -460,6 +460,23 @@ function cart.load_p8(filename)
 end
 
 function patch_lua(lua)
+	--replace glyphs with ascii chars 127-255
+	local glyphs = {"○","█","▒","🐱","⬇️","░","✽","●","♥","☉","웃","⌂","⬅️","😐","♪","🅾️","◆","…","➡️","★","⧗","⬆️","ˇ","∧","❎","▤","▥","あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","ゆ","よ","ら","り","る","れ","ろ","わ","を","ん","っ","ゃ","ゅ","ょ","ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","ユ","ヨ","ラ","リ","ル","レ","ロ","ワ","ヲ","ン","ッ","ャ","ュ","ョ","◜","◝"}
+
+	-- very carefully replace these utf-8 glyphs with the respective ascii chars
+	-- need to be careful because utf-8 and extended ascii are not compatible, and these glyphs are more than 1 char
+	local i = 1
+	while i<=#lua do
+		for n, gl in ipairs(glyphs) do
+			if lua:sub(i):match("^"..gl) then
+				lua = lua:sub(1,i-1) .. lua:sub(i):gsub("^"..gl,string.char(n+126))
+				break
+			end
+		end
+		i=i+1
+	end
+
+
 	-- not strictly required, but should help improve performance
 	lua = "local _ENV = _ENV " .. lua
 

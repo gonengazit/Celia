@@ -91,6 +91,13 @@ local function Format_Identity(ast)
 		['$'] = {'peek4(', ')'}
 	}
 
+	--replace pico8 glyphs in global name with a specific string
+	local function patch_local_varname(name)
+		return name:gsub("[\127-\255]",
+			function (m) return ("__glyph_%d"):format(string.byte(m))
+		end)
+	end
+
 	formatExpr = function(expr, no_leading_white)
 		local tok_it = 1
 		local function appendNextToken(str, no_whitespace)
@@ -144,11 +151,24 @@ local function Format_Identity(ast)
 		debug_printf("formatExpr(%s) at line %i", expr.AstType, expr.Tokens[1] and expr.Tokens[1].Line or -1)
 
 		if expr.AstType == 'VarExpr' then
+			-- 4 options for variable names:
+			-- 1. global name without glyps -> _ENV.name
+			-- 2. global name with glyphs -> _ENV['name']
+			-- 3. local name with no glyphs -> name
+			-- 4. local name with glyphs -> replace each glyph with __glyph_i where i is the number of glyph
+			--
+			-- these are done to support variables with glyphs as much as possible like pico8, and support lua 5.2 style _ENV
 			if expr.Variable then
-				if expr.Variable.IsGlobal then
-					appendStr( "_ENV."..expr.Variable.Name , no_leading_white)
+				local has_glyph = expr.Variable.Name:match("^[%w_]*$")
+				if expr.Variable.IsGlobal and expr.Variable.Name ~="_ENV" then
+				  -- variable name without glyphs
+					if has_glyph then
+						appendStr( "_ENV."..expr.Variable.Name , no_leading_white)
+					else
+						appendStr(("_ENV['%s']"):format(expr.Variable.Name), no_leading_white)
+					end
 				else
-					appendStr( expr.Variable.Name , no_leading_white)
+					appendStr(patch_local_varname(expr.Variable.Name))
 				end
 			else
 				appendStr( expr.Name , no_leading_white)
@@ -208,8 +228,21 @@ local function Format_Identity(ast)
 
 		elseif expr.AstType == 'MemberExpr' then
 			formatExpr(expr.Base, no_leading_white)
-			appendNextToken()  -- . or :
-			appendToken(expr.Ident)
+			if expr.Ident.Data:match("^[%w_]*$") then
+				appendNextToken()  -- . or :
+				appendToken(expr.Ident)
+			else
+				-- add support for pico8 glyphs as table keys
+				-- use non expanded [] syntax for .
+				-- no support for :
+				if peek() ~= '.' then
+					error(": syntax not for variables with glyphs")
+				end
+				appendWhite()
+				out:appendStr("['")
+				appendToken(expr.Ident)
+				out:appendStr("']")
+			end
 
 		elseif expr.AstType == 'Function' then
 			-- anonymous function
@@ -217,7 +250,7 @@ local function Format_Identity(ast)
 			appendNextToken( "(" )
 			if #expr.Arguments > 0 then
 				for i = 1, #expr.Arguments do
-					appendStr( expr.Arguments[i].Name )
+					appendStr( patch_local_varname(expr.Arguments[i].Name ))
 					if i ~= #expr.Arguments then
 						appendNextToken(",")
 					elseif expr.VarArg then
@@ -245,7 +278,7 @@ local function Format_Identity(ast)
 				elseif entry.Type == 'Value' then
 					formatExpr(entry.Value)
 				elseif entry.Type == 'KeyString' then
-					appendStr(entry.Key)
+					appendStr(patch_local_varname(entry.Key))
 					appendNextToken( "=" )
 					formatExpr(entry.Value)
 				end
@@ -340,7 +373,7 @@ local function Format_Identity(ast)
 		elseif statement.AstType == 'LocalStatement' then
 			appendNextToken( "local" )
 			for i = 1, #statement.LocalList do
-				appendStr( statement.LocalList[i].Name )
+				appendStr( patch_local_varname(statement.LocalList[i].Name ))
 				appendComma( i ~= #statement.LocalList )
 			end
 			if #statement.InitList > 0 then
@@ -357,7 +390,7 @@ local function Format_Identity(ast)
 
 						local patch = patch_binary_ops[statement.Operator] or {"", statement.Operator, ""}
 						out:appendStr(patch[1])
-						out:appendStr(statement.LocalList[#statement.LocalList].Name)
+						out:appendStr(patch_local_varname(statement.LocalList[#statement.LocalList].Name))
 						out:appendStr(patch[2])
 						out:appendStr("(")
 						formatExpr(statement.InitList[i])
@@ -442,7 +475,7 @@ local function Format_Identity(ast)
 			appendNextToken( "function" )
 
 			if statement.IsLocal then
-				appendStr(statement.Name.Name)
+				appendStr(patch_local_varname(statement.Name.Name))
 			else
 				formatExpr(statement.Name)
 			end
@@ -450,7 +483,7 @@ local function Format_Identity(ast)
 			appendNextToken( "(" )
 			if #statement.Arguments > 0 then
 				for i = 1, #statement.Arguments do
-					appendStr( statement.Arguments[i].Name )
+					appendStr( patch_local_varname(statement.Arguments[i].Name ))
 					appendComma( i ~= #statement.Arguments or statement.VarArg )
 					if i == #statement.Arguments and statement.VarArg then
 						appendNextToken( "..." )
@@ -467,7 +500,7 @@ local function Format_Identity(ast)
 		elseif statement.AstType == 'GenericForStatement' then
 			appendNextToken( "for" )
 			for i = 1, #statement.VariableList do
-				appendStr( statement.VariableList[i].Name )
+				appendStr( patch_local_varname(statement.VariableList[i].Name ))
 				appendComma( i ~= #statement.VariableList )
 			end
 			appendNextToken( "in" )
@@ -481,7 +514,7 @@ local function Format_Identity(ast)
 
 		elseif statement.AstType == 'NumericForStatement' then
 			appendNextToken( "for" )
-			appendStr( statement.Variable.Name )
+			appendStr(patch_local_varname( statement.Variable.Name ))
 			appendNextToken( "=" )
 			formatExpr(statement.Start)
 			appendNextToken( "," )
@@ -496,12 +529,12 @@ local function Format_Identity(ast)
 
 		elseif statement.AstType == 'LabelStatement' then
 			appendNextToken( "::" )
-			appendStr( statement.Label )
+			appendStr( patch_local_varname(statement.Label ))
 			appendNextToken( "::" )
 
 		elseif statement.AstType == 'GotoStatement' then
 			appendNextToken( "goto" )
-			appendStr( statement.Label )
+			appendStr( patch_local_varname(statement.Label ))
 
 		elseif statement.AstType == 'PrintStatement' then
 			appendStr("print(")
