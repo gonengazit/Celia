@@ -1774,6 +1774,7 @@ end
 
 api.sub = string.sub
 api.pairs = pairs
+api.ipairs = ipairs
 api.type = type
 api.assert = assert
 api.setmetatable = setmetatable
@@ -1790,6 +1791,8 @@ function api.rawlen(table) -- luacheck: no unused
 end
 api.rawequal = rawequal
 api.next = next
+api.unpack = unpack
+api.pack = table.pack
 
 function api.all(a)
 	if a == nil then
@@ -1888,5 +1891,23 @@ end
 function api.serial(channel, address, length) -- luacheck: no unused
 	-- TODO: implement this
 end
+
+function api.split(str, sep, conv_nums)
+	if type(str) ~= "string" and type(str) ~= "number" then
+		return nil
+	end
+	str = tostring(str)
+	sep=sep or ","
+	conv_nums=(conv_nums==nil) and true or conv_nums
+	local tbl={}
+	for val in string.gmatch(str, '([^'..sep..']+)') do
+		if conv_nums  and tonumber(val) ~= nil then
+			val=tonumber(val)
+		end
+		table.insert(tbl,val)
+	end
+	return tbl
+end
+
 
 return api

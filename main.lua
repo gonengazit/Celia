@@ -497,7 +497,6 @@ function new_sandbox()
 	local picolove_functions = {
 		error = error,
 		log = log,
-		ipairs = ipairs,
 		_keydown = nil,
 		_keyup = nil,
 		_touchdown = nil,
