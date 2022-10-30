@@ -44,10 +44,10 @@ local function Format_Identity(ast)
 			local data  = token.Data
 			local lines = util.splitLines(data)
 			while self.line + #lines < token.Line do
-				print("Inserting extra line")
-				self.str  = self.str .. '\n'
-				self.line = self.line + 1
-				self.char = 1
+				print("Inserting extra line at before line "..token.Line)
+				self:appendStr("\n")
+				-- self.line = self.line + 1
+				-- self.char = 1
 			end
 			--]]
 			self:appendStr(token.Data)
@@ -93,9 +93,11 @@ local function Format_Identity(ast)
 
 	--replace pico8 glyphs in global name with a specific string
 	local function patch_local_varname(name)
-		return name:gsub("[\127-\255]",
+		--make sure to discard other returns of gsub
+		local patched = name:gsub("[\127-\255]",
 			function (m) return ("__glyph_%d"):format(string.byte(m))
 		end)
+		return patched
 	end
 
 	formatExpr = function(expr, no_leading_white)
@@ -168,7 +170,7 @@ local function Format_Identity(ast)
 						appendStr(("_ENV['%s']"):format(expr.Variable.Name), no_leading_white)
 					end
 				else
-					appendStr(patch_local_varname(expr.Variable.Name))
+					appendStr(patch_local_varname(expr.Variable.Name), no_leading_white)
 				end
 			else
 				appendStr( expr.Name , no_leading_white)

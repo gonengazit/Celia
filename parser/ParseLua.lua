@@ -269,13 +269,13 @@ local function LexLua(src)
 				toEmit = { Type = 'Eof' }
 
 			--support pico8 glyphs as variable names
-			elseif UpperChars[c] or LowerChars[c] or c == '_' or string.byte(c) >= 128 then
+			elseif UpperChars[c] or LowerChars[c] or c == '_' or (c~="" and string.byte(c) >= 128) then
 				--ident or keyword
 				local start = p
 				repeat
 					get()
 					c = peek()
-				until not (UpperChars[c] or LowerChars[c] or Digits[c] or c == '_' or string.byte(c) >= 128)
+				until not (UpperChars[c] or LowerChars[c] or Digits[c] or c == '_' or (c~="" and string.byte(c) >= 128))
 				local dat = src:sub(start, p-1)
 				if Keywords[dat] then
 					toEmit = {Type = 'Keyword', Data = dat}
