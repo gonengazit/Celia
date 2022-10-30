@@ -467,10 +467,12 @@ function patch_lua(lua)
 	-- need to be careful because utf-8 and extended ascii are not compatible, and these glyphs are more than 1 char
 	local i = 1
 	while i<=#lua do
-		for n, gl in ipairs(glyphs) do
-			if lua:sub(i):match("^"..gl) then
-				lua = lua:sub(1,i-1) .. lua:sub(i):gsub("^"..gl,string.char(n+126))
-				break
+		if string.byte(lua:sub(i,i)) >= 127 then
+			for n, gl in ipairs(glyphs) do
+				if lua:sub(i):match("^"..gl) then
+					lua = lua:sub(1,i-1) .. lua:sub(i):gsub("^"..gl,string.char(n+126))
+					break
+				end
 			end
 		end
 		i=i+1
