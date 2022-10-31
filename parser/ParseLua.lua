@@ -26,7 +26,7 @@ local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 local BinDigits = lookupify{'0', '1'}
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', '\\','//', ',', '{', '}', '[', ']', '(', ')', ';', '#', '?', '&', '|', '@', '$'}
-local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>'}
+local Operators = lookupify{'+', '-', '*', '/', '^', '%', '\\', '&', '|', '^^', '<<', '>>', '>>>', '>><', '<<>', '..'}
 
 local Scope = require'parser/Scope'
 
@@ -383,6 +383,8 @@ local function LexLua(src)
 				if consume('.') then
 					if consume('.') then
 						toEmit = {Type = 'Symbol', Data = '...'}
+					elseif consume('=') then
+						toEmit = {Type = 'Symbol', Data = '..='}
 					else
 						toEmit = {Type = 'Symbol', Data = '..'}
 					end
