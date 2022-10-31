@@ -286,18 +286,24 @@ local function LexLua(src)
 			elseif Digits[c] or (peek() == '.' and Digits[peek(1)]) then
 				--number const
 				local start = p
-				if c == '0' and peek(1) == 'x' then
+				if c == '0' and (peek(1) == 'x' or peek(1) == 'X') then
 					get();get()
 					while HexDigits[peek()] do get() end
+					if consume('.') then
+						while HexDigits[peek()] do get() end
+					end
 					if consume('Pp') then
 						consume('+-')
-						while Digits[peek()] do get() end
+						while HexDigits[peek()] do get() end
 					end
+
 				--support pico8 binary literals
-				elseif c=='0' and peek(1)=='b' then
+				elseif c=='0' and (peek(1)=='b' or peek(1)=='B') then
 					get();get()
 					while BinDigits[peek()] do get() end
-
+					if consume('.') then
+						while BinDigits[peek()] do get() end
+					end
 				else
 					while Digits[peek()] do get() end
 					if consume('.') then

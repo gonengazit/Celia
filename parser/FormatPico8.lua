@@ -177,7 +177,22 @@ local function Format_Identity(ast)
 			end
 
 		elseif expr.AstType == 'NumberExpr' then
-			appendToken( expr.Value , no_leading_white)
+			-- patch pico8 fractional binary literals to hex literals
+			local value = expr.Value.Data
+			if (value:sub(1,2) == '0b' or value:sub(1,2) == '0B') and value:match('.') then
+				local int, frac = value:sub(3):match("([01]*)%.?([01]*)")
+
+				--only patch fractional binary literas
+				if frac ~= "" then
+					--pad frac to a multiple of 4 digits
+					frac = frac..string.rep('0',(-#frac)%4)
+					value = ("0x%x.%x"):format(tonumber(int,2),tonumber(frac,2))
+				end
+
+			end
+
+
+			appendStr( value , no_leading_white)
 
 		elseif expr.AstType == 'StringExpr' then
 			appendToken( expr.Value , no_leading_white)
