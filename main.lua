@@ -772,9 +772,13 @@ local function update_audio(time)
 						local note = sfx[flr(off)][1]
 						ch.freq = note_to_hz(note)
 					end
-					ch.sample = ch.osc(ch.oscpos) * vol / 7
-					ch.oscpos = ch.oscpos + ch.freq / __sample_rate
-					ch.buffer:setSample(ch.bufferpos, ch.sample)
+					if ch.osc then
+						ch.sample = ch.osc(ch.oscpos) * vol / 7
+						ch.oscpos = ch.oscpos + ch.freq / __sample_rate
+						ch.buffer:setSample(ch.bufferpos, ch.sample)
+					else
+						--TODO: custom instruments 8-f
+					end
 				else
 					ch.buffer:setSample(ch.bufferpos, lerp(ch.sample or 0, 0, 0.1))
 					ch.sample = 0
