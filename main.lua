@@ -849,6 +849,7 @@ function love.keypressed(key, scancode, isrepeat)
 	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
 		api.reload_cart()
 		api.run()
+		tastool = tastool.class()
 	-- elseif
 	-- 	key == "escape"
 	-- 	and cartname ~= nil
