@@ -223,6 +223,11 @@ function _load(_cartname)
 	if cart.load_p8(currentDirectory .. _cartname) then
 		api.print("loaded " .. _cartname, 6)
 	end
+
+	pico8.rom={}
+	for i=1,0x4300 do
+		pico8.rom[i] = api.peek(i)
+	end
 	return true
 end
 
