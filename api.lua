@@ -779,6 +779,14 @@ function api.circfill(cx, cy, r, col)
 	end
 end
 
+function api.oval(x0, y0, x1, y1, r, col)
+	--TODO: implement
+end
+
+function api.ovalfill(x0, y0, x1, y1, r, col)
+	--TODO: implement
+end
+
 function api.line(x0, y0, x1, y1, col)
 	if col then
 		color(col)
