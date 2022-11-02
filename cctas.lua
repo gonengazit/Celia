@@ -182,7 +182,8 @@ function cctas:advance_seeded_obj(dir)
 end
 
 function cctas:begin_full_game_playback()
-	api.reload()
+	--TODO: fix reload speed
+	api.reload_cart()
 	api.run()
 	pico8.cart.begin_game()
 	pico8.cart._draw()

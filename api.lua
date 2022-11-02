@@ -1353,10 +1353,13 @@ function api.memset(dest_addr, val, len)
 	end
 end
 
+function api.reload_cart()
+	_load(cartname)
+end
+
 function api.reload(dest_addr, source_addr, len, filepath) -- luacheck: no unused
 	-- FIXME: doesn't handle ranges, we should keep a "cart rom"
 	-- FIXME: doesn't handle filepaths
-	-- _load(cartname)
 	for i=0, len-1 do
 		api.poke(dest_addr+i, pico8.rom[source_addr+i])
 	end
