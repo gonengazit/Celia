@@ -846,7 +846,7 @@ end
 
 function love.keypressed(key)
 	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
-		api.reload()
+		api.reload_cart()
 		api.run()
 	elseif
 		key == "escape"
