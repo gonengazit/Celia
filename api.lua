@@ -474,6 +474,13 @@ function api.print(...)
 		api.cursor(0, y + 6)
 	end
 	local to_print = tostring(api.tostr(str))
+
+	to_print=to_print:gsub('.', function (c)
+		-- print(c, string.byte(c), pico8_glyphs[string.byte(c)])
+		local gl = pico8_glyphs[string.byte(c)]
+		if not gl then return c end
+		return glyph_edgecases[gl] or gl end)
+
 	love.graphics.setShader(pico8.text_shader)
 	love.graphics.print(to_print, flr(x), flr(y))
 end
@@ -526,6 +533,7 @@ function api.tonum(val, format)
 end
 
 function api.chr(num)
+	--GTODO: stuff
 	local n = tonumber(num)
 	if n == nil then
 		return
@@ -611,7 +619,7 @@ function api.spr(n, x, y, w, h, flip_x, flip_y)
 	if w == 1 and h == 1 then
 		q = pico8.quads[n]
 		if not q then
-			log("warning: sprite " .. n .. " is missing")
+			-- log("warning: sprite " .. n .. " is missing")
 			return
 		end
 	else
@@ -671,6 +679,7 @@ function api.sspr(sx, sy, sw, sh, dx, dy, dw, dh, flip_x, flip_y)
 end
 
 function api.rect(x0, y0, x1, y1, col)
+	-- GTODO: x0=x1
 	if col then
 		color(col)
 	end
@@ -770,6 +779,14 @@ function api.circfill(cx, cy, r, col)
 	end
 end
 
+function api.oval(x0, y0, x1, y1, r, col)
+	--TODO: implement
+end
+
+function api.ovalfill(x0, y0, x1, y1, r, col)
+	--TODO: implement
+end
+
 function api.line(x0, y0, x1, y1, col)
 	if col then
 		color(col)
@@ -849,6 +866,8 @@ end
 
 
 function api.pal(c0, c1, p)
+	-- GTODO: 0 vs 1 indexing
+	-- GTODO: support other variants of this func
 	local __palette_modified = false
 	local __display_modified = false
 	if type(c0) ~= "number" then
@@ -1193,12 +1212,13 @@ function api.poke(addr, val)
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
-		--GTODO: replacePixels?
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
 	elseif addr < 0x2000 then
 		local lo=val%16
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
 		pico8.map[flr(addr/128)][addr%128]=val
 	elseif addr < 0x3000 then
 		addr = addr - 0x2000
@@ -1288,6 +1308,7 @@ function api.poke4(addr, val)
 end
 
 function api.memcpy(dest_addr, source_addr, len)
+	--GTODO
 	if len < 1 or dest_addr == source_addr then
 		return
 	end
@@ -1335,7 +1356,11 @@ end
 function api.reload(dest_addr, source_addr, len, filepath) -- luacheck: no unused
 	-- FIXME: doesn't handle ranges, we should keep a "cart rom"
 	-- FIXME: doesn't handle filepaths
-	_load(cartname)
+	-- _load(cartname)
+	for i=0, len-1 do
+		api.poke(dest_addr+i, pico8.rom[source_addr+i])
+	end
+
 end
 
 function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
@@ -1649,6 +1674,7 @@ function api.btnp(i, p)
 		return bitfield
 	end
 end
+-- GTODO: button glyphs
 
 function api.cartdata(id) -- luacheck: no unused
 	-- TODO: handle global cartdata properly
@@ -1768,6 +1794,7 @@ end
 
 api.sub = string.sub
 api.pairs = pairs
+api.ipairs = ipairs
 api.type = type
 api.assert = assert
 api.setmetatable = setmetatable
@@ -1784,6 +1811,8 @@ function api.rawlen(table) -- luacheck: no unused
 end
 api.rawequal = rawequal
 api.next = next
+api.unpack = unpack
+api.pack = table.pack
 
 function api.all(a)
 	if a == nil then
@@ -1804,7 +1833,7 @@ end
 
 function api.foreach(a, f)
 	if not a then
-		warning("foreach got a nil value")
+		-- warning("foreach got a nil value")
 		return
 	end
 
@@ -1882,5 +1911,23 @@ end
 function api.serial(channel, address, length) -- luacheck: no unused
 	-- TODO: implement this
 end
+
+function api.split(str, sep, conv_nums)
+	if type(str) ~= "string" and type(str) ~= "number" then
+		return nil
+	end
+	str = tostring(str)
+	sep=sep or ","
+	conv_nums=(conv_nums==nil) and true or conv_nums
+	local tbl={}
+	for val in string.gmatch(str, '([^'..sep..']+)') do
+		if conv_nums  and tonumber(val) ~= nil then
+			val=tonumber(val)
+		end
+		table.insert(tbl,val)
+	end
+	return tbl
+end
+
 
 return api

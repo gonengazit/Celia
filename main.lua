@@ -100,6 +100,39 @@ pico8 = {
 	spritesheet_data = nil,
 	spritesheet = nil,
 }
+pico8_glyphs = { [0] = "\0",
+	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
+	"ᶜ", "\r", "ᵉ", "ᶠ", "▮", "■", "□", "⁙", "⁘", "‖", "◀",
+	"▶", "「", "」", "¥", "•", "、", "。", "゛", "゜", " ", "!",
+	"\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", "0",
+	"1", "2", "3", "4", "5", "6", "7", "8", "9", ":", ";", "<", "=", ">", "?",
+	"@", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+	"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]",
+	"^", "_", "`", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
+	"m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "{",
+	"|", "}", "~", "○", "█", "▒", "🐱", "⬇️", "░", "✽", "●",
+	"♥", "☉", "웃", "⌂", "⬅️", "😐", "♪", "🅾️", "◆",
+	"…", "➡️", "★", "⧗", "⬆️", "ˇ", "∧", "❎", "▤", "▥",
+	"あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ",
+	"し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に",
+	"ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ", "ま", "み", "む",
+	"め", "も", "や", "ゆ", "よ", "ら", "り", "る", "れ", "ろ", "わ",
+	"を", "ん", "っ", "ゃ", "ゅ", "ょ", "ア", "イ", "ウ", "エ", "オ",
+	"カ", "キ", "ク", "ケ", "コ", "サ", "シ", "ス", "セ", "ソ", "タ",
+	"チ", "ツ", "テ", "ト", "ナ", "ニ", "ヌ", "ネ", "ノ", "ハ", "ヒ",
+	"フ", "ヘ", "ホ", "マ", "ミ", "ム", "メ", "モ", "ヤ", "ユ", "ヨ",
+	"ラ", "リ", "ル", "レ", "ロ", "ワ", "ヲ", "ン", "ッ", "ャ", "ュ",
+	"ョ", "◜", "◝"
+}
+
+-- switch 2 utf-8 character glyphs with the respective 1 character alternative
+glyph_edgecases = {
+	["⬇️"] = "⬇",
+	["🅾️"] = "🅾",
+	["➡️"] = "➡",
+	["⬆️"] = "⬆",
+	["⬅️"] = "⬅"
+}
 
 local flr, abs = math.floor, math.abs
 
@@ -119,11 +152,8 @@ local bits = 16
 
 currentDirectory = "/"
 local glyphs=""
-for i=32, 127 do
-	glyphs=glyphs..string.char(i)
-end
-for i=128, 153 do
-	glyphs=glyphs..string.char(194, i)
+for i=32, 153 do
+	glyphs=glyphs..(glyph_edgecases[pico8_glyphs[i]] or pico8_glyphs[i])
 end
 
 local function _allow_pause(value)
@@ -199,6 +229,11 @@ function _load(_cartname)
 	cartname = _cartname
 	if cart.load_p8(currentDirectory .. _cartname) then
 		api.print("loaded " .. _cartname, 6)
+	end
+
+	pico8.rom={}
+	for i=1,0x4300 do
+		pico8.rom[i] = api.peek(i)
 	end
 	return true
 end
@@ -491,12 +526,18 @@ function new_sandbox()
 	for k, v in pairs(api) do
 		cart_env[k] = v
 	end
+	cart_env._ENV = cart_env -- experimental support for lua5.2 style _ENV
+
+	local glyph_consts = {["\128"] = 0.5,["\129"] = 23130.5,["\130"] = 20767.5,["\131"] = 3,["\132"] = 32125.5,["\133"] = -18402.5,["\134"] = -1632.5,["\135"] = 20927.5,["\136"] = -19008.5,["\137"] = -26208.5,["\138"] = -20192.5,["\139"] = 0,["\140"] = -24351.5,["\141"] = -25792.5,["\142"] = 4,["\143"] = -20032.5,["\144"] = -2560.5,["\145"] = 1,["\146"] = -20128.5,["\147"] = 6943.5,["\148"] = 2,["\149"] = -2624.5,["\150"] = 31455.5,["\151"] = 5,["\152"] = 3855.5,["\153"] = 21845.5,}
+	for k,v in pairs(glyph_consts) do
+		cart_env[k] = v
+	end
+
 
 	-- extra functions provided by picolove
 	local picolove_functions = {
 		error = error,
 		log = log,
-		ipairs = ipairs,
 		_keydown = nil,
 		_keyup = nil,
 		_touchdown = nil,
@@ -762,9 +803,13 @@ local function update_audio(time)
 						local note = sfx[flr(off)][1]
 						ch.freq = note_to_hz(note)
 					end
-					ch.sample = ch.osc(ch.oscpos) * vol / 7
-					ch.oscpos = ch.oscpos + ch.freq / __sample_rate
-					ch.buffer:setSample(ch.bufferpos, ch.sample)
+					if ch.osc then
+						ch.sample = ch.osc(ch.oscpos) * vol / 7
+						ch.oscpos = ch.oscpos + ch.freq / __sample_rate
+						ch.buffer:setSample(ch.bufferpos, ch.sample)
+					else
+						--TODO: custom instruments 8-f
+					end
 				else
 					ch.buffer:setSample(ch.bufferpos, lerp(ch.sample or 0, 0, 0.1))
 					ch.sample = 0
@@ -973,75 +1018,3 @@ function love.run()
 	end
 end
 
-function patch_lua(lua)
-	-- patch lua code
-	lua = lua:gsub("!=", "~=")
-	lua = lua:gsub("//", "--")
-	-- rewrite broken up while statements eg:
-	-- while fn
-	-- (0,0,
-	-- 0,0) do
-	-- end
-	lua = lua:gsub("while%s*(.-)%s*do", function(a)
-		a = a:gsub("%s*\n%s*", " ")
-		return "while " .. a .. " do"
-	end)
-	-- rewrite shorthand if statements eg. if (not b) i=1 j=2
-	lua = lua:gsub("if%s*(%b())%s*([^\n]*)\n", function(a, b)
-		local nl = a:find("\n", nil, true)
-		local th = b:find("%f[%w]then%f[%W]")
-		local an = b:find("%f[%w]and%f[%W]")
-		local o = b:find("%f[%w]or%f[%W]")
-		local ce = b:find("--", nil, true)
-		if not (nl or th or an or o) then
-			if ce then
-				local c, t = b:match("(.-)(%s-%-%-.*)")
-				return "if " .. a:sub(2, -2) .. " then " .. c .. " end" .. t .. "\n"
-			else
-				return "if " .. a:sub(2, -2) .. " then " .. b .. " end\n"
-			end
-		end
-	end)
-	-- rewrite assignment operators
-	-- TODO: handle edge case "if x then i += 1 % 2 end" with % as +-*/%(^.:#)[
-	--lua = lua:gsub("([\n\r]%s*)(%a[%a%d]*)%s*([%+-%*/%%])=(%s*%S*)([^\n\r]*)", "%1%2 = %2 %3 (%4)%5")
-	--lua = lua:gsub("^(%s*)(%a[%a%d]*)%s*([%+-%*/%%])=(%s*%S*)([^\n\r]*)", "%1%2 = %2 %3 (%4)%5")
-	lua = lua:gsub("(%S+)%s*([%+-%*/%%])=", "%1 = %1 %2 ")
-	lua = lua:gsub("(%S+)%s*(%.%.)=", "%1 = %1 %2 ")
-
-	--address operators (not ready yet - issues with strings)
-	--lua = lua:gsub("@%s*([^\n\r%s]*)", "peek(%1)")
-	--lua = lua:gsub("%%%s*([^\n\r%s]*)", "peek2(%1)")
-	--lua = lua:gsub("%$%s*([^\n\r%s]*)", "peek4(%1)")
-
-	--[[
-	2\2
-	test\test
-	test_test\test_test
-	(test+kfjdf)\(ahb\k39)
-	--]]
-	-- TODO: nested expressions, function calls, etc
-	lua = lua:gsub("([%w_%[%]*/]+)%s*\\%s*([%w_%[%]*/]+)", " flr(%1/%2) ")
-	-- rewrite inspect operator "?"
-	lua = lua:gsub("([\n\r]%s*)?([^\n\r]*)", "%1print(%2)")
-	lua = lua:gsub("^(%s*)?([^\n\r]*)", "%1print(%2)")
-	-- convert binary literals to hex literals
-	lua = lua:gsub("([^%w_])0[bB]([01.]+)", function(a, b)
-		local p1, p2 = b, ""
-		if b:find(".", nil, true) then
-			p1, p2 = b:match("(.-)%.(.*)")
-		end
-		-- pad to 4 characters
-		p2 = p2 .. string.rep("0", 3 - ((#p2 - 1) % 4))
-		p1, p2 = tonumber(p1, 2), tonumber(p2, 2)
-		if p1 then
-			if p2 then
-				return string.format("%s0x%x.%x", a, p1, p2)
-			else
-				return string.format("%s0x%x", a, p1)
-			end
-		end
-	end)
-
-	return lua
-end

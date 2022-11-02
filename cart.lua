@@ -1,5 +1,9 @@
 local api = require("api")
 
+local parse = require("parser/ParseLua")
+local format = require("parser/FormatPico8")
+local util = require("parser/Util")
+
 local compression_map = {}
 for entry in
 	("\n 0123456789abcdefghijklmnopqrstuvwxyz!#%(){}[]<>+=/*:;.,~_"):gmatch(".")
@@ -454,6 +458,52 @@ function cart.load_p8(filename)
 	loaded_code = lua
 
 	return true
+end
+
+function patch_lua(lua)
+	--replace glyphs with respective ascii chars
+
+	-- very carefully replace these glyphs with the respective ascii chars
+	-- need to be careful because utf-8 and extended ascii are not compatible, and some of the glyphs are more than 1 char (even more than 1 utf8 char)
+	--
+	-- TODO: optimize this code
+
+	local gmatch_magic = util.lookupify{'(', ')', '.', '%', '+', '-', '*', '?', '[', '^', '$'}
+	local i = 1
+	while i<=#lua do
+		local c = lua:sub(i,i)
+		if string.byte(c) >= 128 then
+			for n, gl in ipairs(pico8_glyphs) do
+				local escaped_gl
+				if gmatch_magic[gl] then
+					escaped_gl = "%"..gl
+				else
+					escaped_gl = gl
+				end
+
+				if lua:sub(i):match("^"..escaped_gl) then
+					lua = lua:sub(1,i-1) .. lua:sub(i):gsub("^"..escaped_gl,string.char(n))
+					break
+				end
+			end
+		end
+		i=i+1
+	end
+
+
+	-- not strictly required, but should help improve performance
+	lua = "local _ENV = _ENV " .. lua
+
+	local status, ast =parse.ParseLua(lua)
+	if not status then
+		error(ast)
+	end
+	local status, patched = format(ast)
+	if not status then
+		error(patched)
+	end
+	-- print(patched)
+	return patched
 end
 
 return cart
