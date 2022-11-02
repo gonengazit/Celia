@@ -1204,12 +1204,13 @@ function api.poke(addr, val)
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
-		--GTODO: replacePixels?
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
 	elseif addr < 0x2000 then
 		local lo=val%16
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
 		pico8.map[flr(addr/128)][addr%128]=val
 	elseif addr < 0x3000 then
 		addr = addr - 0x2000
