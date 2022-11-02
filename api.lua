@@ -474,6 +474,13 @@ function api.print(...)
 		api.cursor(0, y + 6)
 	end
 	local to_print = tostring(api.tostr(str))
+
+	to_print=to_print:gsub('.', function (c)
+		-- print(c, string.byte(c), pico8_glyphs[string.byte(c)])
+		local gl = pico8_glyphs[string.byte(c)]
+		if not gl then return c end
+		return glyph_edgecases[gl] or gl end)
+
 	love.graphics.setShader(pico8.text_shader)
 	love.graphics.print(to_print, flr(x), flr(y))
 end
