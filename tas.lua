@@ -501,6 +501,10 @@ function tas:selection_keypress(key, isrepeat)
 		else
 			self:preform_undo()
 		end
+	elseif key == 'home' then
+		self.last_selected_frame = self:frame_count() + 2
+	elseif key=='end' then
+		self.last_selected_frame = #self.keystates
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
