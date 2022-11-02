@@ -619,7 +619,7 @@ function api.spr(n, x, y, w, h, flip_x, flip_y)
 	if w == 1 and h == 1 then
 		q = pico8.quads[n]
 		if not q then
-			log("warning: sprite " .. n .. " is missing")
+			-- log("warning: sprite " .. n .. " is missing")
 			return
 		end
 	else
@@ -1825,7 +1825,7 @@ end
 
 function api.foreach(a, f)
 	if not a then
-		warning("foreach got a nil value")
+		-- warning("foreach got a nil value")
 		return
 	end
 
