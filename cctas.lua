@@ -42,6 +42,16 @@ function cctas:init()
 	pico8.cart.begin_game()
 	pico8.cart._draw()
 
+	if pico8.cart.__tas_load_level and pico8.cart.__tas_level_index then
+		self.cart_type = "tas"
+	elseif pico8.cart.lvl_id and pico8.cart.load_level then
+		self.cart_type = "evercore"
+	elseif pico8.cart.room and pico8.cart.load_room then
+		self.cart_type = "vanilla"
+	else
+		error("couldn't find functions for level index and loading levels")
+	end
+
 	self.level_time=0
 	self.inputs_active = false
 
@@ -201,9 +211,14 @@ function cctas:reset_editor_state()
 	self.hold=0
 end
 
-local function load_room_wrap(idx)
-	--TODO: support evercore style carts
-	pico8.cart.load_room(idx%8, math.floor(idx/8))
+function cctas:load_room_wrap(idx)
+	if self.cart_type == "tas" then
+		pico8.cart.__tas_load_level(idx)
+	elseif self.cart_type == "evercore" then
+		pico8.cart.load_level(idx)
+	else
+		pico8.cart.load_room(idx%8, math.floor(idx/8))
+	end
 end
 
 -- if reset changes is false, loading jank and rng seeds will not be touched
@@ -214,17 +229,27 @@ function cctas:load_level(idx, reset_changes)
 
 	local seeds = self:get_rng_seeds()
 	--apply loading jank
-	load_room_wrap(idx-1)
 	self.prev_obj_count=0
-	for _,obj in ipairs(pico8.cart.objects) do
-		-- assume room title is destroyed before you exit the level
-		-- assume no other objects will be destroyed before you exit the level
-		-- (this is easy to tweak with the offset variable)
-		if obj.type ~= pico8.cart.room_title or pico8.cart.room_title==nil then
-			self.prev_obj_count = self.prev_obj_count + 1
+	local status, err = pcall(self.load_room_wrap,self,idx-1)
+	if status then
+		for _,obj in ipairs(pico8.cart.objects) do
+			-- assume room title is destroyed before you exit the level
+			-- assume no other objects will be destroyed before you exit the level
+			-- (this is easy to tweak with the offset variable)
+			if obj.type ~= pico8.cart.room_title or pico8.cart.room_title==nil then
+				self.prev_obj_count = self.prev_obj_count + 1
+			end
 		end
+	else
+		self:loadstate()
 	end
-	load_room_wrap(idx)
+
+	status, err = pcall(self.load_room_wrap, self, idx)
+	if not status then
+		self:loadstate()
+		print("Could not load level")
+		return
+	end
 	if reset_changes then
 		-- for the first level, assume no objects get loading janked by default
 		self.loading_jank_offset = self:level_index() == self.first_level and #pico8.cart.objects + 1 or 0
@@ -252,7 +277,14 @@ function cctas:load_level(idx, reset_changes)
 
 end
 function cctas:level_index()
-	return pico8.cart.level_index()
+	if self.cart_type == "tas" then
+		return pico8.cart.__tas_level_index()
+	elseif self.cart_type == "evercore" then
+		return pico8.cart.lvl_id
+	else
+		--reimplement instead of using level_index() to support smalleste
+		return pico8.cart.room.x + 8*pico8.cart.room.y
+	end
 end
 function cctas:next_level()
 	self:load_level(self:level_index()+1,true)
@@ -459,7 +491,15 @@ function cctas:get_input_file_obj()
 		end
 	end
 
-	local filename = ("%s/TAS%d.tas"):format(dirname, self:level_index()+1)
+	--evercore is 1 indexed and vanilla is 0 indexed
+	local file_id
+	if self.cart_type == "vanilla" then
+		file_id=self:level_index()+1
+	else
+		file_id=self:level_index()
+	end
+
+	local filename = ("%s/TAS%d.tas"):format(dirname, file_id)
 	return love.filesystem.newFile(filename)
 end
 
