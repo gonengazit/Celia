@@ -354,6 +354,8 @@ function cctas:full_reset()
 
 	self:reset_editor_state()
 	self:init_seed_objs()
+	-- yet another thing that'll be fixed by state repr change
+	self:clearstates()
 	self:state_changed()
 end
 
