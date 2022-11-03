@@ -232,7 +232,7 @@ function _load(_cartname)
 	end
 
 	pico8.rom={}
-	for i=1,0x4300 do
+	for i=0,0x42ff do
 		pico8.rom[i] = api.peek(i)
 	end
 	return true

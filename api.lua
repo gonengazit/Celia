@@ -1358,8 +1358,12 @@ function api.reload_cart()
 end
 
 function api.reload(dest_addr, source_addr, len, filepath) -- luacheck: no unused
-	-- FIXME: doesn't handle ranges, we should keep a "cart rom"
 	-- FIXME: doesn't handle filepaths
+	--
+	dest_addr = flr(tonumber(dest_addr) or 0)
+	source_addr = flr(tonumber(source_addr) or 0)
+	len = flr(tonumber(len) or 0x4300)
+	len = math.min(0x4300-source_addr, len)
 	for i=0, len-1 do
 		api.poke(dest_addr+i, pico8.rom[source_addr+i])
 	end
@@ -1724,6 +1728,7 @@ end
 local tfield = { [0] = "year", "month", "day", "hour", "min", "sec" }
 function api.stat(x)
 	-- TODO: implement this
+	x = flr(tonumber(x) or 0)
 	if x == 0 then
 		return 0 -- TODO memory usage
 	elseif x == 1 then
