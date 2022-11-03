@@ -1019,3 +1019,19 @@ function love.run()
 	end
 end
 
+local _default_errhand=love.errorhandler or love.errhand
+
+function love.errorhandler(msg)
+	if tastool then
+		local backup_path = tastool:save_backup()
+		if backup_path then
+			msg = msg.."\n\nsaved backup to"..backup_path
+		else
+			msg = msg.."\n\n failed to create backup"
+		end
+	end
+	print("calling default")
+	return _default_errhand(msg)
+
+end
+

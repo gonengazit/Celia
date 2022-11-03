@@ -653,4 +653,30 @@ function tas:paste_inputs()
 	self.last_selected_frame = self:frame_count() + 1 + cnt
 end
 
+--called on tas tool crash
+--save a backup of the current inputs, and return the path
+function tas:save_backup()
+	local stripped_cartname = cartname:match("[^.]+")
+	local filename = cartname .. "-" .. os.time() .. ".tas"
+	if not love.filesystem.getInfo("backups", "directory") then
+		if not love.filesystem.createDirectory("backups") then
+			print("error creating backup directory")
+			return nil
+		end
+	end
+	local f = love.filesystem.newFile('backups/'..filename)
+	if not f then
+		return
+	end
+	if f:open("w") then
+		f:write(self:get_input_str())
+		local path = love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename()
+		print("saved backup file to ".. path)
+		return path
+	else
+		print("error saving backup of file")
+	end
+
+end
+
 return tas
