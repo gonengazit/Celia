@@ -1728,6 +1728,7 @@ end
 local tfield = { [0] = "year", "month", "day", "hour", "min", "sec" }
 function api.stat(x)
 	-- TODO: implement this
+	x = flr(tonumber(x) or 0)
 	if x == 0 then
 		return 0 -- TODO memory usage
 	elseif x == 1 then
