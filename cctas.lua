@@ -95,7 +95,7 @@ function cctas:keypressed(key, isrepeat)
 	if self.full_game_playback then
 		self.full_game_playback = false
 		self.realtime_playback = false
-	elseif self.realtime_playback then
+	elseif self.realtime_playback or self.seek then
 		self.super.keypressed(self,key,isrepeat)
 	elseif self.modify_loading_jank then
 		self:loading_jank_keypress(key,isrepeat)
@@ -360,18 +360,22 @@ function cctas:full_reset()
 end
 
 function cctas:player_rewind()
+	self:reset_editor_state()
 	if self.level_time>0 or self.inputs_active then
 		for _ = 1, self.level_time do
 			self:popstate()
 		end
 		self:loadstate()
 	else
-		while not self.inputs_active do
-			--TODO: make this performant, animated, or remove this
-			self:step()
-		end
+		self.seek = {
+			finish_condition = function()
+				return  self.inputs_active
+			end,
+			on_finish = function() end,
+			fast_forward=true
+		}
+
 	end
-	self:reset_editor_state()
 end
 
 function cctas:clearstates()

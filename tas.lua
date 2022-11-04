@@ -213,11 +213,28 @@ function tas:init()
 		__index = function(table,key) return pico8.cart[key] end,
 		__newindex = function(table, key, val) pico8.cart[key] = val end
 	})
+
+	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
+	self.seek=nil
 end
 
 function tas:update()
 	if self.realtime_playback then
 		self:step()
+	elseif self.seek then
+		if self.seek.fast_forward then
+			local t=love.timer.getTime()
+			repeat
+				self:step()
+			until self.seek.finish_condition() or love.timer.getTime()-t>pico8.frametime*0.75
+		else
+			self:step()
+		end
+
+		if self.seek.finish_condition() then
+			self.seek.on_finish()
+			self.seek=nil
+		end
 	end
 end
 
@@ -413,8 +430,13 @@ function tas:keypressed(key, isrepeat)
 	if key=='p' then
 		self.realtime_playback = not self.realtime_playback
 	elseif self.realtime_playback then
-		-- pressing any key during realtime playback stops it during realtime playback stops it
+		-- pressing any key during realtime playback stops it
 		self.realtime_playback = false
+	elseif self.seek then
+		if self.seek.finish_on_interrupt then
+			self.seek.on_finish()
+		end
+		self.seek=nil
 	--TODO: block keypresses even when overloading this func
 	elseif self.last_selected_frame ~= -1 then
 		self:selection_keypress(key, isrepeat)
