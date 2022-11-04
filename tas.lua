@@ -103,9 +103,11 @@ end
 -- if frame_count is overloaded, it must be updated/increased *before* calling pushstate
 function tas:pushstate()
 	-- don't copy any non-cart functions
-	local newstate=deepcopy_no_api(pico8)
+	local clone=deepcopy_no_api(pico8)
 
-	table.insert(self.states,newstate)
+	--push the actual pico8 instance (and not the clone) to support undoing
+	table.insert(self.states,pico8)
+	pico8 = clone
 
 	if self.keystates[self:frame_count()+1] == nil then
 		self.keystates[self:frame_count()+1] = 0
@@ -119,14 +121,10 @@ end
 --loads a deepcopy of the current state to the pico8 instance
 function tas:loadstate()
 	pico8 = deepcopy_no_api(self.states[#self.states])
-	love.graphics.setCanvas(pico8.screen)
-	restore_clip()
-	restore_camera()
 end
 
 function tas:clearstates()
 	self.states={}
-	self:pushstate()
 end
 
 function tas:state_iter()
@@ -136,6 +134,8 @@ function tas:state_iter()
 		i = i + 1
 		if (i <= n) then
 			return self.states[i]
+		elseif i == n+1 then
+			return pico8
 		end
 	end
 end
@@ -156,32 +156,38 @@ end
 
 
 function tas:step()
-
-	love.graphics.setCanvas(pico8.screen)
+	--this has to be before pushstate, because frame_count depends on the len of the the state list
 	self:update_buttons()
-	rawstep()
+
 	--store the state
 	self:pushstate()
+
+	love.graphics.setCanvas(pico8.screen)
+	rawstep()
 
 	--advance the state of pressed keys
 	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
 end
 
 function tas:rewind()
-	if #self.states <= 1 then
+	if #self.states <= 0 then
 		return
 	end
 
-	self:popstate()
-	self:loadstate()
+	pico8 = self:popstate()
+
+	love.graphics.setCanvas(pico8.screen)
+	restore_clip()
+	restore_camera()
 end
 
 --rewind to the first frame
 function tas:full_rewind()
 	while #self.states>1 do
-		self:popstate()
+		pico8 = self:popstate()
 	end
-	self:loadstate()
+	-- for the last frame, call rewind to update the canvas, and allow overloaded funcs to update variables
+	self:rewind()
 end
 
 function tas:full_reset()
@@ -192,10 +198,9 @@ end
 
 function tas:init()
 	self.states={}
-	self.keystates={}
+	self.keystates={0}
 	self.realtime_playback=false
 	self.hold = 0
-	self:pushstate()
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + 64)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
 	-- duplicated code is kinda eh but i am lazy
@@ -248,13 +253,13 @@ local function shallow_copy(t)
 end
 -- states are shallow copyied (for perf reasons), meaning mutating them directly will cause undo to desync
 function tas:get_editor_state()
-	return {states = shallow_copy(self.states), keystates = deepcopy(self.keystates)}
+	return {states = shallow_copy(self.states), keystates = deepcopy(self.keystates), pico8 = pico8}
 end
 
 function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
 	self.keystates = deepcopy(state.keystates)
-	self:loadstate()
+	pico8 = state.pico8
 end
 
 --undo_idx points the state to be loaded if undo is preformed
@@ -322,7 +327,7 @@ end
 
 -- can be overloaded to define different timing methods
 function tas:frame_count()
-	return #self.states-1
+	return #self.states
 end
 --returns the width of the counter
 function tas:draw_frame_counter(x,y)
@@ -577,7 +582,8 @@ function tas:predict(pred, num, inputs)
 	local shader=love.graphics.getShader()
 	local p8state = pico8
 
-	self:loadstate()
+	--set gfx stuff?
+	pico8 = deepcopy_no_api(pico8)
 	love.graphics.setCanvas(pico8.screen)
 
 	local ret=false

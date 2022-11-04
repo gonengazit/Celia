@@ -65,11 +65,8 @@ function cctas:init()
 	self.level_time=0
 	self.inputs_active = false
 
-	--TODO: make it so init_seed_objs can be called after super.init?
-	--right now it doens't work because super.init pushes to the state stack, which isn't updated by init_seed_objs
-	--maybe change the representation back to pushing before step and not after?
-	self:init_seed_objs()
 	self.super.init(self)
+
 
 	console.ENV.find_player = self.find_player
 
@@ -80,6 +77,7 @@ function cctas:init()
 
 	self.modify_rng_seeds=false
 	self.rng_seed_idx = -1
+	self:init_seed_objs()
 
 	self.full_game_playback = false
 
@@ -254,6 +252,7 @@ function cctas:load_level(idx, reset_changes)
 			end
 		end
 	else
+		--err 1
 		self:loadstate()
 	end
 
@@ -315,7 +314,7 @@ function cctas:find_player()
 end
 
 function cctas:pushstate()
-	if self.level_time>0 or self:find_player() then
+	if self.level_time>0 or self.inputs_active then
 		self.level_time = self.level_time + 1
 	end
 	self.super.pushstate(self)
@@ -325,7 +324,7 @@ function cctas:popstate()
 	if self.level_time>0 then
 		self.level_time = self.level_time-1
 	end
-	self.super.popstate(self)
+	return self.super.popstate(self)
 end
 
 function cctas:step()
@@ -369,18 +368,19 @@ function cctas:full_reset()
 
 	self:reset_editor_state()
 	self:init_seed_objs()
-	-- yet another thing that'll be fixed by state repr change
-	self:clearstates()
 	self:state_changed()
 end
 
 function cctas:player_rewind()
 	self:reset_editor_state()
 	if self.level_time>0 or self.inputs_active then
-		for _ = 1, self.level_time do
-			self:loadstate()
+		-- only call rewind() on the last step to improve performance
+		for _ = 1, self.level_time-1 do
+			self:popstate()
 		end
-		self:loadstate()
+		if self.level_time>0 then
+			self:rewind()
+		end
 	else
 		self.seek = {
 			finish_condition = function()
@@ -437,9 +437,9 @@ function cctas:get_seed_handler(obj, state)
 		end
 	end
 end
+
 --loads rng seeds for the current state
---should (probably be called when there's no states pushed state)
---TODO: consider whether this should affect all states (probably yes?)
+--must be called on the first frame
 function cctas:init_seed_objs()
 	for _, obj in ipairs(pico8.cart.objects) do
 		obj.__tas_id = {}
@@ -462,7 +462,7 @@ function cctas:get_rng_seeds()
 	return seeds
 end
 
--- loads the seed for all saved states and the pico8 instance
+-- loads the seed for all saved states
 -- seeds not given will be left at the default value
 --
 function cctas:load_rng_seeds(t)
@@ -485,19 +485,11 @@ function cctas:load_rng_seeds(t)
 		end
 	end
 	for state in state_iter do
-		for _, obj in ipairs(state.objects) do
+		for _, obj in ipairs(state.cart.objects) do
 			local seed = self:get_seed_handler(obj, state)
 			if seed ~= nil and seed_mapping[obj.__tas_id] ~= nil then
 				seed.set_seed(obj, seed_mapping[obj.__tas_id])
 			end
-		end
-	end
-
-	-- kinda ugly, but i don't know how to do it better
-	for _, obj in ipairs(pico8.cart.objects) do
-		local seed = self:get_seed_handler(obj)
-		if seed ~= nil and seed_mapping[obj.__tas_id] ~= nil then
-			seed.set_seed(obj, seed_mapping[obj.__tas_id])
 		end
 	end
 end
