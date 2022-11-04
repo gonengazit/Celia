@@ -38,6 +38,16 @@ function cctas:init()
 		return o
 	end
 
+	--disable screenshake
+	local _draw = pico8.cart._draw
+	pico8.cart._draw = function()
+		if pico8.cart.shake then
+			pico8.cart.shake=0
+		end
+		_draw()
+	end
+
+
 	--this seems hacky, but is actually how updation order behaves in vanilla
 	pico8.cart.begin_game()
 	pico8.cart._draw()
