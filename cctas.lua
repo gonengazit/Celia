@@ -126,6 +126,9 @@ function cctas:keypressed(key, isrepeat)
 	elseif key == 'n' and love.keyboard.isDown('lshift', 'rshift') then
 		self:push_undo_state()
 		self:begin_full_game_playback()
+	elseif key == 'u' then
+		self:push_undo_state()
+		self:begin_cleanup_save()
 	else
 		self.super.keypressed(self,key,isrepeat)
 	end
@@ -327,7 +330,9 @@ function cctas:step()
 			if self:load_input_file() == nil then
 				self:full_reset()
 			end
-		else
+		-- seeking to a frame doesn't loop the level, so seeks can handle level end manually
+		--TODO: figure out if this is the right way to handle things
+		elseif not self.seek then
 			-- TODO: make it so clouds don't jump??
 			self:full_rewind()
 		end
@@ -363,7 +368,7 @@ function cctas:player_rewind()
 	self:reset_editor_state()
 	if self.level_time>0 or self.inputs_active then
 		for _ = 1, self.level_time do
-			self:popstate()
+			self:loadstate()
 		end
 		self:loadstate()
 	else
@@ -509,9 +514,9 @@ function cctas:get_input_file_obj()
 	return love.filesystem.newFile(filename)
 end
 
-function cctas:get_input_str(i,j)
+function cctas:get_input_str(i,j, include_seeds)
 	--only include the seeds in the string for a full level input
-	if i ~= nil then
+	if i ~= nil and not include_seeds then
 		return self.super.get_input_str(self,i,j)
 	end
 	return ("[%s]%s"):format(table.concat(self:get_rng_seeds(),","),self.super.get_input_str(self))
@@ -542,6 +547,31 @@ function cctas:load_input_str(str, i)
 	end
 	self:load_rng_seeds(seeds_tbl)
 	return true
+end
+
+function cctas:save_cleaned_input_file(last_frame)
+	local f = self:get_input_file_obj()
+	if not f then
+		return
+	end
+	if f:open("w") then
+		f:write(self:get_input_str(1, last_frame, true))
+		print(("saved %df cleaned file to %s"):format(last_frame, love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename()))
+	else
+		print("error saving cleaned input file")
+	end
+end
+
+function cctas:begin_cleanup_save()
+	local lvl_id=self:level_index()
+	self:save_input_file()
+	self.seek={
+		finish_condition = function() return self:level_index() ~= lvl_id end,
+		on_finish = function()
+			self:rewind()
+			self:save_cleaned_input_file(self:frame_count())
+		end
+	}
 end
 
 function cctas:draw_button(...)
