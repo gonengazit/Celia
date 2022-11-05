@@ -9,6 +9,7 @@ local bit = require("bit")
 local api = require("api")
 local cart = require("cart")
 
+
 cartname = nil -- used by api.reload
 local initialcartname = nil -- used by esc
 local love_args = nil -- luacheck: no unused
@@ -133,7 +134,10 @@ loaded_code = nil
 
 local __audio_buffer_size = 1024
 
-local video_frames = nil
+local gif = require("gif")
+local gif_canvas = nil
+local gif_recording = nil
+
 local osc
 local paused = false
 local focus = true
@@ -328,6 +332,7 @@ function love.load(argv)
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	pico8.screen =
 		love.graphics.newCanvas(pico8.resolution[1], pico8.resolution[2])
+
 	pico8.screen:setFilter("linear", "nearest")
 
 	local font = love.graphics.newImageFont("font.png", glyphs, 1)
@@ -630,13 +635,11 @@ function flip_screen()
 
 	love.graphics.present()
 
-	if video_frames then
-		local tmp =
-			love.graphics.newCanvas(pico8.resolution[1], pico8.resolution[2])
-		love.graphics.setCanvas(tmp)
-		love.graphics.draw(pico8.screen, 0, 0)
+	if gif_canvas then
+		love.graphics.setCanvas(gif_canvas)
+		love.graphics.draw(pico8.screen, 0, 0, 0, 2, 2)
 		love.graphics.setCanvas()
-		table.insert(video_frames, tmp:newImageData())
+		gif_recording:frame(gif_canvas:newImageData())
 	end
 	-- get ready for next time
 	love.graphics.setShader(pico8.draw_shader)
@@ -871,15 +874,30 @@ function love.keypressed(key)
 		log("saved screenshot to", filename)
 	elseif key == "f3" or key == "f8" then
 		-- start recording
-		video_frames = {}
+		if not love.filesystem.getInfo("gifs", "directory") and not love.filesystem.createDirectory("gifs") then
+			log('failed to create gif directory')
+		elseif gif_recording==nil then
+			local err
+			gif_recording, err=gif.new("gifs/"..cartname..'-'..os.time()..'.gif')
+			if not gif_recording then
+				log('failed to start recording: '..err)
+			else
+				gif_canvas=love.graphics.newCanvas(pico8.resolution[1]*2, pico8.resolution[2]*2)
+				log('starting record ...')
+			end
+		else
+			log('recording already in progress')
+		end
 	elseif key == "f4" or key == "f9" then
 		-- stop recording and save
-		local basename = cartname .. "-" .. os.time() .. "-"
-		for i, v in ipairs(video_frames) do
-			v:encode("png", string.format("%s%04d.png", basename, i))
+		if gif_recording~=nil then
+			gif_recording:close()
+			log('saved recording to '..gif_recording.filename)
+			gif_recording=nil
+			gif_canvas=nil
+		else
+			log('no active recording')
 		end
-		video_frames = nil
-		log("saved video to", basename)
 	elseif key == "return" and isAltDown() then
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return
