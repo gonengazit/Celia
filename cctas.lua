@@ -75,6 +75,8 @@ function cctas:init()
 	self.first_level=self:level_index()
 	self.loading_jank_offset=#pico8.cart.objects+1
 
+	self.max_djump_overload=-1
+
 	self.modify_rng_seeds=false
 	self.rng_seed_idx = -1
 	self:init_seed_objs()
@@ -137,6 +139,27 @@ function cctas:keypressed(key, isrepeat)
 	elseif key == 'u' then
 		self:push_undo_state()
 		self:begin_cleanup_save()
+	elseif key == '=' then
+		if love.keyboard.isDown('lshift', 'rshift') then
+		-- +
+			if self.max_djump_overload ==-1 then
+				self.max_djump_overload = pico8.cart.max_djump + 1
+			else
+				self.max_djump_overload = self.max_djump_overload + 1
+			end
+			self:load_level(self:level_index(), false)
+		else
+			self.max_djump_overload = -1
+			self:load_level(self:level_index(), false)
+		end
+	elseif key == '-' then
+		if self.max_djump_overload ==-1 then
+			self.max_djump_overload = pico8.cart.max_djump - 1
+		else
+			self.max_djump_overload = self.max_djump_overload - 1
+		end
+		self.max_djump_overload = math.max(self.max_djump_overload, 0)
+		self:load_level(self:level_index(), false)
 	else
 		self.super.keypressed(self,key,isrepeat)
 	end
@@ -237,6 +260,18 @@ end
 function cctas:load_level(idx, reset_changes)
 	-- load the room from the initial state of the level, to reset variables like berries
 	self:full_rewind()
+
+	if self.max_djump_overload ~= -1 then
+		pico8.cart.max_djump = self.max_djump_overload
+	elseif self.cart_type == "vanilla" then
+		if idx>=22 then
+			pico8.cart.new_bg = true
+			pico8.cart.max_djump = 2
+		else
+			pico8.cart.new_bg = nil
+			pico8.cart.max_djump = 1
+		end
+	end
 
 	local seeds = self:get_rng_seeds()
 	--apply loading jank
