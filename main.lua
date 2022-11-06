@@ -150,7 +150,7 @@ local __sample_rate = 22050
 local channels = 1
 local bits = 16
 
-currentDirectory = "/"
+currentDirectory = "carts/"
 local glyphs=""
 for i=32, 153 do
 	glyphs=glyphs..(glyph_edgecases[pico8_glyphs[i]] or pico8_glyphs[i])

@@ -1,4 +1,5 @@
 *.p8
+!carts/celeste.p8
 !nocart.p8
 !editor.p8
 !test/*.p8
