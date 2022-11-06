@@ -516,7 +516,6 @@ function cctas:load_rng_seeds(t)
 			seed.set_seed(obj,t[i])
 			seed_mapping[obj.__tas_id] = t[i]
 			i = i+1
-			break
 		end
 	end
 	for state in state_iter do
