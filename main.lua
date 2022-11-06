@@ -984,7 +984,7 @@ function love.run()
 
 		-- Call update and draw
 		local render = false
-		while dt > pico8.frametime do
+		if dt > pico8.frametime then
 			if paused or not focus then -- luacheck: ignore 542
 				-- nop
 			else
