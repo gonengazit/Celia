@@ -179,6 +179,8 @@ function tas:rewind()
 	love.graphics.setCanvas(pico8.screen)
 	restore_clip()
 	restore_camera()
+
+	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
 end
 
 --rewind to the first frame
