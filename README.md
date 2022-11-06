@@ -1,15 +1,9 @@
-PICOLOVE
+Celia
 --------
 
-Run PICO-8 games and computer programs with free and open-source software.
-
-On github at: https://github.com/picolove/picolove
+A PICO-8 TAS framework based on [picolove](https://github.com/picolove/picolove)
 
 Requires LÖVE 11.x
-
-What it is:
-
- * An implementation of PICO-8's API in LÖVE
 
 What is PICO-8:
 
@@ -19,51 +13,69 @@ What is LÖVE:
 
  * See https://love2d.org/
 
-Why:
+# What Celia is:
 
- * For a fun challenge!
- * Allow standalone publishing of PICO-8 games on other platforms
-  * Should work on mobile devices [*](#android-packaging)
- * Configurable controls
- * Extendable
- * No arbitrary cpu or memory limitations
- * No arbitrary code size limitations
- * Better debugging tools available
- * Free and open-source software
+Celia has 3 uses:
 
-What it isn't:
+ * A general TAS tool for tasing any PICO-8 cart
+ * A framework for developing designated TAS tools PICO-8 games
+ * A fully fledged TAS tool for [celeste](https://www.lexaloffle.com/bbs/?tid=2145) and mods.
 
- * A replacement for PICO-8
- * A perfect replica
- * No dev tools, no image editor, map editor, sfx editor, music editor
- * No modifying or saving carts
- * Not memory compatible with PICO-8
+# Limitations and caveats
 
-Not Yet Implemented:
+* Celia is based on [this](https://github.com/gonengazit/picolove) fork of picolove. Carts not supported by it will not work. in particular, some more advanced/newer PICO-8 features might not be avaliable (though it does have many features not present in other picolove forks, such as support for \_ENV and bitwise ops).
+* Due to the last point, Celia uses floats instead of 16.16 Fixed point numbers, which may cause some differences from PICO-8
+* No support for seeding reproducing randomness deterministically (yet)
+* No support for coroutines, as they cannot be serialized in standard lua, as far as I know
 
- * Memory modification/reading
- * PICO-8 cartridge versions > 8
+# Usage
 
-Differences:
+<!-- <insert command to run celia> -->
 
- * Uses floating point numbers not fixed point
- * sqrt doesn't freeze
- * Uses LuaJIT not lua 5.2
+In the center of the screen, you'll see the PICO-8 screen, displaying the current frame
+On the left, you'll see the HUD, displaying the current frame number, and an input display, with the currently pressed inputs
+On the right, you'll see the pianoroll, which shows the inputs in the frames around the current one
 
-Extra features:
+## Controls
+* __L__ - advance 1 frame forward
+* __K__ - rewind 1 frame back
+* __Left__, __Right__, __Up__, __Down__, __Z__/__C__, __X__ (controller buttons)- toggle the respective button for the current frame
+* __Shift__ + __controller button__ - toggle hold of the respective button. held buttons will be pressed when advancing/rewinding to a frame
+* __D__ - preform a full-rewind, return to frame 0
+* __P__ - start realtime playback. The TAS will play back in real time, and inputs can't be modified. any keypress during realtime playback will stop it.
+* __Shift + R__ - reset, clear the inputs, and rewind to frame 0
+* __M__ - save the current inputs to a file <cartname>.lua, in the games data folder (By default, on windows this is %appdata%/love/Celia, and on linux ~/.local/share/love/Celia). The filepath will be outputted to the terminal.
+* __Shift + W__ - Load the input file from the data folder
+* __Insert__ - Insert a blank input frame before the current frame
+* __Delete__ - Delete the current input frame
+* __Ctrl + V__ - paste inputs from the clipboard before the current frame
+* __Ctrl + Z__ - perform undo. pretty much any operation that changes the inputs can be undone
+* __Ctrl + Shift + Z__ perform redo.
+* __Shift__ + __L__ - enable visual selection mode
+* __Ctrl + T__ - toggle console
 
- * `ipairs()` standard lua function
- * `log(...)` function prints to console for debugging
- * `error(message)` bluescreens with an error message
- * `warning(message)` prints warning and stacktrace to console
- * `setfps(fps)` changes the consoles framerate
- * `_keyup`, `_keydown`, `_textinput` allow using direct keyboard input
- * `_touchup`, `_touchdown` allow using touch input
- * `_getcursorx()`, `_getcursory()` allow access to the cursor position
- * `_getpicoloveversion()` returns the version of picolove
+### Visual selection mode
+Visual selection mode allows you to perform operations on a contiguous range of inputs. The selected range will always start with the current frame (highlighted blue on the piano roll), and contain all subsequent frames (highlighted gray). You can always exit visual selection mode, by making the selection empty, or pressing __ESC__.
 
-Android Packaging:
+* __L__ - advance selection 1 frame forward
+* __K__ - move selection 1 frame back. if the selection now only includes the current frame, exit visual selection mode.
+* __ESC__ - exit visual selection mode
+* __End__ - extend selection until last frame
+* __Home__ - reduce selection to the current frame, and the next one.
+* __basic button__ - set/unset the button for all selected frames
+* __Alt + basic button__ - toggle the button for all selected frames
+* __Ctrl + C__ - copy selected frames to clipboard
+* __Ctrl + V__ - replace selection with frames pasted from clipboard
+* __Ctrl + X__ - cut frames to clipboard
 
-Replace the default cartridge (nocart.p8) with your game. Text (P8) or PNG (P8.PNG) is supported.
-Follow the [Android Game Packaging](https://bitbucket.org/MartinFelis/love-android-sdl2/wiki/Game_Packaging) steps.
-Optionally, for orientation rotation support (Portrait and Landscape), remove ```android:screenOrientation="landscape"``` in the AndroidManifest.xml
+### Terminal
+Using the terminal, you can access and modify the variables of the PICO-8 instance. it supports standard terminal keybindings, and allows you to input and run lua code on the pico8 instance.
+
+Warning: making changes to variables in the PICO-8 instance, then rewinding before the changes will lose the changes. It's very easy to make TASes that desync by modifying the variables of the cart, so use it carefully.
+
+
+
+
+
+
+
