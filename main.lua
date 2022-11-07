@@ -628,7 +628,13 @@ function flip_screen()
 		love.graphics.setShader(pico8.display_shader)
 		love.graphics.setCanvas(gif_canvas)
 		love.graphics.draw(pico8.screen, 0, 0, 0, 2, 2)
+
 		love.graphics.setShader()
+		love.graphics.push()
+		love.graphics.scale(2,2)
+		tastool:draw_gif_overlay()
+		love.graphics.pop()
+
 		love.graphics.setCanvas()
 		gif_recording:frame(gif_canvas:newImageData())
 	end
@@ -842,6 +848,37 @@ local function isAltDown()
 	return love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 end
 
+function start_gif_recording()
+	-- start recording
+	if not love.filesystem.getInfo("gifs", "directory") and not love.filesystem.createDirectory("gifs") then
+		log('failed to create gif directory')
+	elseif gif_recording==nil then
+		local err
+		gif_recording, err=gif.new("gifs/"..cartname..'-'..os.time()..'.gif')
+		if not gif_recording then
+			log('failed to start recording: '..err)
+		else
+			gif_canvas=love.graphics.newCanvas(pico8.resolution[1]*2, pico8.resolution[2]*2)
+			log('starting record ...')
+			return true
+		end
+	else
+		log('recording already in progress')
+	end
+end
+
+function stop_gif_recording()
+	-- stop recording and save
+	if gif_recording~=nil then
+		gif_recording:close()
+		log('saved recording to '..gif_recording.filename)
+		gif_recording=nil
+		gif_canvas=nil
+	else
+		log('no active recording')
+	end
+end
+
 function love.keypressed(key, scancode, isrepeat)
 	console.keypressed(key, scancode, isrepeat)
 	if console.isEnabled() then
@@ -874,31 +911,9 @@ function love.keypressed(key, scancode, isrepeat)
 		local screenshot = love.graphics.captureScreenshot(filename)
 		log("saved screenshot to", filename)
 	elseif key == "f3" or key == "f8" then
-		-- start recording
-		if not love.filesystem.getInfo("gifs", "directory") and not love.filesystem.createDirectory("gifs") then
-			log('failed to create gif directory')
-		elseif gif_recording==nil then
-			local err
-			gif_recording, err=gif.new("gifs/"..cartname..'-'..os.time()..'.gif')
-			if not gif_recording then
-				log('failed to start recording: '..err)
-			else
-				gif_canvas=love.graphics.newCanvas(pico8.resolution[1]*2, pico8.resolution[2]*2)
-				log('starting record ...')
-			end
-		else
-			log('recording already in progress')
-		end
+		start_gif_recording()
 	elseif key == "f4" or key == "f9" then
-		-- stop recording and save
-		if gif_recording~=nil then
-			gif_recording:close()
-			log('saved recording to '..gif_recording.filename)
-			gif_recording=nil
-			gif_canvas=nil
-		else
-			log('no active recording')
-		end
+		stop_gif_recording()
 	elseif key == "return" and isAltDown() then
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
 		return

@@ -133,6 +133,8 @@ function cctas:keypressed(key, isrepeat)
 		self:prev_level()
 	elseif key=='d' and love.keyboard.isDown('lshift', 'rshift') then
 		self:player_rewind()
+	elseif key=='g' and love.keyboard.isDown('lshift', 'rshift') then
+		self:start_gif_recording()
 	elseif key == 'n' and love.keyboard.isDown('lshift', 'rshift') then
 		self:push_undo_state()
 		self:begin_full_game_playback()
@@ -425,6 +427,22 @@ function cctas:player_rewind()
 			fast_forward=true
 		}
 
+	end
+end
+
+function cctas:start_gif_recording()
+	if start_gif_recording() then
+		start_gif_recording()
+		self:full_rewind()
+		local lvl_id = self:level_index()
+		self.seek = {
+			finish_condition = function() return self:level_index() ~= lvl_id end,
+			on_finish = function()
+				stop_gif_recording()
+				self:rewind()
+			end,
+			finish_on_interrupt = true
+		}
 	end
 end
 

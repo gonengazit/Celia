@@ -432,6 +432,11 @@ function tas:draw()
 
 end
 
+function tas:draw_gif_overlay()
+	local frame_count_width = self:draw_frame_counter(1,1)
+	self:draw_input_display(1+frame_count_width+1,1)
+end
+
 function tas:keypressed(key, isrepeat)
 	local ctrl = love.keyboard.isDown('lctrl', 'rctrl', 'lgui', 'rgui')
 	if key=='p' then
