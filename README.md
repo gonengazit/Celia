@@ -76,8 +76,8 @@ Visual selection mode allows you to perform operations on a contiguous range of 
 * __Ctrl + V__ - replace selection with frames pasted from clipboard
 * __Ctrl + X__ - cut frames to clipboard
 
-### Terminal
-Using the terminal, you can access and modify the variables of the PICO-8 instance. it supports standard terminal keybindings, and allows you to input and run lua code on the pico8 instance.
+### Console
+Using the console, you can access and modify the variables of the PICO-8 instance. it supports standard terminal keybindings, and allows you to input and run lua code on the pico8 instance.
 
 Warning: making changes to variables in the PICO-8 instance, then rewinding before the changes will lose the changes. It's very easy to make TASes that desync by modifying the variables of the cart, so use it carefully.
 
