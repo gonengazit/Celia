@@ -415,6 +415,12 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	local argpos = 1
 	local paramcount = 0
 
+	local tas_tools = {
+		cctas = cctas,
+		tas = tas
+	}
+
+	local tas_tool_name = nil
 	if argc >= 1 then
 		-- TODO: implement commandline options
 		while argpos <= argc do
@@ -503,9 +509,12 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 			elseif argv[argpos] == "--test" then -- picolove commands
 				paramcount = 0
 				require("test")
+			elseif tas_tools[argv[argpos]] and tas_tool_name == nil then
+				paramcount = 0
+				tas_tool_name = argv[argpos]
 			else
 				if initialcartname == nil or initialcartname == "" then
-					initialcartname = argv[argc]
+					initialcartname = argv[argpos]
 				end
 			end
 
@@ -520,7 +529,11 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	_load(initialcartname)
 	api.run()
 
-	tastool=cctas()
+	if tas_tool_name == nil then
+		print("no tas tool specified, defaulting to general pico-8 tas tool")
+		tas_tool_name = "tas"
+	end
+	tastool=tas_tools[tas_tool_name]()
 end
 
 function new_sandbox()
