@@ -30,7 +30,11 @@ Celia has 3 uses:
 
 # Usage
 
-<!-- <insert command to run celia> -->
+this is the usage for the general PICO-8 TAS tool. For usage specific to the cctas (celeste) Tas tool, see [here](/cctas) (but make sure to read this file as well)
+
+place the cart that you want to run in the `carts` folder, then run
+
+`<path to your love executable> . cartname.p8` from a terminal/command line
 
 In the center of the screen, you'll see the PICO-8 screen, displaying the current frame
 On the left, you'll see the HUD, displaying the current frame number, and an input display, with the currently pressed inputs
@@ -53,6 +57,10 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __Ctrl + Shift + Z__ perform redo.
 * __Shift__ + __L__ - enable visual selection mode
 * __Ctrl + T__ - toggle console
+* __F3__ - begin gif recording
+* __F4__ - stop gif recording
+* __F6__ - take screenshot
+* __Ctrl + R__ - reload cart
 
 ### Visual selection mode
 Visual selection mode allows you to perform operations on a contiguous range of inputs. The selected range will always start with the current frame (highlighted blue on the piano roll), and contain all subsequent frames (highlighted gray). You can always exit visual selection mode, by making the selection empty, or pressing __ESC__.
