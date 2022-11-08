@@ -3,13 +3,13 @@ Celia
 
 A PICO-8 TAS framework based on [picolove](https://github.com/picolove/picolove)
 
-Requires LÖVE 11.x
+Requires LÃ–VE 11.x
 
 What is PICO-8:
 
  * See http://www.lexaloffle.com/pico-8.php
 
-What is LÖVE:
+What is LÃ–VE:
 
  * See https://love2d.org/
 
@@ -30,7 +30,7 @@ Celia has 3 uses:
 
 # Usage
 
-this is the usage for the general PICO-8 TAS tool. For usage specific to the cctas (celeste) Tas tool, see [here](/cctas) (but make sure to read this file as well)
+this is the usage for the general PICO-8 TAS tool. For usage specific to the cctas (celeste) Tas tool, see [here](/cctas.md) (but make sure to read this file as well)
 
 place the cart that you want to run in the `carts` folder, then run
 
