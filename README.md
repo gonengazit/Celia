@@ -81,6 +81,13 @@ Using the console, you can access and modify the variables of the PICO-8 instanc
 
 Warning: making changes to variables in the PICO-8 instance, then rewinding before the changes will lose the changes. It's very easy to make TASes that desync by modifying the variables of the cart, so use it carefully.
 
+# Acknowledgements
+* [gamax92/picolove](https://github.com/gamax92/picolove) and [picolove/picolove](https://github.com/picolove/picolove)
+* [Love2d integrated console by rameshvarun](https://github.com/rameshvarun/love-console)
+* [Lua 30log class library](https://github.com/Yonaba/30log)
+* [Original Celeste TAS tool by akliant917](https://github.com/CelesteClassic/ClassicTAS)
+* [Lua parser taken and modified from LuaMinify](https://github.com/stravant/LuaMinify)
+
 
 
 
