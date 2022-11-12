@@ -67,10 +67,10 @@ function tas:reset_hold()
 	self.hold=0
 end
 
-function tas:update_buttons()
+local function update_buttons(self, input_idx)
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
-			if self:key_down(i) then
+			if self:key_down(i, input_idx) then
 				pico8.keypressed[0][i] = (v or -1) + 1
 			else
 				pico8.keypressed[0][i] = nil
@@ -156,11 +156,13 @@ end
 
 
 function tas:step()
-	--this has to be before pushstate, because frame_count depends on the len of the the state list
-	self:update_buttons()
-
+	local input_idx = self:frame_count() + 1
 	--store the state
 	self:pushstate()
+
+	--update based on the buttons of the 'previous' frame
+	--TODO: make this cleaner
+	update_buttons(self,input_idx)
 
 	love.graphics.setCanvas(pico8.screen)
 	rawstep()

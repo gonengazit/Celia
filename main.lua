@@ -938,21 +938,21 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
-function love.keyreleased(key)
-	for p = 0, 1 do
-		for i = 0, #pico8.keymap[p] do
-			for _, testkey in pairs(pico8.keymap[p][i]) do
-				if key == testkey then
-					pico8.keypressed[p][i] = nil
-					break
-				end
-			end
-		end
-	end
-	if pico8.cart and pico8.cart._keyup then
-		return pico8.cart._keyup(key)
-	end
-end
+-- function love.keyreleased(key)
+-- 	for p = 0, 1 do
+-- 		for i = 0, #pico8.keymap[p] do
+-- 			for _, testkey in pairs(pico8.keymap[p][i]) do
+-- 				if key == testkey then
+-- 					pico8.keypressed[p][i] = nil
+-- 					break
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- 	if pico8.cart and pico8.cart._keyup then
+-- 		return pico8.cart._keyup(key)
+-- 	end
+-- end
 
 function love.textinput(text)
 	console.textinput(text)
