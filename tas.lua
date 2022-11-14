@@ -501,6 +501,7 @@ function tas:keypressed(key, isrepeat)
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if key == testkey  and not isrepeat then
 					if love.keyboard.isDown("lshift", "rshift") then
+						self:push_undo_state()
 						self:toggle_hold(i)
 					else
 						self:push_undo_state()
