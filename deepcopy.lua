@@ -1,3 +1,4 @@
+local table_new = require("table.new")
 local handle_funcs = {
     ["nil"] = function(orig) return orig end,
     number = function(orig) return orig end,
@@ -8,7 +9,7 @@ local handle_funcs = {
         if see then
             return see
         end
-        local ret={}
+        local ret=table_new(#orig,0)
         seen[orig]=ret
         for k,v in pairs(orig) do
             if k == "__tas_id" then
@@ -92,6 +93,7 @@ local function deepcopy_debug(orig, seen, upvalues, path)
        type(orig) == "string" or type(orig) == "boolean" then
         return orig
     elseif type(orig)=="table" then
+        print(table.concat(path,"."))
         local ret={}
         seen[orig]=ret
         for k,v in pairs(orig) do
@@ -136,6 +138,7 @@ local function deepcopy_debug(orig, seen, upvalues, path)
         end
         return ret
     elseif type(orig)=="userdata" then
+        print(table.concat(path,"."))
         if getmetatable(orig).type and orig:type()=="Canvas" then
             local ret=love.graphics.newCanvas(orig:getDimensions())
             ret:renderTo(function()
@@ -159,7 +162,19 @@ function deepcopy_no_api(orig)
     for _,v in pairs(new_sandbox()) do
         nocopy[v]=v
     end
-    return deepcopy(orig ,nocopy)
+    local ret={}
+    local upvalues={}
+    for k,v in pairs(orig) do
+        -- don't copy sfx or rom, because (currently) they are immutaable
+        -- sfx might still be an issue, but a small one
+        if k=='sfx' or k=='rom' then
+            ret[k]=v
+            nocopy[v]=v
+        else
+            ret[k]=deepcopy(orig[k],nocopy,upvalues)
+        end
+    end
+    return ret
 end
 function deepcopy_benchmark(v)
     local nocopy = {}

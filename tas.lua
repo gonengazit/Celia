@@ -274,6 +274,13 @@ function tas:push_undo_state()
 		table.remove(self.undo_states)
 	end
 	table.insert(self.undo_states, self:get_editor_state())
+
+	-- limit undo history to depth 30, to avoid overusing memory
+	if #self.undo_states>30 then
+		table.remove(self.undo_states,1)
+		self.undo_idx = self.undo_idx - 1
+	end
+
 end
 
 function tas:preform_undo()
