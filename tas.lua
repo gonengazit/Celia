@@ -6,6 +6,7 @@ local console = require("console")
 tas.hud_w = 48
 tas.hud_h = 0
 tas.scale = 6
+tas.pianoroll_w=65
 
 
 --wrapper functions
@@ -205,7 +206,7 @@ function tas:init()
 	self.keystates={0}
 	self.realtime_playback=false
 	self.hold = 0
-	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + 64)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
+	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
 	-- duplicated code is kinda eh but i am lazy
 	local tas_w, tas_h = tas.screen:getDimensions()
@@ -358,23 +359,23 @@ local function draw_inputs_row(tbl, x, y, c, frame_num)
 
 	-- draw the frame number
 	setPicoColor(c)
-	love.graphics.rectangle("fill", x, y, 16, 7)
+	love.graphics.rectangle("fill", x, y, 17, 7)
 	setPicoColor(0)
-	love.graphics.rectangle("line", x, y, 16, 7)
-	love.graphics.printf(frame_num, x, y+1, 16, "right")
+	love.graphics.rectangle("line", x, y, 17, 7)
+	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right")
 
 	for i=1, #tbl do
 		setPicoColor(c)
-		love.graphics.rectangle("fill", x+(i-1)*box_w+16, y, box_w, 7)
+		love.graphics.rectangle("fill", x+(i-1)*box_w+17, y, box_w, 7)
 		setPicoColor(0)
-		love.graphics.rectangle("line", x+(i-1)*box_w+16, y, box_w, 7)
+		love.graphics.rectangle("line", x+(i-1)*box_w+17, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.printf(tbl[i], x+(i-1)*box_w+16, y+1, box_w, "center")
+		love.graphics.printf(tbl[i], x+(i-1)*box_w+17, y+1, box_w, "center")
 	end
 end
 
 function tas:draw_piano_roll()
-	local x=pico8.resolution[1] + self.hud_w+0.5
+	local x=pico8.resolution[1] + self.hud_w
 	local y=0
 
 	local inputs={"l","r","u","d","z","x"}
