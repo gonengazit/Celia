@@ -696,7 +696,9 @@ end
 
 function tas:paste_inputs()
 	local cnt = self:load_input_str(love.system.getClipboardText(), self:frame_count() + 1)
-	self.last_selected_frame = self:frame_count() + 1 + cnt
+	if cnt then
+		self.last_selected_frame = self:frame_count() + cnt
+	end
 end
 
 --called on tas tool crash
