@@ -68,7 +68,7 @@ function cctas:init()
 	self.super.init(self)
 
 
-	console.ENV.find_player = self.find_player
+	rawset(console.ENV,"find_player", self.find_player)
 
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
