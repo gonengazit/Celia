@@ -1110,7 +1110,7 @@ local function ParseLua(src)
 			until not tok:ConsumeKeyword('elseif', tokenList)
 
 			--else clause
-			if tok:ConsumeKeyword('else', tokenList) then
+			if (not shorthand_line or tok:Peek().Line == shorthand_line) and tok:ConsumeKeyword('else', tokenList) then
 				local st, nodeBody = ParseStatementList(scope, shorthand_line)
 				if not st then return false, nodeBody end
 				nodeIfStat.Clauses[#nodeIfStat.Clauses+1] = {
