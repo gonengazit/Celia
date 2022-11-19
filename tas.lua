@@ -325,7 +325,12 @@ end
 
 function tas:draw_button(x,y,i)
 	if self:key_held(i) then
-		setPicoColor(8)
+		if not self:key_down(i) then
+			-- this is a weird state that's a bit hard (but possible) to get into
+			setPicoColor(9)
+		else
+			setPicoColor(8)
+		end
 	elseif self:key_down(i) then
 		setPicoColor(7)
 	else
