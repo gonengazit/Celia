@@ -46,12 +46,10 @@ function tas:reset_keys()
 end
 
 function tas:insert_keystate()
-	--TODO: respect hold?
 	table.insert(self.keystates, self:frame_count() + 1, self.hold)
 end
 
 function tas:duplicate_keystate()
-	--TODO: respect hold?
 	table.insert(self.keystates, self:frame_count() + 1, self.keystates[self:frame_count()+1])
 end
 
@@ -185,6 +183,11 @@ function tas:rewind()
 	pico8 = self:popstate()
 
 	love.graphics.setCanvas(pico8.screen)
+	pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
+	pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
+	pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
+	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
+
 	restore_clip()
 	restore_camera()
 
