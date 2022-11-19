@@ -34,9 +34,9 @@ Celia has 3 uses:
 
 this is the usage for the general PICO-8 TAS tool. For usage specific to the cctas (celeste) Tas tool, see [here](/cctas.md) (but make sure to read this file as well)
 
-place the cart that you want to run in the `carts` folder, then run
+clone the repository, and place the cart that you want to run in the `carts` folder, then run
 
-`<path to your love executable> . cartname.p8` from a terminal/command line
+`<path to your love executable> . cartname.p8` from a terminal/command line in the project root directory
 
 In the center of the screen, you'll see the PICO-8 screen, displaying the current frame
 On the left, you'll see the HUD, displaying the current frame number, and an input display, with the currently pressed inputs
