@@ -11,43 +11,7 @@ local console = require("console")
 --TODO: probably call load_level directly
 --or at least make sure rng seeds are set etc
 function cctas:init()
-
-	for type, seed in pairs(vanilla_seeds) do
-		if pico8.cart[type] ~= nil then
-			seed.inject(pico8)
-		end
-	end
-
-	-- add tostring metamethod to objects, for use with the console
-	local init_object = pico8.cart.init_object
-	pico8.cart.init_object = function(...)
-		local o = init_object(...)
-
-		local mt = getmetatable(o) or {}
-		mt.__tostring = function(obj)
-			local type = "object"
-			for k,v in pairs(pico8.cart) do
-				if obj.type == v then
-					type = k
-					break
-				end
-			end
-			return ("[%s] x: %g, y: %g, rem: {%g, %g}, spd: {%g, %g}"):format(type, obj.x, obj.y, obj.rem.x, obj.rem.y, obj.spd.x, obj.spd.y)
-		end
-		setmetatable(o, mt)
-		return o
-	end
-
-	--disable screenshake
-	local _draw = pico8.cart._draw
-	pico8.cart._draw = function()
-		if pico8.cart.shake then
-			pico8.cart.shake=0
-		end
-		_draw()
-	end
-
-
+	self:perform_inject()
 	--this seems hacky, but is actually how updation order behaves in vanilla
 	pico8.cart.begin_game()
 	pico8.cart._draw()
@@ -84,6 +48,43 @@ function cctas:init()
 	self.full_game_playback = false
 
 	self:state_changed()
+end
+
+function cctas:perform_inject()
+	for type, seed in pairs(vanilla_seeds) do
+		if pico8.cart[type] ~= nil then
+			seed.inject(pico8)
+		end
+	end
+
+	-- add tostring metamethod to objects, for use with the console
+	local init_object = pico8.cart.init_object
+	pico8.cart.init_object = function(...)
+		local o = init_object(...)
+
+		local mt = getmetatable(o) or {}
+		mt.__tostring = function(obj)
+			local type = "object"
+			for k,v in pairs(pico8.cart) do
+				if obj.type == v then
+					type = k
+					break
+				end
+			end
+			return ("[%s] x: %g, y: %g, rem: {%g, %g}, spd: {%g, %g}"):format(type, obj.x, obj.y, obj.rem.x, obj.rem.y, obj.spd.x, obj.spd.y)
+		end
+		setmetatable(o, mt)
+		return o
+	end
+
+	--disable screenshake
+	local _draw = pico8.cart._draw
+	pico8.cart._draw = function()
+		if pico8.cart.shake then
+			pico8.cart.shake=0
+		end
+		_draw()
+	end
 end
 
 function cctas:toggle_key(i ,frame)
@@ -231,6 +232,7 @@ function cctas:begin_full_game_playback()
 	--TODO: fix reload speed
 	api.reload_cart()
 	api.run()
+	self:perform_inject()
 	pico8.cart.begin_game()
 	pico8.cart._draw()
 
