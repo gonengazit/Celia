@@ -361,8 +361,18 @@ end
 
 function console.textinput(input)
   -- If disabled, ignore the input, otherwise insert at the cursor.
-  if not enabled then return end
-  command:insert(input)
+  local ctrl=love.keyboard.isDown("lctrl","lgui","rctrl","rgui")
+  if not enabled then
+    return
+  elseif (input == "=" or input=="+") and ctrl then
+      console.FONT_SIZE = console.FONT_SIZE + 1
+      console.FONT = love.graphics.newFont(console.FONT_SIZE)
+  elseif input == "-" and ctrl then
+      console.FONT_SIZE = math.max(console.FONT_SIZE - 1, 1)
+      console.FONT = love.graphics.newFont(console.FONT_SIZE)
+  else
+    command:insert(input)
+  end
 end
 
 function console.execute(command)
@@ -426,13 +436,6 @@ function console.keypressed(key, scancode, isrepeat)
   elseif key == "right" then command:forward_character()
 
   elseif key == "c" and ctrl then command:clear()
-
-  elseif key == "=" and shift and ctrl then
-      console.FONT_SIZE = console.FONT_SIZE + 1
-      console.FONT = love.graphics.newFont(console.FONT_SIZE)
-  elseif key == "-" and ctrl then
-      console.FONT_SIZE = math.max(console.FONT_SIZE - 1, 1)
-      console.FONT = love.graphics.newFont(console.FONT_SIZE)
 
   elseif key == "return" then
     console.addHistory(command.text)
