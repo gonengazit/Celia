@@ -22,6 +22,8 @@ cctas files will be saved and loaded from the path `<love data folder>/Celia/<ca
 * __=__ - restore max\_djump to default behaviour
 * __A__ - enable loading jank offset mode
 * __B__ - enable rng seeding mode
+* __Y__ - print player position to console
+* __Ctrl + C__ - copy player position to clipboard
 
 ## loading jank offset mode
 By default, the amount of objects that have loading jank applied will depend on the amount of objects present on the previous level (not including room title).  This corresponds to offset 0. If, before exiting the previous level, this amount will change (or if levels in the mod are not ordered sequentially), you can modify the offset.

@@ -163,6 +163,17 @@ function cctas:keypressed(key, isrepeat)
 		end
 		self.max_djump_overload = math.max(self.max_djump_overload, 0)
 		self:load_level(self:level_index(), false)
+	elseif key=='y' then
+		local p = self:find_player()
+		if p then
+			print(p)
+		end
+	elseif key=='c' and love.keyboard.isDown('lctrl','rctrl','lgui','rgui') then
+		--copy player position to clipboard
+		local p = self:find_player()
+		if p then
+			love.system.setClipboardText(tostring(p))
+		end
 	else
 		self.super.keypressed(self,key,isrepeat)
 	end
