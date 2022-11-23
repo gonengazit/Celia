@@ -1388,10 +1388,15 @@ function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
 end
 
 function api.rnd(x)
-	return love.math.random() * (tonumber(x) or 1)
+	if type(x)=="table" then
+		return x[love.math.random(#x)]
+	else
+		return love.math.random() * (tonumber(x) or 1)
+	end
 end
 
 function api.srand(seed)
+	seed=tonumber(seed) or 0
 	if seed == 0 then
 		seed = 1
 	end
@@ -1941,7 +1946,8 @@ function api.split(str, sep, conv_nums)
 	sep=sep or ","
 	conv_nums=(conv_nums==nil) and true or conv_nums
 	local tbl={}
-	for val in string.gmatch(str, '([^'..sep..']+)') do
+	str=str..sep
+	for val in string.gmatch(str, '(.-)'..sep) do
 		if conv_nums  and tonumber(val) ~= nil then
 			val=tonumber(val)
 		end
