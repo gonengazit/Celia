@@ -93,6 +93,7 @@ pico8 = {
 	quads = {},
 	spritesheet_data = nil,
 	spritesheet = nil,
+	spritesheet_changed = false,
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
