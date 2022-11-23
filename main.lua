@@ -900,7 +900,12 @@ function love.keypressed(key)
 			log('no active recording')
 		end
 	elseif key == "return" and isAltDown() then
+		local canvas=love.graphics.getCanvas()
+		love.graphics.setCanvas()
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
+		--for some reason this isn't called when fullscreen is unset
+		love.resize(love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.setCanvas(canvas)
 		return
 	else
 		for p = 0, 1 do
