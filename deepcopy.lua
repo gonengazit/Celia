@@ -1,4 +1,4 @@
-local table_new = require("table.new")
+local table_new = require("table.new") or function() return {} end -- LOVE 11.3 compatibility hack
 local handle_funcs = {
     ["nil"] = function(orig) return orig end,
     number = function(orig) return orig end,

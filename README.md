@@ -3,7 +3,7 @@ Celia
 
 A PICO-8 TAS framework based on [picolove](https://github.com/picolove/picolove)
 
-Requires LÖVE 11.4
+Requires LÖVE 11.4 (LÖVE 11.x experimentally supported)
 
 What is PICO-8:
 
