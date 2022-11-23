@@ -164,6 +164,8 @@ function cart.load_p8(filename)
 							end
 							mapY = 0
 							mapX = 0
+							-- this variable marks that spritesheet_data has been changed, and the spritesheet needs to be reloaded accordingly
+							pico8.spritesheet_changed = false
 						end
 					end
 				elseif inbyte < 0x3000 then
@@ -332,6 +334,8 @@ function cart.load_p8(filename)
 		end
 
 		pico8.spritesheet = love.graphics.newImage(pico8.spritesheet_data)
+		-- this variable marks that spritesheet_data has been changed, and the spritesheet needs to be reloaded accordingly
+		pico8.spritesheet_changed = false
 
 		-- load the sprite flags
 		local gffdata = data:match("\n__gff__.-\n(.-\n)\n-__")

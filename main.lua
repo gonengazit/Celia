@@ -98,6 +98,7 @@ pico8 = {
 	quads = {},
 	spritesheet_data = nil,
 	spritesheet = nil,
+	spritesheet_changed = false,
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
@@ -923,12 +924,17 @@ function love.keypressed(key, scancode, isrepeat)
 		local filename = cartname .. "-" .. os.time() .. ".png"
 		local screenshot = love.graphics.captureScreenshot(filename)
 		log("saved screenshot to", filename)
-	elseif key == "f3" or key == "f8" then
+	elseif key == "f3" or key == "f8" or (key=="8" and isCtrlOrGuiDown()) then
 		start_gif_recording()
-	elseif key == "f4" or key == "f9" then
+	elseif key == "f4" or key == "f9" or (key=="9" and isCtrlOrGuiDown()) then
 		stop_gif_recording()
 	elseif key == "return" and isAltDown() then
+		local canvas=love.graphics.getCanvas()
+		love.graphics.setCanvas()
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
+		--for some reason this isn't called when fullscreen is unset
+		love.resize(love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.setCanvas(canvas)
 		return
 	else
 		tastool:keypressed(key, isrepeat)

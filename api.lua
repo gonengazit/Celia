@@ -608,6 +608,15 @@ function api.tostr(...)
 	end
 end
 
+
+--sync spritesheet_data and spritesheet
+local function refresh_spritesheet()
+	if pico8.spritesheet_changed then
+		pico8.spritesheet_changed=false
+		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
+	end
+end
+
 function api.spr(n, x, y, w, h, flip_x, flip_y)
 	love.graphics.setShader(pico8.sprite_shader)
 	n = flr(tonumber(n) or 0)
@@ -641,6 +650,7 @@ function api.spr(n, x, y, w, h, flip_x, flip_y)
 	if not q then
 		log("missing quad", n)
 	end
+	refresh_spritesheet()
 	love.graphics.draw(
 		pico8.spritesheet,
 		q,
@@ -666,6 +676,7 @@ function api.sspr(sx, sy, sw, sh, dx, dy, dw, dh, flip_x, flip_y)
 	local q =
 		love.graphics.newQuad(sx, sy, sw, sh, pico8.spritesheet:getDimensions())
 	love.graphics.setShader(pico8.sprite_shader)
+	refresh_spritesheet()
 	love.graphics.draw(
 		pico8.spritesheet,
 		q,
@@ -940,6 +951,7 @@ end
 function api.map(cel_x, cel_y, sx, sy, cel_w, cel_h, bitmask)
 	love.graphics.setShader(pico8.sprite_shader)
 	love.graphics.setColor(1, 1, 1, 1)
+	refresh_spritesheet()
 	cel_x = flr(tonumber(cel_x) or 0)
 	cel_y = flr(tonumber(cel_y) or 0)
 	sx = flr(tonumber(sx) or 0)
@@ -947,6 +959,7 @@ function api.map(cel_x, cel_y, sx, sy, cel_w, cel_h, bitmask)
 	cel_w = flr(tonumber(cel_w) or 128)
 	cel_h = flr(tonumber(cel_h) or 64)
 	bitmask = tonumber(bitmask) or 0
+
 	for y = 0, cel_h - 1 do
 		if cel_y + y < 64 and cel_y + y >= 0 then
 			for x = 0, cel_w - 1 do
@@ -1052,7 +1065,7 @@ function api.sset(x, y, c)
 	c = flr(tonumber(c) or 0)%16
 	if x>=0 and x<128 and y>=0 and y<128 then
 		pico8.spritesheet_data:setPixel(x, y, c / 15, 0, 0, 1)
-		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
+		pico8.spritesheet_changed = true --lazy
 	end
 end
 
@@ -1212,13 +1225,13 @@ function api.poke(addr, val)
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
-		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
+		pico8.spritesheet_changed = true --lazy
 	elseif addr < 0x2000 then
 		local lo=val%16
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
 		pico8.spritesheet_data:setPixel(addr*2%128+1, flr(addr/64), hi/15, 0, 0, 1)
-		pico8.spritesheet:replacePixels(pico8.spritesheet_data)
+		pico8.spritesheet_changed = true --lazy
 		pico8.map[flr(addr/128)][addr%128]=val
 	elseif addr < 0x3000 then
 		addr = addr - 0x2000
@@ -1375,10 +1388,15 @@ function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
 end
 
 function api.rnd(x)
-	return love.math.random() * (tonumber(x) or 1)
+	if type(x)=="table" then
+		return x[love.math.random(#x)]
+	else
+		return love.math.random() * (tonumber(x) or 1)
+	end
 end
 
 function api.srand(seed)
+	seed=tonumber(seed) or 0
 	if seed == 0 then
 		seed = 1
 	end
@@ -1928,7 +1946,8 @@ function api.split(str, sep, conv_nums)
 	sep=sep or ","
 	conv_nums=(conv_nums==nil) and true or conv_nums
 	local tbl={}
-	for val in string.gmatch(str, '([^'..sep..']+)') do
+	str=str..sep
+	for val in string.gmatch(str, '(.-)'..sep) do
 		if conv_nums  and tonumber(val) ~= nil then
 			val=tonumber(val)
 		end
