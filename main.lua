@@ -1081,7 +1081,6 @@ function love.errorhandler(msg)
 			msg = msg.."\n\n failed to create backup"
 		end
 	end
-	print("calling default")
 	return _default_errhand(msg)
 
 end
