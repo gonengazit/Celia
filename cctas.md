@@ -9,6 +9,9 @@ the functions for loading the level, and getting the level index (i.e. load\_roo
 
 carts not based on these may or may not work. for a cart that uses a different scheme, it may be tased by defining the functions `__tas_load_level(idx)` and `__tas_level_index()`. These functions must be consistent with one another.
 
+in addition, a table called `__tas_settings` may be defined, which may contain the following values
+* `disable_loading_jank` - if set to true, don't apply loading jank on any level, and don't allow modifying it
+
 # Keybinds
 * __F__ - go to next level
 * __S__ - go to previous level

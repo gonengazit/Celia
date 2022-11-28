@@ -26,6 +26,8 @@ function cctas:init()
 		error("couldn't find functions for level index and loading levels")
 	end
 
+	self.cart_settings = pico8.cart.__tas_settings or {}
+
 	self.level_time=0
 	self.inputs_active = false
 
@@ -114,9 +116,11 @@ function cctas:keypressed(key, isrepeat)
 		self:rng_seed_keypress(key,isrepeat)
 	elseif key=='a' and not isrepeat then
 		-- TODO: telegraph this better?
-		self:full_rewind()
-		self:push_undo_state()
-		self.modify_loading_jank = true
+		if not self.cart_settings.disable_loading_jank then
+			self:full_rewind()
+			self:push_undo_state()
+			self.modify_loading_jank = true
+		end
 	elseif key=='b' and not isrepeat then
 		self.rng_seed_idx = -1
 		-- don't enable rng mode if no seedable objects exist
@@ -314,7 +318,9 @@ function cctas:load_level(idx, reset_changes)
 	end
 	if reset_changes then
 		-- for the first level, assume no objects get loading janked by default
-		self.loading_jank_offset = self:level_index() == self.first_level and #pico8.cart.objects + 1 or 0
+		-- also do not apply loading jank if it is disable
+		self.loading_jank_offset =
+		    (self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
 	end
 
 	for i = self.prev_obj_count+ self.loading_jank_offset, #pico8.cart.objects do
