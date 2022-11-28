@@ -277,7 +277,7 @@ function cart.load_p8(filename)
 		log("version", version)
 
 		-- extract the lua
-		lua = data:match("\n__lua__.-\n(.-)\n__") or ""
+		lua = data:match("\n__lua__.-\n(.-)\n__[%w]+__") or ""
 
 		-- load the sprites into an imagedata
 		-- generate a quad for each sprite index
