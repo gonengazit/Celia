@@ -339,7 +339,9 @@ function cctas:load_level(idx, reset_changes)
 	self:clearstates()
 	self:reset_editor_state()
 
-	if not reset_changes then
+	if reset_changes then
+		self:full_reset()
+	else
 		self:load_rng_seeds(seeds)
 	end
 
