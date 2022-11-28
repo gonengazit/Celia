@@ -657,6 +657,12 @@ function cctas:hud()
 	return ("%6s%7s\npos:% -7g% g\nrem:% -7.3f% .3f\nspd:% -7.3f% .3f\n\ngrace: %d"):format("x","y",p.x,p.y,p.rem.x,p.rem.y, p.spd.x, p.spd.y, p.grace)
 end
 
+function cctas:offset_camera()
+	local offx, offy = pico8.cart.draw_x  or 0, pico8.cart.draw_y or 0
+	love.graphics.translate(self.hud_w-offx,self.hud_h-offy)
+	love.graphics.setScissor(self.hud_w*self.scale,self.hud_h*self.scale,pico8.resolution[1]*self.scale, pico8.resolution[2]*self.scale)
+end
+
 function cctas:draw()
 	self.super.draw(self)
 
@@ -664,7 +670,7 @@ function cctas:draw()
 
 	if self.modify_loading_jank then
 		love.graphics.push()
-		love.graphics.translate(self.hud_w,self.hud_h)
+		self:offset_camera()
 
 		for i = self.prev_obj_count + self.loading_jank_offset, #pico8.cart.objects do
 			local obj = pico8.cart.objects[i]
@@ -674,12 +680,13 @@ function cctas:draw()
 			end
 		end
 		love.graphics.pop()
+		love.graphics.setScissor()
 
 		love.graphics.setColor(1,1,1)
 		love.graphics.printf(('loading jank offset: %+d'):format(self.loading_jank_offset),1,100,48,"left",0,2/3,2/3)
 	elseif self.modify_rng_seeds then
 		love.graphics.push()
-		love.graphics.translate(self.hud_w,self.hud_h)
+		self:offset_camera()
 
 		local obj = pico8.cart.objects[self.rng_seed_idx]
 		local seed = self:get_seed_handler(obj)
@@ -689,6 +696,7 @@ function cctas:draw()
 		love.graphics.pop()
 
 		love.graphics.setColor(1,1,1)
+		love.graphics.setScissor()
 		love.graphics.print("rng manip mode",1,100,0,2/3,2/3)
 	end
 
