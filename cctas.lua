@@ -111,7 +111,8 @@ function cctas:keypressed(key, isrepeat)
 	if self.full_game_playback then
 		self.full_game_playback = false
 		self.realtime_playback = false
-	elseif self.realtime_playback or self.seek then
+	--TODO: abstract this
+	elseif self.realtime_playback or self.seek or self.last_selected_frame ~= -1 then
 		self.super.keypressed(self,key,isrepeat)
 	elseif self.modify_loading_jank then
 		self:loading_jank_keypress(key,isrepeat)
