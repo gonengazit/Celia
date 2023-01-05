@@ -1,4 +1,9 @@
-local table_new = require("table.new") or function() return {} end -- LOVE 11.3 compatibility hack
+local love11_4,table_new = pcall(require, "table.new")
+if not love11_4 then
+    --LOVE 11.3 compatibility hack
+    table_new=function() return {} end
+end
+
 local handle_funcs = {
     ["nil"] = function(orig) return orig end,
     number = function(orig) return orig end,
