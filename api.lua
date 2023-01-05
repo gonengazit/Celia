@@ -1004,9 +1004,11 @@ function api.mset(x, y, v)
 end
 
 function api.fget(n, f)
-	if n == nil then
-		return nil
-	end
+	-- difference from pico8: fget() returns fget(0) instead of nil
+	-- TODO: handle this properly with varargs
+	-- if n == nil then
+	-- 	return nil
+	-- end
 	n = flr(tonumber(n) or 0)
 	if f ~= nil then
 		f = flr(tonumber(f) or 0)
