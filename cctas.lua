@@ -63,6 +63,9 @@ function cctas:perform_inject()
 	local init_object = pico8.cart.init_object
 	pico8.cart.init_object = function(...)
 		local o = init_object(...)
+		if type(o)~='table' then
+			return o
+		end
 
 		local mt = getmetatable(o) or {}
 		mt.__tostring = function(obj)
