@@ -122,9 +122,9 @@ function tas:popstate()
 	return table.remove(self.states)
 end
 
---loads a deepcopy of the current state to the pico8 instance
-function tas:loadstate()
-	pico8 = deepcopy_no_api(self.states[#self.states])
+--clone the current state of the pico8 (for backup's sake)
+function tas:clonestate()
+	return deepcopy_no_api(pico8)
 end
 
 function tas:clearstates()

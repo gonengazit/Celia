@@ -274,11 +274,15 @@ function cctas:load_room_wrap(idx)
 	end
 end
 
+--TODO: make the backups (in case of failure to load level) cleaner
 -- if reset changes is false, loading jank and rng seeds will not be touched
 -- otherwise, they will be reset
 function cctas:load_level(idx, reset_changes)
 	-- load the room from the initial state of the level, to reset variables like berries
 	self:full_rewind()
+
+	--backup the current state, in case of a crash
+	local state_backup=self:clonestate()
 
 	if self.max_djump_overload ~= -1 then
 		pico8.cart.max_djump = self.max_djump_overload
@@ -306,16 +310,24 @@ function cctas:load_level(idx, reset_changes)
 			end
 		end
 	else
-		--err 1
-		self:loadstate()
+		if not self.first_level then
+			print("could not load previous level for loading jank")
+		end
+		--restore from state backup, and recreate the backup
+		pico8=state_backup
+		state_backup=self:clonestate()
+		love.graphics.setCanvas(pico8.screen)
 	end
 
 	status, err = pcall(self.load_room_wrap, self, idx)
 	if not status then
-		self:loadstate()
-		print("Could not load level")
+		print("could not load level")
+		--restore from state backup
+		pico8=state_backup
+		love.graphics.setCanvas(pico8.screen)
 		return
 	end
+
 	if reset_changes then
 		-- for the first level, assume no objects get loading janked by default
 		-- also do not apply loading jank if it is disable
