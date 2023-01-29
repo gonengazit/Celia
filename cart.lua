@@ -454,6 +454,9 @@ function cart.load_p8(filename)
 		end
 	end
 
+	love.math.setRandomSeed(0,0)
+	pico8.rnd_state=love.math.getRandomState()
+
 	lua = patch_lua(lua)
 	lua = lua .. "\n_picolove_end()"
 

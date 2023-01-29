@@ -1390,19 +1390,26 @@ function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
 end
 
 function api.rnd(x)
+	local ret
+	love.math.setRandomState(pico8.rnd_state)
 	if type(x)=="table" then
-		return x[love.math.random(#x)]
+		ret= x[love.math.random(#x)]
 	else
-		return love.math.random() * (tonumber(x) or 1)
+		ret= love.math.random() * (tonumber(x) or 1)
 	end
+	pico8.rnd_state=love.math.getRandomState()
+	return ret
 end
 
 function api.srand(seed)
+	love.math.setRandomState(pico8.rnd_state)
 	seed=tonumber(seed) or 0
 	if seed == 0 then
 		seed = 1
 	end
-	return love.math.setRandomSeed(flr(seed * 0x8000))
+	local ret= love.math.setRandomSeed(flr(seed * 0x8000))
+	pico8.rnd_state=love.math.getRandomState()
+	return ret
 end
 
 api.flr = math.floor
