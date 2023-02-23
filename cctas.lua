@@ -407,7 +407,13 @@ function cctas:step()
 
 	if lvl_idx~=self:level_index() then
 		if self.full_game_playback then
-			print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
+
+			--for carts which use different timing variables, just don't print the time
+			if type(pico8.cart.minutes)=="number" and
+			   type(pico8.cart.seconds)=="number" and
+			   type(pico8.cart.frames) =="number" then
+				print(("%02d:%02d.%03d (%d)"):format(pico8.cart.minutes, pico8.cart.seconds, pico8.cart.frames/30*1000, self.level_time-1))
+			end
 			self:init_seed_objs()
 			self:clearstates()
 			if self:load_input_file() == nil then
