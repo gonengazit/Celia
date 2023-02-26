@@ -91,6 +91,25 @@ local function Format_Identity(ast)
 		['$'] = {' peek4(', ')'}
 	}
 
+	if fixed_point_enabled then
+		--patch all relevant ops to call the respective fix32 functions
+		local patch_fix32_ops={
+			['+'] = {' __fix_add(', ',', ')'},
+			['-'] = {' __fix_sub(', ',', ')'},
+			['*'] = {' __fix_mul(', ',', ')'},
+			['/'] = {' __fix_div(', ',', ')'},
+			['\\'] = {'flr(__fix_div(', ',', '))'},
+			['%'] = {' __fix_mod(', ',', ')'},
+			['^'] = {' __fix_pow(', ',', ')'},
+		}
+
+		for op, val in pairs(patch_fix32_ops) do
+			patch_binary_ops[op]=val
+		end
+
+		patch_unary_ops['-']={' __fix_unm(',')'}
+	end
+
 	--replace pico8 glyphs in global name with a specific string
 	local function patch_local_varname(name)
 		--make sure to discard other returns of gsub
@@ -189,6 +208,10 @@ local function Format_Identity(ast)
 					value = ("0x%x.%x"):format(tonumber(int,2),tonumber(frac,2))
 				end
 
+			end
+
+			if fixed_point_enabled then
+				value=require("fix32").str_to_fix32_str(value)
 			end
 
 
