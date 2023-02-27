@@ -2,6 +2,15 @@ local api = {}
 
 local flr = math.floor
 
+local fix32=require("fix32")
+api.__fix_add=fix32.add
+api.__fix_sub=fix32.sub
+api.__fix_mul=fix32.mul
+api.__fix_div=fix32.div
+api.__fix_mod=fix32.mod
+api.__fix_pow=fix32.pow
+api.__fix_unm=fix32.unm
+
 local function color(c)
 	c = flr(c or 0) % 16
 	pico8.color = c
@@ -497,6 +506,7 @@ function api.cursor(x, y, col)
 end
 
 function api.tonum(val, format)
+	--TODO:fixed point
 	local kind = type(val)
 	if kind ~= "number" and kind ~= "string" and kind ~= "boolean" then
 		return
@@ -1390,6 +1400,7 @@ function api.cstore(dest_addr, source_addr, len) -- luacheck: no unused
 end
 
 function api.rnd(x)
+	--TODO: fixed point
 	if type(x)=="table" then
 		return x[love.math.random(#x)]
 	else
@@ -1398,6 +1409,7 @@ function api.rnd(x)
 end
 
 function api.srand(seed)
+	--TODO: fixed point
 	seed=tonumber(seed) or 0
 	if seed == 0 then
 		seed = 1
@@ -1438,16 +1450,25 @@ function api.mid(x, y, z)
 end
 
 function api.cos(x)
+	--TODO:fixed point
 	return math.cos((x or 0) * math.pi * 2)
 end
 
 function api.sin(x)
+	--TODO: fixed point
 	return -math.sin((x or 0) * math.pi * 2)
 end
 
-api.sqrt = math.sqrt
+api.sqrt = function(x)
+	if fixed_point_enabled then
+		return fix32.sqrt(x)
+	else
+		return math.sqrt(x)
+	end
+end
 
 function api.atan2(x, y)
+	--TODO: fixed point
 	return (0.75 + math.atan2(x, y) / (math.pi * 2)) % 1.0
 end
 
@@ -1620,7 +1641,11 @@ function api.help()
 end
 
 function api.time()
-	return pico8.frames/30
+	if fixed_point_enabled then
+		return fix32.div(pico8.frames,30)
+	else
+		return pico8.frames/30
+	end
 end
 api.t = api.time
 
