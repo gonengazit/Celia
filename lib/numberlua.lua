@@ -214,6 +214,7 @@ local floor = math.floor
 local MOD = 2^32
 local MODM = MOD-1
 
+--[[
 local function memoize(f)
   local mt = {}
   local t = setmetatable({}, mt)
@@ -248,6 +249,30 @@ local function make_bitop(t)
     end)
   end)
   return make_bitop_uncached(op2, 2^(t.n or 1))
+end]]
+
+local cache = {}
+
+M.bxor = function(a, b)
+  if cache[a] and cache[a][b] then
+    return cache[a][b]
+  end
+  local result, bit = 0, 1
+  while a > 0 or b > 0 do
+    local bit_a = a % 2
+    local bit_b = b % 2
+    if (bit_a + bit_b) % 2 == 1 then
+      result = result + bit
+    end
+    a = floor(a / 2)
+    b = floor(b / 2)
+    bit = bit * 2
+  end
+  if not cache[a] then
+    cache[a] = {}
+  end
+  cache[a][b] = result
+  return result
 end
 
 -- ok?  probably not if running on a 32-bit int Lua number type platform
@@ -255,7 +280,7 @@ function M.tobit(x)
   return x % 2^32
 end
 
-M.bxor = make_bitop {[0]={[0]=0,[1]=1},[1]={[0]=1,[1]=0}, n=4}
+--M.bxor = make_bitop {[0]={[0]=0,[1]=1},[1]={[0]=1,[1]=0}, n=4}
 local bxor = M.bxor
 
 function M.bnot(a)   return MODM - a end
