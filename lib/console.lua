@@ -385,9 +385,9 @@ function console.execute(command)
   -- Reprint the command + the prompt string.
   print(console.PROMPT .. command)
 
-  local chunk, error = load("return " .. command)
+  local chunk, error = loadstring("return " .. command)
   if not chunk then
-    chunk, error = load(command)
+    chunk, error = loadstring(command)
   end
 
   if chunk then
