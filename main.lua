@@ -2,7 +2,6 @@ package.path = package.path .. ";?.lua;lib/?.lua"
 love.filesystem.setRequirePath(package.path)
 
 require("strict")
-local QueueableSource = require("QueueableSource")
 
 local bit = require("numberlua").bit
 
@@ -314,10 +313,10 @@ function love.load(argv)
 	end
 
 	__audio_channels = {
-		[0] = QueueableSource:new(8),
-		QueueableSource:new(8),
-		QueueableSource:new(8),
-		QueueableSource:new(8),
+		[0] = love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
 	}
 
 	for i = 0, 3 do
@@ -843,7 +842,7 @@ local function update_audio(time)
 			ch.bufferpos = ch.bufferpos + 1
 			if ch.bufferpos == __audio_buffer_size then
 				-- queue buffer and reset
-				__audio_channels[channel]:queue(ch.buffer)
+				__audio_channels[channel]:queue(ch.buffer, ch.buffer:getSize())
 				__audio_channels[channel]:play()
 				ch.bufferpos = 0
 			end
