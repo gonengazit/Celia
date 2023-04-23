@@ -1,3 +1,5 @@
+local bit = require("numberlua").bit
+
 require "deepcopy"
 local class = require("30log")
 

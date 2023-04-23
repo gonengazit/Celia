@@ -1,6 +1,8 @@
 -- GIF encoder specialized for PICO-8
 -- by gamax92.
 
+local bit=require("numberlua").bit
+
 local palmap={}
 
 for i=0, 15 do

@@ -1,3 +1,4 @@
+local bit = require("numberlua").bit
 local api = require("api")
 
 local parse = require("parser/ParseLua")

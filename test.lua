@@ -1,3 +1,5 @@
+local bit = require("numberlua").bit
+
 local api = require("api")
 
 local lust = require("lust")
