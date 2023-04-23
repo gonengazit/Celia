@@ -365,7 +365,13 @@ extern float palette[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(color.r*15.0+0.5);
-	return vec4(palette[index]/15.0, 0.0, 0.0, 1.0);
+	vec4 result;
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			result = vec4(palette[x]/15.0, 0.0, 0.0, 1.0);
+		}
+	}
+	return result;
 }]])
 	pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -375,8 +381,14 @@ extern float transparent[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
-	float alpha = transparent[index];
-	return vec4(palette[index]/15.0, 0.0, 0.0 ,alpha);
+	vec4 result;
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			float alpha = transparent[x];
+			result = vec4(palette[x]/15.0, 0.0, 0.0, alpha);
+		}
+	}
+	return result;
 }]])
 	pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
 	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
@@ -391,7 +403,13 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	}
 	int index = int(color.r*15.0+0.5);
 	// lookup the color in the palette by index
-	return vec4(palette[index]/15.0, 0.0, 0.0, texcolor.a);
+	vec4 result;
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			result = vec4(palette[x]/15.0, 0.0, 0.0, texcolor.a);
+		}
+	}
+	return result;
 }]])
 	pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -401,7 +419,13 @@ extern vec4 palette[16];
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
 	// lookup the color in the palette by index
-	return palette[index]/255.0;
+	vec4 result;
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			result = palette[x]/255.0;
+		}
+	}
+	return result;
 }]])
 	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 
