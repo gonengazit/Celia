@@ -77,15 +77,15 @@ end
 function api._call(code)
 	code = patch_lua(code)
 
-	local ok, f, e = pcall(load, code, "repl")
-	if not ok or f == nil then
+	local f, e = loadstring(code, "repl")
+	if f == nil then
 		api.rectfill(0, api._getcursory(), 128, api._getcursory() + 5 + 6, 0)
 		api.print("syntax error", 14)
 		api.print(api.sub(e, 20), 6)
 		return false
 	else
 		setfenv(f, pico8.cart)
-		ok, e = pcall(f)
+		local ok, e = pcall(f)
 		if not ok then
 			api.rectfill(0, api._getcursory(), 128, api._getcursory() + 5 + 6, 0)
 			api.print("runtime error", 14)
@@ -1525,8 +1525,8 @@ function api.run()
 		pico8.cartdata[i] = 0
 	end
 
-	local ok, f, e = pcall(load, loaded_code, cartname)
-	if not ok or f == nil then
+	local f, e = loadstring(loaded_code, cartname)
+	if f == nil then
 		log("=======8<========")
 		log(loaded_code)
 		log("=======>8========")
@@ -1537,7 +1537,7 @@ function api.run()
 		love.graphics.setCanvas(pico8.screen)
 		love.graphics.origin()
 		restore_clip()
-		ok, e = pcall(f)
+		local ok, e = pcall(f)
 		if not ok then
 			error("Error running lua: " .. tostring(e))
 		else
