@@ -1,0 +1,74 @@
+@font-face {
+  font-family: 'pico-8';
+  src: url('font/pico-8-webfont.woff') format('woff'),
+       url('font/pico-8-webfont.woff2') format('woff2'),
+       url('font/pico-8.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'pico-8-smooth';
+  src: url('font/pico-8-smooth-webfont.woff') format('woff'),
+       url('font/pico-8-smooth-webfont.woff2') format('woff2'),
+       url('font/pico-8-smooth.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+    box-sizing: border-box;
+}
+
+h1 {
+    font-family: "pico-8-smooth";
+}
+
+body {
+    margin: 8px;
+    padding: 8px;
+
+    width: 100vw - 8px;
+    height: 100vh - 8px;
+
+    font-family: 'pico-8';
+    line-height: 1.25;
+    background-color: #000;
+    color: #fff1e8;
+}
+
+hr {
+    border-top: 0.19em solid #fff1e8;
+	border-bottom: 0;
+	border-left: 0;
+	border-right: 0;
+	text-align: left;
+	margin-left: 0;
+	width: min(720px, 80vw);
+}
+
+.bootup {
+    color: #c2c3c7;
+}
+
+footer {
+    font-size: 12px;
+    padding-left: 10px;
+    position:absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Links */
+a:link, a:visited, a:active {
+  color: #29adff;
+  text-decoration: none;
+}
+
+/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+#canvas {
+    padding-right: 0;
+    display: block;
+    border: 0px none;
+    visibility: hidden;
+}
