@@ -1,3 +1,6 @@
+if love.system.getOS()~="Web" then
+    return {bit=require("bit")}
+end
 --[[
 
 LUA MODULE
