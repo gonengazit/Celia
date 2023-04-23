@@ -1,3 +1,5 @@
+local bit = require("numberlua").bit
+
 local api = {}
 
 local flr = math.floor
@@ -1450,8 +1452,6 @@ api.sqrt = math.sqrt
 function api.atan2(x, y)
 	return (0.75 + math.atan2(x, y) / (math.pi * 2)) % 1.0
 end
-
-local bit = require("bit")
 
 function api.band(x, y)
 	return bit.band(x*0x10000, y*0x10000)/0x10000

@@ -4,7 +4,7 @@ love.filesystem.setRequirePath(package.path)
 require("strict")
 local QueueableSource = require("QueueableSource")
 
-local bit = require("bit")
+local bit = require("numberlua").bit
 
 local api = require("api")
 local cart = require("cart")
