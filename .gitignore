@@ -7,3 +7,4 @@
 build/*.love
 luacov.report.out
 luacov.stats.out
+.luarc.json
