@@ -42,6 +42,31 @@ In the center of the screen, you'll see the PICO-8 screen, displaying the curren
 On the left, you'll see the HUD, displaying the current frame number, and an input display, with the currently pressed inputs
 On the right, you'll see the pianoroll, which shows the inputs in the frames around the current one
 
+### Web build
+
+Some changes were made to make this project more compatible with
+web/emscripten/wasm. Right now it is a work-in-progress. For building,
+[Davidobot's fork of love.js](https://github.com/Davidobot/love.js) is used. On
+linux, the process goes like this:
+
+```shell
+$ npm -g install love.js
+$ git clone https://github.com/gonengazit/Celia
+$ cd Celia
+$ zip -r ../celia.love * # assuming info-zip
+$ cd ..
+$ love.js -c -t Celia celia.love build/ # build/ will be created automatically
+$ # according to love.js's README, the -c flag is optional. It disables the use of pthreads in favour of supporting a wider range of web browsers. In particular this results in more laggy sound
+$ cp -f Celia/res/index.html build/index.html
+$ cp -rf Celia/res/theme/ build/
+$ # done!
+$ python -m http.server -b 127.0.0.1 -d build/ # example way to host
+```
+
+Same process should be possible on Windows/Mac with minimal changes (probably
+use the GUI for zipping and copying files instead, though, as `zip`'s and `cp`'s
+command line syntax might differ)
+
 ## Controls
 * __L__ - advance 1 frame forward
 * __K__ - rewind 1 frame back
