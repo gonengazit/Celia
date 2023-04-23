@@ -67,6 +67,14 @@ Same process should be possible on Windows/Mac with minimal changes (probably
 use the GUI for zipping and copying files instead, though, as `zip`'s and `cp`'s
 command line syntax might differ)
 
+**Currently not working on web:**
+
+- Saving/Opening TASes (technically it does work, but there is no interface for
+  the user to download/upload TASes)
+- Opening custom carts (mostly because of the problem above)
+- Clipboard
+- Many keybindings (as they come in conflict with keybindings your browser has)
+
 ## Controls
 * __L__ - advance 1 frame forward
 * __K__ - rewind 1 frame back
