@@ -191,6 +191,7 @@ function setColor(c)
 end
 
 function _load(_cartname)
+	local _cartname = _cartname or "celeste.p8"
 	if type(_cartname) ~= "string" then
 		return false
 	end
@@ -547,13 +548,16 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	end
 
 	if initialcartname == nil or initialcartname == "" then
-		initialcartname = "nocart.p8"
+		initialcartname = false
 	end
 
 	_load(initialcartname)
 	api.run()
 
-	if tas_tool_name == nil then
+	if not initialcartname then
+		print("nothing specified, possibly because the user doesn't have a console, defaulting to celestetas.")
+		tas_tool_name = "cctas"
+	elseif tas_tool_name == nil then
 		print("no tas tool specified, defaulting to general pico-8 tas tool")
 		tas_tool_name = "tas"
 	end
