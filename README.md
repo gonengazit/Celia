@@ -51,7 +51,7 @@ linux, the process goes like this:
 
 ```shell
 $ npm -g install love.js
-$ git clone https://github.com/gonengazit/Celia
+$ git clone --recursive https://github.com/gonengazit/Celia
 $ cd Celia
 $ zip -r ../celia.love * # assuming info-zip
 $ cd ..
@@ -123,11 +123,8 @@ Warning: making changes to variables in the PICO-8 instance, then rewinding befo
 * [Lua 30log class library](https://github.com/Yonaba/30log)
 * [Original Celeste TAS tool by akliant917](https://github.com/CelesteClassic/ClassicTAS)
 * [Lua parser taken and modified from LuaMinify](https://github.com/stravant/LuaMinify)
-* [LuaJIT-like bitops implementation in pure lua](https://github.com/davidm/lua-bit-numberlua)
 
-
-
-
-
-
-
+## Web specific
+* [LuaJIT-like bitops implementation in pure lua by DavidM](https://github.com/davidm/lua-bit-numberlua)
+* [Davidobot's fork of love.js](https://github.com/Davidobot/love.js)
+* [A binder between love.js and javascript by MrcSnm (included as a submodule)](https://github.com/MrcSnm/Love.js-Api-Player)
