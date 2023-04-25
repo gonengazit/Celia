@@ -34,6 +34,7 @@ ignore = {
 }
 
 exclude_files = {
+  "Love.js-Api-Player",
   "lib",
   "spec",
   ".DS_Store",
