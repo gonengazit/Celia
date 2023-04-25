@@ -22,7 +22,7 @@
     <center>
       <div>
         <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
-        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        <canvas id="canvas" ondrop="onfiledrop(event)" ondragover="event.preventDefault()" oncontextmenu="event.preventDefault()"></canvas>
       </div>
     </center>
     
@@ -67,6 +67,18 @@
           e.preventDefault();
         }
       }, false);
+
+      function onfiledrop(e) {
+        e.preventDefault();
+        if (FS) {
+            e.dataTransfer.files[0].text().then(function(data) {
+                var prefix = "/home/web_user/love/Celia/";
+                var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
+                FS.writeFile(prefix+working_file,data);
+                FS.writeFile(prefix+"file_pending",working_file);
+            });
+        }
+      }
 
       var Module = {
         arguments: ["./game.love"],

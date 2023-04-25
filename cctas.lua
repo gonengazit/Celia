@@ -7,6 +7,7 @@ local api = require("api")
 
 local console = require("console")
 
+local is_web = love.system.getOS()=="Web"
 
 --TODO: probably call load_level directly
 --or at least make sure rng seeds are set etc
@@ -336,7 +337,7 @@ function cctas:load_level(idx, reset_changes)
 		-- for the first level, assume no objects get loading janked by default
 		-- also do not apply loading jank if it is disable
 		self.loading_jank_offset =
-		    (self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
+			(self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
 	end
 
 	for i = self.prev_obj_count+ self.loading_jank_offset, #pico8.cart.objects do
@@ -374,9 +375,21 @@ function cctas:level_index()
 end
 function cctas:next_level()
 	self:load_level(self:level_index()+1,true)
+	if is_web then
+		local file = love.filesystem.newFile("working_file")
+		file:open("w")
+		file:write(self:get_input_file_obj():getFilename())
+		file:close()
+	end
 end
 function cctas:prev_level()
 	self:load_level(self:level_index()-1,true)
+	if is_web then
+		local file = love.filesystem.newFile("working_file")
+		file:open("w")
+		file:write(self:get_input_file_obj():getFilename())
+		file:close()
+	end
 end
 
 function cctas:find_player()
@@ -464,7 +477,7 @@ function cctas:player_rewind()
 	else
 		self.seek = {
 			finish_condition = function()
-				return  self.inputs_active
+				return	self.inputs_active
 			end,
 			on_finish = function() end,
 			fast_forward=true

@@ -594,7 +594,14 @@ local function inside(x, y, x0, y0, w, h) -- luacheck: no unused
 	return (x >= x0 and x < x0 + w and y >= y0 and y < y0 + h)
 end
 
-function love.update(_)
+function love.update(dt)
+	if love.system.getOS()=="Web" and cartname then
+		local filename = "file_pending"
+		if love.filesystem.getInfo(filename) then
+			tastool:load_input_file()
+			love.filesystem.remove(filename)
+		end
+	end
 	tastool:update()
 end
 
@@ -923,21 +930,21 @@ function love.keypressed(key, scancode, isrepeat)
 		api.run()
 		tastool = tastool.class()
 	-- elseif
-	-- 	key == "escape"
-	-- 	and cartname ~= nil
-	-- 	and cartname ~= initialcartname
-	-- 	and cartname ~= "nocart.p8"
-	-- 	and cartname ~= "editor.p8"
+	--	key == "escape"
+	--	and cartname ~= nil
+	--	and cartname ~= initialcartname
+	--	and cartname ~= "nocart.p8"
+	--	and cartname ~= "editor.p8"
 	-- then
-	-- 	api.load(initialcartname)
-	-- 	api.run()
-	-- 	return
+	--	api.load(initialcartname)
+	--	api.run()
+	--	return
 	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
 		love.event.quit()
 	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
-	-- 	pico8.clipboard = love.system.getClipboardText()
+	--	pico8.clipboard = love.system.getClipboardText()
 	-- elseif pico8.can_pause and (key == "pause" or key == "p") then
-	-- 	paused = not paused
+	--	paused = not paused
 	elseif key == "f1" or key == "f6" then
 		-- screenshot
 		local filename = cartname .. "-" .. os.time() .. ".png"
@@ -964,19 +971,19 @@ function love.keypressed(key, scancode, isrepeat)
 end
 
 -- function love.keyreleased(key)
--- 	for p = 0, 1 do
--- 		for i = 0, #pico8.keymap[p] do
--- 			for _, testkey in pairs(pico8.keymap[p][i]) do
--- 				if key == testkey then
--- 					pico8.keypressed[p][i] = nil
--- 					break
--- 				end
--- 			end
--- 		end
--- 	end
--- 	if pico8.cart and pico8.cart._keyup then
--- 		return pico8.cart._keyup(key)
--- 	end
+--	for p = 0, 1 do
+--		for i = 0, #pico8.keymap[p] do
+--			for _, testkey in pairs(pico8.keymap[p][i]) do
+--				if key == testkey then
+--					pico8.keypressed[p][i] = nil
+--					break
+--				end
+--			end
+--		end
+--	end
+--	if pico8.cart and pico8.cart._keyup then
+--		return pico8.cart._keyup(key)
+--	end
 -- end
 
 function love.textinput(text)

@@ -59,11 +59,13 @@ $ love.js -c -t Celia celia.love build/ # build/ will be created automatically
 $ # according to love.js's README, the -c flag is optional. It disables the use of pthreads in favour of supporting a wider range of web browsers. In particular this results in more laggy sound
 $ cp -f Celia/res/index.html build/index.html
 $ cp -rf Celia/res/theme/ build/
+$ cd build/
+$ node ../Celia/Love.js-Api-Player/globalizeFS.js
 $ # done!
-$ python -m http.server -b 127.0.0.1 -d build/ # example way to host
+$ python -m http.server -b 127.0.0.1 # example way to host
 ```
 
-Same process should be possible on Windows/Mac with minimal changes (probably
+The same process should be possible on Windows/Mac with minimal changes (probably
 use the GUI for zipping and copying files instead, though, as `zip`'s and `cp`'s
 command line syntax might differ)
 
@@ -127,4 +129,4 @@ Warning: making changes to variables in the PICO-8 instance, then rewinding befo
 ## Web specific
 * [LuaJIT-like bitops implementation in pure lua by DavidM](https://github.com/davidm/lua-bit-numberlua)
 * [Davidobot's fork of love.js](https://github.com/Davidobot/love.js)
-* [A binder between love.js and javascript by MrcSnm (included as a submodule)](https://github.com/MrcSnm/Love.js-Api-Player)
+* [globalizeFS.js from love.js-api-player by MrcSnm (included as a submodule)](https://github.com/MrcSnm/Love.js-Api-Player)
