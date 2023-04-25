@@ -71,9 +71,9 @@ command line syntax might differ)
 
 **Currently not working on web:**
 
-- Saving/Opening TASes (technically it does work, but there is no interface for
-  the user to download/upload TASes)
-- Opening custom carts (mostly because of the problem above)
+- Saving TASes (technically it does work, but there is no ability to download
+  them to your computer)
+- Opening custom carts
 - Clipboard
 - Many keybindings (as they come in conflict with keybindings your browser has)
 
