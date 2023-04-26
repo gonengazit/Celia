@@ -46,28 +46,20 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 
 Some changes were made to make this project more compatible with
 web/emscripten/wasm. Right now it is a work-in-progress. For building,
-[Davidobot's fork of love.js](https://github.com/Davidobot/love.js) is used. On
-linux, the process goes like this:
+[Davidobot's fork of love.js](https://github.com/Davidobot/love.js) is used, so
+make sure to have the npm package for it installed.
 
 ```shell
 $ npm -g install love.js
-$ git clone --recursive https://github.com/gonengazit/Celia
-$ cd Celia
-$ zip -r ../celia.love * # assuming info-zip
-$ cd ..
-$ love.js -c -t Celia celia.love build/ # build/ will be created automatically
-$ # according to love.js's README, the -c flag is optional. It disables the use of pthreads in favour of supporting a wider range of web browsers. In particular this results in more laggy sound
-$ cp -f Celia/res/index.html build/index.html
-$ cp -rf Celia/res/theme/ build/
-$ cd build/
-$ node ../Celia/Love.js-Api-Player/globalizeFS.js
-$ # done!
-$ python -m http.server -b 127.0.0.1 # example way to host
+$ git clone --recursive https://github.com/gonengazit/Celia && cd Celia
+$ make web
+$ python -m http.server -b 127.0.0.1 -d build/__site/ # example way to host
 ```
 
-The same process should be possible on Windows/Mac with minimal changes (probably
-use the GUI for zipping and copying files instead, though, as `zip`'s and `cp`'s
-command line syntax might differ)
+Building on Windows should be possible as well, since the js tools are
+cross-platform. However without going to the lengths of installing cygwin or
+git bash with info-zip, the [makefile](makefile) recipe won't run, and you'll
+have to do the copying and zipping manually.
 
 **Currently not working on web:**
 
