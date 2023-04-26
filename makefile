@@ -1,4 +1,4 @@
-.PHONY: run all lint build clean format test run_build
+.PHONY: run all lint build clean format test web run_build
 
 project_name := celia
 
@@ -19,7 +19,7 @@ format:
 	sed -i s/0x1234abcd/0x1234\.abcd/g test.lua
 
 clean:
-	rm -f build/${project_name}.love
+	rm -rf build/*
 
 test:
 	# todo implement test running
@@ -33,6 +33,14 @@ build: clean
 		-print0 \
 		| cut -z -c3- \
 		| xargs -0 zip -9 build/${project_name}.love
+
+web: build
+	@command -v love.js \
+		&& love.js -c -t ${project_name} build/${project_name}.love build/__site/ \
+		|| echo "love.js not found in PATH"
+	cp -f res/index.html build/__site/index.html
+	cp -f -r res/theme/ build/__site/
+	cd build/__site/ && node ../../Love.js-Api-Player/globalizeFS.js
 
 run_build:
 	@echo "executing \"build/${project_name}.love\" ..."
