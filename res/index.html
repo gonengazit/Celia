@@ -71,12 +71,24 @@
       function onfiledrop(e) {
         e.preventDefault();
         if (FS) {
-            e.dataTransfer.files[0].text().then(function(data) {
-                var prefix = "/home/web_user/love/Celia/";
-                var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
-                FS.writeFile(prefix+working_file,data);
-                FS.writeFile(prefix+"file_pending",working_file);
-            });
+          e.dataTransfer.files[0].text().then(function(data) {
+            var prefix = "/home/web_user/love/Celia/";
+            if (/\[(\d+,)*\](\d+,)*/.test(data)) {
+              var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
+              FS.writeFile(prefix+working_file,data);
+              FS.writeFile(prefix+"file_pending","tas");
+            } else {
+              var cartname = e.dataTransfer.files[0].name;
+              var dirname = prefix+cartname.replace(/\.[^/.]+$/, "");
+              if (!FS.analyzePath(dirname).exists) {
+                FS.mkdir(dirname);
+              }
+              if (!FS.analyzePath(prefix+"carts/"+cartname).exists) {
+                FS.writeFile(prefix+"carts/"+cartname,data);
+              }
+              FS.writeFile(prefix+"file_pending",cartname);
+            }
+          });
         }
       }
 

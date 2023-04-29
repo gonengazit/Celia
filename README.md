@@ -63,7 +63,6 @@ have to do the copying and zipping manually.
 
 **Currently not working on web:**
 
-- Opening custom carts
 - Clipboard
 - Many keybindings (as some of them come into conflict with the ones your
   browser has, and even if that wasn't an issue shift and ctrl modifiers

@@ -153,6 +153,7 @@ local channels = 1
 local bits = 16
 
 currentDirectory = "carts/"
+love.filesystem.createDirectory(currentDirectory)
 local glyphs=""
 for i=32, 153 do
 	glyphs=glyphs..(glyph_edgecases[pico8_glyphs[i]] or pico8_glyphs[i])
@@ -598,7 +599,20 @@ function love.update(dt)
 	if love.system.getOS()=="Web" and cartname then
 		local filename = "file_pending"
 		if love.filesystem.getInfo(filename) then
-			tastool:load_input_file()
+			local fh, e = love.filesystem.newFile(filename,'r')
+			if e then
+				print(e)
+			else
+				local data = fh:read()
+				fh:close()
+				if data=="tas" then
+					tastool:load_input_file()
+				else
+					_load(data)
+					api.run()
+					tastool=({tas=tas,cctas=cctas})["cctas"]()
+				end
+			end
 			love.filesystem.remove(filename)
 		end
 	end
