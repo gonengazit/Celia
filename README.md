@@ -63,11 +63,11 @@ have to do the copying and zipping manually.
 
 **Currently not working on web:**
 
-- Saving TASes (technically it does work, but there is no ability to download
-  them to your computer)
 - Opening custom carts
 - Clipboard
-- Many keybindings (as they come in conflict with keybindings your browser has)
+- Many keybindings (as some of them come into conflict with the ones your
+  browser has, and even if that wasn't an issue shift and ctrl modifiers
+  seemingly don't work)
 
 ## Controls
 * __L__ - advance 1 frame forward

@@ -80,6 +80,25 @@
         }
       }
 
+      window.setInterval(function() {
+        var prefix = "/home/web_user/love/Celia/";
+        if (FS && FS.analyzePath(prefix+"save_pending").exists) {
+          var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
+          if (FS.analyzePath(prefix+working_file).exists) {
+            var blob = new Blob([FS.readFile(prefix+working_file).buffer], { type: 'application/octet-stream' });
+            console.log(blob);
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = working_file.replace("/","-");
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // very important
+            FS.unlink(prefix+"save_pending");
+          }
+        }
+      }, 1500);
+
       var Module = {
         arguments: ["./game.love"],
         INITIAL_MEMORY: 16777216,

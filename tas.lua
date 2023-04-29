@@ -703,6 +703,14 @@ function tas:save_input_file()
 	end
 	if f:open("w") then
 		f:write(self:get_input_str())
+		if love.system.getOS()=='Web' then
+			local t,e = love.filesystem.newFile("save_pending","w")
+			if e then
+				print(e)
+				return
+			end
+			t:close()
+		end
 		print("saved file to ".. love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename())
 	else
 		print("error saving input file")
