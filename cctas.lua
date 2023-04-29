@@ -51,6 +51,7 @@ function cctas:init()
 	self.full_game_playback = false
 
 	self:state_changed()
+	self:update_working_file()
 end
 
 function cctas:perform_inject()
@@ -375,21 +376,11 @@ function cctas:level_index()
 end
 function cctas:next_level()
 	self:load_level(self:level_index()+1,true)
-	if is_web then
-		local file = love.filesystem.newFile("working_file")
-		file:open("w")
-		file:write(self:get_input_file_obj():getFilename())
-		file:close()
-	end
+	self:update_working_file()
 end
 function cctas:prev_level()
 	self:load_level(self:level_index()-1,true)
-	if is_web then
-		local file = love.filesystem.newFile("working_file")
-		file:open("w")
-		file:write(self:get_input_file_obj():getFilename())
-		file:close()
-	end
+	self:update_working_file()
 end
 
 function cctas:find_player()

@@ -146,6 +146,15 @@ function tas:state_iter()
 	end
 end
 
+function tas:update_working_file()
+	if love.system.getOS()=="Web" then
+		local file = love.filesystem.newFile("working_file")
+		file:open("w")
+		file:write(self:get_input_file_obj():getFilename())
+		file:close()
+	end
+end
+
 -- advance the pico8 state ignoring buttons or backing up the state
 local function rawstep()
 	pico8.frames = pico8.frames + 1
@@ -236,6 +245,7 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+	self:update_working_file()
 end
 
 function tas:update()
