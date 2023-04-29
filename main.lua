@@ -173,6 +173,21 @@ local function _allow_shutdown(value)
 	pico8.can_shutdown = value
 end
 
+local function guess_tool(e)
+	if e.begin_game and e._draw and
+		e.objects and (
+			e.load_level or
+			e.load_room or
+			e.__tas_level_index
+		) and e.player then
+		print("guessed cctas")
+		return cctas
+	else
+		print("guessed tas")
+		return tas
+	end
+end
+
 log = print
 
 function shdr_unpack(thing)
@@ -610,7 +625,7 @@ function love.update(dt)
 				else
 					_load(data)
 					api.run()
-					tastool=({tas=tas,cctas=cctas})["cctas"]()
+					tastool=guess_tool(pico8.cart)()
 				end
 			end
 			love.filesystem.remove(filename)
