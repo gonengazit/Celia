@@ -148,7 +148,7 @@ end
 
 function tas:update_working_file()
 	if love.system.getOS()=="Web" then
-		local file = love.filesystem.newFile("working_file")
+		local file = love.filesystem.newFile("tmp/working_file")
 		file:open("w")
 		file:write(self:get_input_file_obj():getFilename())
 		file:close()
@@ -704,7 +704,7 @@ function tas:save_input_file()
 	if f:open("w") then
 		f:write(self:get_input_str())
 		if love.system.getOS()=='Web' then
-			local t,e = love.filesystem.newFile("save_pending","w")
+			local t,e = love.filesystem.newFile("tmp/save_pending","w")
 			if e then
 				print(e)
 				return

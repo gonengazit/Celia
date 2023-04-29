@@ -153,7 +153,6 @@ local channels = 1
 local bits = 16
 
 currentDirectory = "carts/"
-love.filesystem.createDirectory(currentDirectory)
 local glyphs=""
 for i=32, 153 do
 	glyphs=glyphs..(glyph_edgecases[pico8_glyphs[i]] or pico8_glyphs[i])
@@ -271,6 +270,13 @@ function love.load(argv)
 	love_args = argv
 	if love.system.getOS() == "Android" or love.system.getOS() == "iOS" then
 		love.resize(love.graphics.getDimensions())
+	end
+
+	if not love.filesystem.getInfo("carts/","directory") then
+		love.filesystem.createDirectory("carts/")
+	end
+	if not love.filesystem.getInfo("tmp/","directory") then
+		love.filesystem.createDirectory("tmp/")
 	end
 
 	osc = {}
@@ -612,7 +618,7 @@ end
 
 function love.update(dt)
 	if love.system.getOS()=="Web" and cartname then
-		local filename = "file_pending"
+		local filename = "tmp/file_pending"
 		if love.filesystem.getInfo(filename) then
 			local fh, e = love.filesystem.newFile(filename,'r')
 			if e then

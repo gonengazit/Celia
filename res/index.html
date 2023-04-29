@@ -74,9 +74,9 @@
           e.dataTransfer.files[0].text().then(function(data) {
             var prefix = "/home/web_user/love/Celia/";
             if (/\[(\d+,)*\](\d+,)*/.test(data)) {
-              var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
+              var working_file = new TextDecoder().decode(FS.open(prefix+"tmp/working_file").node.contents);
               FS.writeFile(prefix+working_file,data);
-              FS.writeFile(prefix+"file_pending","tas");
+              FS.writeFile(prefix+"tmp/file_pending","tas");
             } else {
               var cartname = e.dataTransfer.files[0].name;
               var dirname = prefix+cartname.replace(/\.[^/.]+$/, "");
@@ -86,7 +86,7 @@
               if (!FS.analyzePath(prefix+"carts/"+cartname).exists) {
                 FS.writeFile(prefix+"carts/"+cartname,data);
               }
-              FS.writeFile(prefix+"file_pending",cartname);
+              FS.writeFile(prefix+"tmp/file_pending",cartname);
             }
           });
         }
@@ -94,8 +94,8 @@
 
       window.setInterval(function() {
         var prefix = "/home/web_user/love/Celia/";
-        if (FS && FS.analyzePath(prefix+"save_pending").exists) {
-          var working_file = new TextDecoder().decode(FS.open(prefix+"working_file").node.contents);
+        if (FS && FS.analyzePath(prefix+"tmp/save_pending").exists) {
+          var working_file = new TextDecoder().decode(FS.open(prefix+"tmp/working_file").node.contents);
           if (FS.analyzePath(prefix+working_file).exists) {
             var blob = new Blob([FS.readFile(prefix+working_file).buffer], { type: 'application/octet-stream' });
             var a = document.createElement('a');
@@ -105,7 +105,7 @@
             a.click();
             document.body.removeChild(a);
             // very important
-            FS.unlink(prefix+"save_pending");
+            FS.unlink(prefix+"tmp/save_pending");
           }
         }
       }, 1500);
