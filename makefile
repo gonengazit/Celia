@@ -29,7 +29,7 @@ build: clean
 	# include .lua, .p8, and .png files (needed for icon and font)
 	# exclude tests
 	find . \( -name '*.lua' -or -name '*.png' -or -name '*.p8' \) \
-		-not -path '*test/*' \
+		-not -path '*test/*' -not -path '*Love.js-Api-Player/*' \
 		-print0 \
 		| cut -z -c3- \
 		| xargs -0 zip -9 build/${project_name}.love

@@ -8,3 +8,4 @@ build/*
 luacov.report.out
 luacov.stats.out
 .luarc.json
+node_modules/*
