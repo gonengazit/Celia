@@ -72,14 +72,16 @@ function tas:reset_hold()
 end
 
 local function update_buttons(self, input_idx)
-	for i = 0, #pico8.keymap[0] do
-			local v = pico8.keypressed[0][i]
-			if self:key_down(i, input_idx) then
-				pico8.keypressed[0][i] = (v or -1) + 1
-			else
-				pico8.keypressed[0][i] = nil
-			end
-	end
+	for p = 0, 1 do
+		for i = 0, #pico8.keymap[p] do
+				local v = pico8.keypressed[p][i]
+				if self:key_down(i + p * 8, input_idx) then
+					pico8.keypressed[p][i] = (v or -1) + 1
+				else
+					pico8.keypressed[p][i] = nil
+				end
+		end
+	end -- foreach player
 end
 
 
@@ -91,14 +93,16 @@ function tas:advance_keystate(curr_keystate)
 	curr_keystate = curr_keystate or 0
 	curr_keystate= bit.bor(curr_keystate, self.hold)
 	if not self.realtime_playback then
-		for i=0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if love.keyboard.isDown(testkey) then
-					curr_keystate = bit.bor(curr_keystate, 2^i)
-					break
+		for p = 0, 1 do
+			for i=0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if love.keyboard.isDown(testkey) then
+						curr_keystate = bit.bor(curr_keystate, 2^(i + p * 8))
+						break
+					end
 				end
 			end
-		end
+		end -- foreach player
 	end
 	return curr_keystate
 end
@@ -348,6 +352,7 @@ function tas:draw_input_display(x,y)
 	self:draw_button(x + 16, y + 6, 3) -- d
 	self:draw_button(x + 2, y + 6, 4) -- z
 	self:draw_button(x + 6, y + 6, 5) -- x
+	self:draw_button(x + 2, y + 2, 12) -- lshift/tab
 end
 
 -- can be overloaded to define different timing methods
@@ -515,20 +520,22 @@ function tas:keypressed(key, isrepeat)
 			self:preform_undo()
 		end
 	else
-		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey  and not isrepeat then
-					if love.keyboard.isDown("lshift", "rshift") then
-						self:push_undo_state()
-						self:toggle_hold(i)
-					else
-						self:push_undo_state()
-						self:toggle_key(i)
+		for p = 0, 1 do
+			for i = 0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if key == testkey  and not isrepeat then
+						if love.keyboard.isDown("lshift", "rshift") then
+							self:push_undo_state()
+							self:toggle_hold(i + p * 8)
+						else
+							self:push_undo_state()
+							self:toggle_key(i + p * 8)
+						end
+						break
 					end
-					break
 				end
 			end
-		end
+		end -- foreach player
 	end
 end
 
@@ -571,33 +578,37 @@ function tas:selection_keypress(key, isrepeat)
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
 		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
-		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey then
-					self:push_undo_state()
-					self:toggle_key(i)
-					for frame = self:frame_count() + 2, self.last_selected_frame do
-						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
-							self:toggle_key(i, frame)
+		for p = 0, 1 do
+			for i = 0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if key == testkey then
+						self:push_undo_state()
+						self:toggle_key(i + p * 8)
+						for frame = self:frame_count() + 2, self.last_selected_frame do
+							if love.keyboard.isDown("lalt", "ralt") or self:key_down((i + p * 8),frame) ~= self:key_down((i + p * 8)) then
+								self:toggle_key(i + p * 8, frame)
+							end
 						end
+						break
 					end
-					break
 				end
 			end
-		end
+		end -- foreach players
 	end
 end
 
 -- b is a bitmask of the inputs
 local function set_btn_state(b)
-	for i = 0, #pico8.keymap[0] do
-			local v = pico8.keypressed[0][i]
-			if bit.band(b, 2^i)~=0 then
-				pico8.keypressed[0][i] = (v or -1) + 1
-			else
-				pico8.keypressed[0][i] = nil
-			end
-	end
+	for p = 0, 1 do
+		for i = 0, #pico8.keymap[p] do
+				local v = pico8.keypressed[p][i]
+				if bit.band(b, 2^(i + p * 8))~=0 then
+					pico8.keypressed[p][i] = (v or -1) + 1
+				else
+					pico8.keypressed[p][i] = nil
+				end
+		end
+	end -- foreach player
 end
 -- check whether the predicate returns truthy within num frames
 -- if respect_inputs is true the current inputs are used
