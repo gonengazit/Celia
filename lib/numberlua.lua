@@ -1,4 +1,4 @@
-if love.system.getOS()~="Web" then
+if jit then
     return {bit=require("bit")}
 end
 --[[

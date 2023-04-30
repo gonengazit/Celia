@@ -44,7 +44,7 @@ local handle_funcs = {
             debug.setupvalue(ret,i,deepcopy(val,seen,upvalues))
             -- TODO: make this web compatible and/or figure out what this even
             --       does
-            if love.system.getOS()~='Web' then
+            if jit then
                 local uid = debug.upvalueid(orig, i)
                 if upvalues[uid] then
                     local other_func, other_i = unpack(upvalues[uid])

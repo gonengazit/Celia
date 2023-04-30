@@ -7,8 +7,6 @@ local api = require("api")
 
 local console = require("console")
 
-local is_web = love.system.getOS()=="Web"
-
 --TODO: probably call load_level directly
 --or at least make sure rng seeds are set etc
 function cctas:init()

@@ -3,6 +3,10 @@ love.filesystem.setRequirePath(package.path)
 
 require("strict")
 
+is_web = love.system.getOS()=="Web"
+-- should be unnecessary, playing it safe anyway for linters and such
+jit = pcall(require,"jit")
+
 local bit = require("numberlua").bit
 
 local api = require("api")
@@ -617,7 +621,7 @@ local function inside(x, y, x0, y0, w, h) -- luacheck: no unused
 end
 
 function love.update(dt)
-	if love.system.getOS()=="Web" and cartname then
+	if is_web and cartname then
 		local filename = "tmp/file_pending"
 		if love.filesystem.getInfo(filename) then
 			local fh, e = love.filesystem.newFile(filename,'r')
