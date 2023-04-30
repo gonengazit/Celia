@@ -698,7 +698,7 @@ function cctas:draw()
 	self.super.draw(self)
 	local offset = 13
 	if self.super.show_second_input_display(self) then
-		offset = 13 * 2
+		offset = 12 + 13
 	end
 
 	love.graphics.print(self:hud(),1,offset,0,2/3,2/3)

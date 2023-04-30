@@ -360,7 +360,7 @@ function tas:draw_input_display(x,y,player)
 	if not player then
 		self:draw_input_display(x, y, 0)
 		if self:show_second_input_display() then
-			self:draw_input_display(x, y + 13, 1)
+			self:draw_input_display(x, y + 12, 1)
 		end
 		return
 	end
