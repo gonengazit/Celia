@@ -238,6 +238,11 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+
+	self.pianoroll_inputs = {
+		[1] = "l", [2] = "r", [3] = "u", [4] = "d", [5] = "z", [6] = "x",
+		--[13] = "t",
+	}
 end
 
 function tas:update()
@@ -403,13 +408,9 @@ function tas:draw_piano_roll()
 	local y=0
 
 	-- local inputs={"l","r","u","d","z","x"}
-	local inputs_table = {
-		[1] = "l", [2] = "r", [3] = "u", [4] = "d", [5] = "z", [6] = "x",
-		[13] = "t",
-	}
 
 	local header={}
-	for i,v in pairs(inputs_table) do
+	for i,v in pairs(self.pianoroll_inputs) do
 		header[i]={{0,0,0},v}
 	end
 	draw_inputs_row(header,x,y,10,"idx")
@@ -427,13 +428,13 @@ function tas:draw_piano_roll()
 	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
 		local current_frame = i == frame_count
 		local s={}
-		for j, _ in pairs(inputs_table) do
+		for j, _ in pairs(self.pianoroll_inputs) do
 			if self:key_down(j-1, i) then
 				if current_frame and self:key_held(j-1) then
 					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},inputs_table[j]}
+					s[j]={{r/255,g/255, b/255,a/255},sels.pianoroll_inputs[j]}
 				else
-					s[j]={{0,0,0},inputs_table[j]}
+					s[j]={{0,0,0},self.pianoroll_inputs[j]}
 				end
 
 			else
@@ -533,7 +534,14 @@ function tas:keypressed(key, isrepeat)
 			for i = 0, #pico8.keymap[p] do
 				for _, testkey in pairs(pico8.keymap[p][i]) do
 					if key == testkey  and not isrepeat then
-						if love.keyboard.isDown("lshift", "rshift") then
+						if p ~= 0 and ctrl and love.keyboard.isDown("lshift", "rshift") then
+							-- toggle piano roll display
+							if self.pianoroll_inputs[i + p * 8 + 1] then
+								self.pianoroll_inputs[i + p * 8 + 1] = nil
+							else
+								self.pianoroll_inputs[i + p * 8 + 1] = pico8.keymap[p][i][1]:sub(1, 1)
+							end
+						elseif love.keyboard.isDown("lshift", "rshift") then
 							self:push_undo_state()
 							self:toggle_hold(i + p * 8)
 						else
