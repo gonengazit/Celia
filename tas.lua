@@ -348,16 +348,30 @@ function tas:draw_button(x,y,i)
 	love.graphics.rectangle("fill", x, y, 3, 3)
 end
 
-function tas:draw_input_display(x,y)
+function tas:show_second_input_display()
+	for i = 8, 16 do
+		if self.pianoroll_inputs[i] then
+			return true
+		end
+	end
+	return false
+end
+function tas:draw_input_display(x,y,player)
+	if not player then
+		self:draw_input_display(x, y, 0)
+		if self:show_second_input_display() then
+			self:draw_input_display(x, y + 13, 1)
+		end
+		return
+	end
 	setPicoColor(0)
 	love.graphics.rectangle("fill", x, y, 25,11)
-	self:draw_button(x + 12, y + 6, 0) -- l
-	self:draw_button(x + 20, y + 6, 1) -- r
-	self:draw_button(x + 16, y + 2, 2) -- u
-	self:draw_button(x + 16, y + 6, 3) -- d
-	self:draw_button(x + 2, y + 6, 4) -- z
-	self:draw_button(x + 6, y + 6, 5) -- x
-	self:draw_button(x + 2, y + 2, 12) -- lshift/tab
+	self:draw_button(x + 12, y + 6, 0 + player * 8) -- l
+	self:draw_button(x + 20, y + 6, 1 + player * 8) -- r
+	self:draw_button(x + 16, y + 2, 2 + player * 8) -- u
+	self:draw_button(x + 16, y + 6, 3 + player * 8) -- d
+	self:draw_button(x + 2, y + 6, 4 + player * 8) -- z
+	self:draw_button(x + 6, y + 6, 5 + player * 8) -- x
 end
 
 -- can be overloaded to define different timing methods
