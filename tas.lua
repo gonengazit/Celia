@@ -432,7 +432,7 @@ function tas:draw_piano_roll()
 			if self:key_down(j-1, i) then
 				if current_frame and self:key_held(j-1) then
 					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},sels.pianoroll_inputs[j]}
+					s[j]={{r/255,g/255, b/255,a/255},self.pianoroll_inputs[j]}
 				else
 					s[j]={{0,0,0},self.pianoroll_inputs[j]}
 				end
