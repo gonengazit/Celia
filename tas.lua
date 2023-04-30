@@ -373,7 +373,11 @@ end
 
 --tbl is a table of coloredTexts, of the entries of the table
 local function draw_inputs_row(tbl, x, y, c, frame_num)
-	local box_w = 48/#tbl
+	local input_count = 0
+	for _, _ in pairs(tbl) do
+		input_count = input_count + 1
+	end
+	local box_w = 48/input_count
 
 	-- draw the frame number
 	setPicoColor(c)
@@ -382,13 +386,15 @@ local function draw_inputs_row(tbl, x, y, c, frame_num)
 	love.graphics.rectangle("line", x, y, 17, 7)
 	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right")
 
-	for i=1, #tbl do
+	local i = 1
+	for input, _ in pairs(tbl) do
 		setPicoColor(c)
 		love.graphics.rectangle("fill", x+(i-1)*box_w+17, y, box_w, 7)
 		setPicoColor(0)
 		love.graphics.rectangle("line", x+(i-1)*box_w+17, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.printf(tbl[i], x+(i-1)*box_w+17, y+1, box_w, "center")
+		love.graphics.printf(tbl[input], x+(i-1)*box_w+17, y+1, box_w, "center")
+		i = i + 1
 	end
 end
 
@@ -396,11 +402,14 @@ function tas:draw_piano_roll()
 	local x=pico8.resolution[1] + self.hud_w
 	local y=0
 
-	local inputs={"l","r","u","d","z","x"}
-
+	-- local inputs={"l","r","u","d","z","x"}
+	local inputs_table = {
+		[1] = "l", [2] = "r", [3] = "u", [4] = "d", [5] = "z", [6] = "x",
+		[13] = "t",
+	}
 
 	local header={}
-	for i,v in ipairs(inputs) do
+	for i,v in pairs(inputs_table) do
 		header[i]={{0,0,0},v}
 	end
 	draw_inputs_row(header,x,y,10,"idx")
@@ -418,13 +427,13 @@ function tas:draw_piano_roll()
 	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
 		local current_frame = i == frame_count
 		local s={}
-		for j=1, #inputs do
+		for j, _ in pairs(inputs_table) do
 			if self:key_down(j-1, i) then
 				if current_frame and self:key_held(j-1) then
 					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+					s[j]={{r/255,g/255, b/255,a/255},inputs_table[j]}
 				else
-					s[j]={{0,0,0},inputs[j]}
+					s[j]={{0,0,0},inputs_table[j]}
 				end
 
 			else
