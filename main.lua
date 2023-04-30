@@ -99,6 +99,9 @@ pico8 = {
 	spritesheet_data = nil,
 	spritesheet = nil,
 	spritesheet_changed = false,
+	mouse_x = 0, 
+	mouse_y = 0,
+	mouse_mask = 0,
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
@@ -135,6 +138,14 @@ glyph_edgecases = {
 }
 
 local flr, abs = math.floor, math.abs
+local function clamp(x, min, max)
+	if x < min then
+		return min
+	elseif x > max then
+		return max
+	end
+	return x
+end
 
 loaded_code = nil
 
@@ -342,7 +353,7 @@ function love.load(argv)
 	love.graphics.setFont(pico8.font)
 	pico8.font:setFilter("nearest", "nearest")
 
-	love.mouse.setVisible(false)
+	--love.mouse.setVisible(false)
 	love.keyboard.setKeyRepeat(true)
 	love.graphics.setLineStyle("rough")
 	love.graphics.setPointSize(1)
@@ -993,6 +1004,20 @@ end
 
 function love.wheelmoved(_, y)
 	pico8.mwheel = pico8.mwheel + y
+end
+
+function love.mousemoved(x, y, dx, dy, istouch)
+	local orig_x = 0
+	local orig_y = 0
+	local screen_w, screen_h = love.graphics.getDimensions()
+	local tas_w, tas_h = tastool.screen:getDimensions()
+	if screen_w/tas_w > screen_h/tas_h then
+		orig_x = screen_w / 2 - (tas_w / 2 * scale)
+	else
+		orig_y = screen_h / 2 - (tas_h / 2 * scale)
+	end
+	pico8.mouse_x = clamp(flr((x - orig_x) / scale / tastool.scale - tastool.hud_w), 0, pico8.resolution[1] - 1)
+	pico8.mouse_y = clamp(flr((y - orig_y) / scale / tastool.scale - tastool.hud_h), 0, pico8.resolution[2] - 1)
 end
 
 function love.graphics.point(x, y)

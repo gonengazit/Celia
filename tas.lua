@@ -430,6 +430,9 @@ function tas:draw_piano_roll()
 	end
 
 end
+function tas:mouse_hud()
+	return ("x: %d, y: %d\nbtns: %u"):format(pico8.mouse_x, pico8.mouse_y, pico8.mouse_mask)
+end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(tas.screen)
@@ -448,6 +451,9 @@ function tas:draw()
 
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
+
+	setPicoColor(7)
+	love.graphics.print(self:mouse_hud(), 1, 50, 0, 2/3, 2/3)
 
 	self:draw_piano_roll()
 

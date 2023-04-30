@@ -1772,17 +1772,20 @@ function api.stat(x)
 	elseif x == 31 then
 		return (table.remove(pico8.kbdbuffer, 1) or "")
 	elseif x == 32 then
-		return getmousex()
+		--return getmousex()
+		return pico8.mouse_x
 	elseif x == 33 then
-		return getmousey()
+		--return getmousey()
+		return pico8.mouse_y
 	elseif x == 34 then
-		local btns = 0
-		for i = 0, 2 do
-			if love.mouse.isDown(i + 1) then
-				btns = bit.bor(btns, bit.lshift(1, i))
-			end
-		end
-		return btns
+		-- local btns = 0
+		-- for i = 0, 2 do
+		-- 	if love.mouse.isDown(i + 1) then
+		-- 		btns = bit.bor(btns, bit.lshift(1, i))
+		-- 	end
+		-- end
+		-- return btns
+		return pico8.mouse_mask
 	elseif x == 36 then
 		return pico8.mwheel
 	elseif (x >= 80 and x <= 85) or (x >= 90 and x <= 95) then
