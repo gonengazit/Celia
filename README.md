@@ -65,6 +65,15 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __F6__ - take screenshot
 * __Ctrl + R__ - reload cart and tas tool (Warning: this cannot be undone!)
 
+#### Second player inputs
+You can use the inputs of the second player as follow:
+* __;__, __,__, __.__, __/__ - correspond respectively to __e__, __s__, __d__, __f__ (directionnal keys), which are used by other functions in the tool
+* __\[__, __\]__, __\\__ - also available for __s__, __d__, __f__
+* __1__, __Q__ - equivalent of __X__ for the first player (also correspond to __A__ in Pico 8)
+* __Tab__, __W__ - equivalent of __C__/__Z__ for the first player (also correspond to __LeftShift__ in Pico 8)
+To toggle the display of an input in the piano roll, you can press __Ctrl + Shift + \<input binding\>__
+If any of the input of the second player is displayed in the piano roll, a second input display will be shown under the first one on the left hand side of the screen, showing the inputs for the second player.
+
 ### Visual selection mode
 Visual selection mode allows you to perform operations on a contiguous range of inputs. The selected range will always start with the current frame (highlighted blue on the piano roll), and contain all subsequent frames (highlighted gray). You can always exit visual selection mode, by making the selection empty, or pressing __ESC__.
 
