@@ -8,6 +8,28 @@ tas.hud_h = 0
 tas.scale = 6
 tas.pianoroll_w=65
 
+local keymap_names = {
+	[0] = {
+		[0] = "l",
+		[1] = "r",
+		[2] = "u",
+		[3] = "d",
+		[4] = "z",
+		[5] = "x",
+		[6] = "esc" ,
+		[7] = "?",
+	},
+	[1] = {
+		[0] = "s",
+		[1] = "f",
+		[2] = "e",
+		[3] = "d",
+		[4] = "tab", 
+		[5] = "1",
+		[6] = "?",
+		[7] = "?",
+	},
+}
 
 --wrapper functions
 
@@ -396,23 +418,29 @@ local function draw_inputs_row(tbl, x, y, c, frame_num)
 	for _, _ in pairs(tbl) do
 		input_count = input_count + 1
 	end
-	local box_w = 48/input_count
+
+	local x_scale = 1 -- to make the text less wide if needed
+	if input_count > 8 then
+		x_scale = 1 - (input_count - 8) / 10
+	end
+	local idx_w = math.ceil(17 * x_scale)
+	local box_w = (48 + 17 - idx_w)/input_count
 
 	-- draw the frame number
 	setPicoColor(c)
-	love.graphics.rectangle("fill", x, y, 17, 7)
+	love.graphics.rectangle("fill", x, y, idx_w, 7)
 	setPicoColor(0)
-	love.graphics.rectangle("line", x, y, 17, 7)
-	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right")
+	love.graphics.rectangle("line", x, y, idx_w, 7)
+	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right", 0, x_scale, 1)
 
 	local i = 1
 	for input, _ in pairs(tbl) do
 		setPicoColor(c)
-		love.graphics.rectangle("fill", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("fill", x+(i-1)*box_w+idx_w, y, box_w, 7)
 		setPicoColor(0)
-		love.graphics.rectangle("line", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("line", x+(i-1)*box_w+idx_w, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.printf(tbl[input], x+(i-1)*box_w+17, y+1, box_w, "center")
+		love.graphics.printf(tbl[input], x+(i-1)*box_w+idx_w, y+1, box_w / x_scale, "center", 0, x_scale, 1)
 		i = i + 1
 	end
 end
@@ -553,7 +581,7 @@ function tas:keypressed(key, isrepeat)
 							if self.pianoroll_inputs[i + p * 8 + 1] then
 								self.pianoroll_inputs[i + p * 8 + 1] = nil
 							else
-								self.pianoroll_inputs[i + p * 8 + 1] = pico8.keymap[p][i][1]:sub(1, 1)
+								self.pianoroll_inputs[i + p * 8 + 1] = keymap_names[p][i]
 							end
 						elseif love.keyboard.isDown("lshift", "rshift") then
 							self:push_undo_state()
