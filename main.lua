@@ -1021,6 +1021,11 @@ function love.mousemoved(x, y, dx, dy, istouch)
 	tastool:mousemoved(mouse_x, mouse_y)
 end
 
+function love.mousepressed( x, y, button, istouch, presses )
+	-- löve ranges button from 1 to 3, we want from 0 to 2
+	tastool:mousepressed(button - 1) -- TODO: maybe use x, y as well?
+end
+
 function love.graphics.point(x, y)
 	love.graphics.rectangle("fill", x, y, 1, 1)
 end

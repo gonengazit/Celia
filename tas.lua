@@ -52,6 +52,12 @@ function tas:set_mouse(x, y, mask, frame)
 	self.inputstates[frame].mouse_mask = mask
 end
 
+-- button is 0, 1 or 2
+function tas:toggle_mouse_button(button, frame)
+	frame = frame or self:frame_count() + 1
+	self.inputstates[frame].mouse_mask=bit.bxor(self.inputstates[frame].mouse_mask,2^button)
+end
+
 function tas:reset_inputs()
 	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 end
@@ -82,7 +88,8 @@ function tas:reset_hold()
 	self.hold=0
 end
 
-local function update_buttons(self, input_idx)
+local function update_pico8_from_frame(self, input_idx)
+	-- controller buttons
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
 			if self:key_down(i, input_idx) then
@@ -91,6 +98,8 @@ local function update_buttons(self, input_idx)
 				pico8.keypressed[0][i] = nil
 			end
 	end
+	-- mouse
+	pico8.mouse_x , pico8.mouse_y, pico8.mouse_mask = self:get_mouse(input_idx)
 end
 
 
@@ -177,14 +186,18 @@ function tas:step()
 
 	--update based on the buttons of the 'previous' frame
 	--TODO: make this cleaner
-	update_buttons(self,input_idx)
+	update_pico8_from_frame(self,input_idx)
 
 	love.graphics.setCanvas(pico8.screen)
 	rawstep()
 
 	--advance the state of pressed keys
 	self.inputstates[self:frame_count()+1].keys = self:advance_keystate(self.inputstates[self:frame_count()+1].keys)
-	-- TODO: also advance mouse
+	-- advance the state of the mouse
+	self.inputstates[self:frame_count()+1].mouse_x
+	, self.inputstates[self:frame_count()+1].mouse_y
+	= self:get_mouse(self:frame_count()) -- copy previous frame
+	self.inputstates[self:frame_count()+1].mouse_mask = 0
 end
 
 function tas:rewind()
@@ -609,6 +622,10 @@ end
 function tas:mousemoved(x, y)
 	local _, _, mask = self:get_mouse()
 	self:set_mouse(x, y, mask)
+end
+
+function tas:mousepressed(button)
+	self:toggle_mouse_button(button)
 end
 
 -- b is a bitmask of the inputs
