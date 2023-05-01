@@ -41,12 +41,23 @@ function tas:toggle_hold(i)
 	end
 end
 
+function tas:get_mouse(frame)
+	frame = frame or self:frame_count() + 1
+	return self.inputstates[frame].mouse_x, self.inputstates[frame].mouse_y, self.inputstates[frame].mouse_mask
+end
+function tas:set_mouse(x, y, mask, frame)
+	frame = frame or self:frame_count() + 1
+	self.inputstates[frame].mouse_x = x
+	self.inputstates[frame].mouse_y = y
+	self.inputstates[frame].mouse_mask = mask
+end
+
 function tas:reset_inputs()
-	self.inputstates[self:frame_count()+1].keys={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 end
 
 function tas:insert_inputstate()
-	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = self.current_mouse_x, mouse_y = self.current_mouse_y, mouse_mask = 0})
+	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
 end
 
 function tas:duplicate_inputstate()
@@ -207,12 +218,12 @@ end
 function tas:full_reset()
 	self:full_rewind()
 	self.hold=0
-	self.inputstates={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	self.inputstates={ {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0} }
 end
 
 function tas:init()
 	self.states={}
-	self.inputstates={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	self.inputstates={ {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0} }
 	self.realtime_playback=false
 	self.hold = 0
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
@@ -235,10 +246,6 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
-
-	-- mouse infos
-	self.current_mouse_x = 0
-	self.current_mouse_y = 0
 end
 
 function tas:update()
@@ -436,7 +443,7 @@ function tas:draw_piano_roll()
 
 end
 function tas:mouse_hud()
-	return ("x: %d, y: %d\nbtns: %u"):format(pico8.mouse_x, pico8.mouse_y, pico8.mouse_mask)
+	return ("x: %d, y: %d\nbtns: %u"):format(self:get_mouse())
 end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
@@ -458,7 +465,7 @@ function tas:draw()
 	self:draw_input_display(1+frame_count_width+1,1)
 
 	setPicoColor(7)
-	love.graphics.print(self:mouse_hud(), 1, 50, 0, 2/3, 2/3)
+	love.graphics.print(self:mouse_hud(), 1, 80, 0, 2/3, 2/3)
 
 	self:draw_piano_roll()
 
@@ -597,6 +604,11 @@ function tas:selection_keypress(key, isrepeat)
 			end
 		end
 	end
+end
+
+function tas:mousemoved(x, y)
+	local _, _, mask = self:get_mouse()
+	self:set_mouse(x, y, mask)
 end
 
 -- b is a bitmask of the inputs

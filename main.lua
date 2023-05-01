@@ -1016,8 +1016,9 @@ function love.mousemoved(x, y, dx, dy, istouch)
 	else
 		orig_y = screen_h / 2 - (tas_h / 2 * scale)
 	end
-	pico8.mouse_x = clamp(flr((x - orig_x) / scale / tastool.scale - tastool.hud_w), 0, pico8.resolution[1] - 1)
-	pico8.mouse_y = clamp(flr((y - orig_y) / scale / tastool.scale - tastool.hud_h), 0, pico8.resolution[2] - 1)
+	local mouse_x = clamp(flr((x - orig_x) / scale / tastool.scale - tastool.hud_w), 0, pico8.resolution[1] - 1)
+	local mouse_y = clamp(flr((y - orig_y) / scale / tastool.scale - tastool.hud_h), 0, pico8.resolution[2] - 1)
+	tastool:mousemoved(mouse_x, mouse_y)
 end
 
 function love.graphics.point(x, y)

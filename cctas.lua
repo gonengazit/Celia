@@ -229,6 +229,10 @@ function cctas:rng_seed_keypress(key,isrepeat)
 	end
 end
 
+function cctas:mousemoved(x, y)
+	self.super.mousemoved(self, x, y)
+end
+
 -- cycle the rng seed index forward if dir is 1 and backward if it is -1
 -- returns true if a seedable object exists
 function cctas:advance_seeded_obj(dir)
