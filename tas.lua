@@ -15,7 +15,7 @@ tas.pianoroll_w=65
 -- index defaults to the current frame if nil
 function tas:key_down(i, frame)
 	frame = frame or self:frame_count() + 1
-	return bit.band(self.keystates[frame],2^i)~=0
+	return bit.band(self.inputstates[frame].keys,2^i)~=0
 end
 
 function tas:key_held(i)
@@ -24,7 +24,7 @@ end
 
 function tas:toggle_key(i, frame)
 	frame = frame or self:frame_count() + 1
-	self.keystates[frame]=bit.bxor(self.keystates[frame],2^i)
+	self.inputstates[frame].keys=bit.bxor(self.inputstates[frame].keys,2^i)
 
 	--disabling a key on the current frame should also disable that hold
 	if not self:key_down(i) and frame == self:frame_count() + 1 then
@@ -37,32 +37,32 @@ function tas:toggle_hold(i)
 
 	-- holding a key should also set it
 	if self:key_held(i) then
-		self.keystates[self:frame_count()+1]=bit.bor(self.keystates[self:frame_count()+1],2^i)
+		self.inputstates[self:frame_count()+1].keys=bit.bor(self.inputstates[self:frame_count()+1].keys,2^i)
 	end
 end
 
-function tas:reset_keys()
-	self.keystates[self:frame_count()+1]=0
+function tas:reset_inputs()
+	self.inputstates[self:frame_count()+1].keys={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 end
 
-function tas:insert_keystate()
-	table.insert(self.keystates, self:frame_count() + 1, self.hold)
+function tas:insert_inputstate()
+	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = self.current_mouse_x, mouse_y = self.current_mouse_y, mouse_mask = 0})
 end
 
-function tas:duplicate_keystate()
-	table.insert(self.keystates, self:frame_count() + 1, self.keystates[self:frame_count()+1])
+function tas:duplicate_inputstate()
+	table.insert(self.inputstates, self:frame_count() + 1, self.inputstates[self:frame_count()+1])
 end
 
-function tas:delete_keystate()
-	table.remove(self.keystates, self:frame_count() + 1)
-	if self:frame_count() + 1 > #self.keystates then
-		table.insert(self.keystates, 0)
+function tas:delete_inputstate()
+	table.remove(self.inputstates, self:frame_count() + 1)
+	if self:frame_count() + 1 > #self.inputstates then
+		table.insert(self.inputstates, {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
 	end
 end
 
 function tas:delete_selection()
 	for i=self:frame_count()+1, self.last_selected_frame do
-		self:delete_keystate()
+		self:delete_inputstate()
 	end
 	self.last_selected_frame = -1
 end
@@ -113,8 +113,8 @@ function tas:pushstate()
 	table.insert(self.states,pico8)
 	pico8 = clone
 
-	if self.keystates[self:frame_count()+1] == nil then
-		self.keystates[self:frame_count()+1] = 0
+	if self.inputstates[self:frame_count()+1] == nil then
+		self.inputstates[self:frame_count()+1] = {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 	end
 end
 
@@ -172,7 +172,8 @@ function tas:step()
 	rawstep()
 
 	--advance the state of pressed keys
-	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
+	self.inputstates[self:frame_count()+1].keys = self:advance_keystate(self.inputstates[self:frame_count()+1].keys)
+	-- TODO: also advance mouse
 end
 
 function tas:rewind()
@@ -191,7 +192,7 @@ function tas:rewind()
 	restore_clip()
 	restore_camera()
 
-	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
+	self.inputstates[self:frame_count()+1].keys = self:advance_keystate(self.inputstates[self:frame_count()+1].keys)
 end
 
 --rewind to the first frame
@@ -206,12 +207,12 @@ end
 function tas:full_reset()
 	self:full_rewind()
 	self.hold=0
-	self.keystates={0}
+	self.inputstates={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 end
 
 function tas:init()
 	self.states={}
-	self.keystates={0}
+	self.inputstates={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
 	self.realtime_playback=false
 	self.hold = 0
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
@@ -234,6 +235,10 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+
+	-- mouse infos
+	self.current_mouse_x = 0
+	self.current_mouse_y = 0
 end
 
 function tas:update()
@@ -266,12 +271,12 @@ local function shallow_copy(t)
 end
 -- states are shallow copyied (for perf reasons), meaning mutating them directly will cause undo to desync
 function tas:get_editor_state()
-	return {states = shallow_copy(self.states), keystates = deepcopy(self.keystates), pico8 = pico8}
+	return {states = shallow_copy(self.states), inputstates = deepcopy(self.inputstates), pico8 = pico8}
 end
 
 function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
-	self.keystates = deepcopy(state.keystates)
+	self.inputstates = deepcopy(state.inputstates)
 	pico8 = state.pico8
 end
 
@@ -406,11 +411,11 @@ function tas:draw_piano_roll()
 	--use 1/3rd of the rows for frames before, and 2/3rds for the frames after the curr frame
 	--use make sure to use all the rows on the edges
 	local start_row = math.max(frame_count - math.floor(num_rows/3), self.last_selected_frame - num_rows + 2,1)
-	if start_row + num_rows - 1 > #self.keystates then
-		start_row = math.max(#self.keystates - num_rows + 1, 1)
+	if start_row + num_rows - 1 > #self.inputstates then
+		start_row = math.max(#self.inputstates - num_rows + 1, 1)
 	end
 
-	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
+	for i=start_row, math.min(start_row + num_rows - 1, #self.inputstates) do
 		local current_frame = i == frame_count
 		local s={}
 		for j=1, #inputs do
@@ -483,7 +488,7 @@ function tas:keypressed(key, isrepeat)
 		self:selection_keypress(key, isrepeat)
 	elseif key=='l' then
 		if love.keyboard.isDown('lshift', 'rshift') then
-			if self:frame_count() + 1 < #self.keystates then
+			if self:frame_count() + 1 < #self.inputstates then
 				self.last_selected_frame = self:frame_count() + 2
 			end
 		else
@@ -504,13 +509,13 @@ function tas:keypressed(key, isrepeat)
 	elseif key=='insert' then
 		self:push_undo_state()
 		if ctrl then
-			self:duplicate_keystate()
+			self:duplicate_inputstate()
 		else
-			self:insert_keystate()
+			self:insert_inputstate()
 		end
 	elseif key=='delete' then
 		self:push_undo_state()
-		self:delete_keystate()
+		self:delete_inputstate()
 	elseif key == 'v' and ctrl then
 		self:push_undo_state()
 		self:paste_inputs()
@@ -541,7 +546,7 @@ end
 function tas:selection_keypress(key, isrepeat)
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
 	if key == 'l' then
-		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
+		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.inputstates)
 	elseif key == 'k' then
 		self.last_selected_frame = self.last_selected_frame - 1
 		if self.last_selected_frame <= self:frame_count() + 1 then
@@ -572,7 +577,7 @@ function tas:selection_keypress(key, isrepeat)
 	elseif key == 'home' then
 		self.last_selected_frame = self:frame_count() + 2
 	elseif key=='end' then
-		self.last_selected_frame = #self.keystates
+		self.last_selected_frame = #self.inputstates
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
@@ -632,7 +637,11 @@ function tas:predict(pred, num, inputs)
 	if type(inputs)=="table" then
 		input_tbl=inputs
 	elseif inputs then
-		input_tbl={table.unpack(self.keystates,self:frame_count()+1)}
+		input_tbl = {}
+		all_input_tbl={table.unpack(self.inputstates,self:frame_count()+1)}
+		for i, v in pairs(all_input_tbl) do
+			input_tbl[i] = v.keys
+		end
 	else
 		input_tbl={}
 	end
@@ -665,13 +674,17 @@ function tas:load_input_str(input_str, i)
 			table.insert(new_inputs, tonumber(input))
 		end
 	end
+	-- TODO: also read mouse
 	if i == nil then
 		self:full_reset()
-		self.keystates = new_inputs
+		self.inputstates = {}
+		for i, v in ipairs(new_inputs) do
+			self.inputstates[i] = {keys = v, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+		end
 	else
 		--insert the new inputs before index i
 		for j,v in ipairs(new_inputs) do
-			table.insert(self.keystates, i+j-1, v)
+			table.insert(self.inputstates, i+j-1, {keys = v, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
 		end
 	end
 	return #new_inputs
@@ -679,7 +692,12 @@ end
 
 -- i,j optional indices for start and end
 function tas:get_input_str(i,j)
-	return table.concat(self.keystates, ",", i, j)
+	-- TODO: also write mouse
+	local keystates = {}
+	for i, v in ipairs(self.inputstates) do
+		table.insert(keystates, v.keys)
+	end
+	return table.concat(keystates, ",", i, j)
 end
 
 -- get the file object of the input file
