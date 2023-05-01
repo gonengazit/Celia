@@ -103,24 +103,32 @@ local function update_pico8_from_frame(self, input_idx)
 end
 
 
--- returns the keystate of the next frame
+-- returns the inputstate of the next frame
 -- depending on its current state, whether the the user is holding down inputs, and the current hold
 --
 -- i.e, if the input is currently right, and up is held, up+right will be returned
-function tas:advance_keystate(curr_keystate)
-	curr_keystate = curr_keystate or 0
-	curr_keystate= bit.bor(curr_keystate, self.hold)
+-- mouse position is copied from the second to last frame, i.e. the real position of the mouse for the user
+function tas:advance_inputstate(curr_inputstate)
+	curr_inputstate = curr_inputstate or {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	-- controller buttons
+	curr_inputstate.keys = bit.bor(curr_inputstate.keys, self.hold)
 	if not self.realtime_playback then
 		for i=0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if love.keyboard.isDown(testkey) then
-					curr_keystate = bit.bor(curr_keystate, 2^i)
+					curr_inputstate.keys = bit.bor(curr_inputstate.keys, 2^i)
 					break
 				end
 			end
 		end
 	end
-	return curr_keystate
+	-- mouse
+	for b = 0, 2 do
+		if love.mouse.isDown(b + 1) then
+			curr_inputstate.mouse_mask = bit.bor(curr_inputstate.mouse_mask, 2^b)
+		end
+	end
+	return curr_inputstate
 end
 
 -- deepcopy the current state, and push it to the stack
@@ -191,13 +199,9 @@ function tas:step()
 	love.graphics.setCanvas(pico8.screen)
 	rawstep()
 
-	--advance the state of pressed keys
-	self.inputstates[self:frame_count()+1].keys = self:advance_keystate(self.inputstates[self:frame_count()+1].keys)
-	-- advance the state of the mouse
-	self.inputstates[self:frame_count()+1].mouse_x
-	, self.inputstates[self:frame_count()+1].mouse_y
-	= self:get_mouse(self:frame_count()) -- copy previous frame
-	self.inputstates[self:frame_count()+1].mouse_mask = 0
+	--advance the state of pressed keys, the mouse position and buttons
+	self.inputstates[self:frame_count()+1] = self:advance_inputstate(self.inputstates[self:frame_count()+1])
+	print("### new mouse_x: ", self.inputstates[self:frame_count() + 1].mouse_x)
 end
 
 function tas:rewind()
@@ -216,7 +220,7 @@ function tas:rewind()
 	restore_clip()
 	restore_camera()
 
-	self.inputstates[self:frame_count()+1].keys = self:advance_keystate(self.inputstates[self:frame_count()+1].keys)
+	self.inputstates[self:frame_count()+1] = self:advance_inputstate(self.inputstates[self:frame_count()+1])
 end
 
 --rewind to the first frame
@@ -696,11 +700,12 @@ end
 function tas:load_input_str(input_str, i)
 	local new_inputs={}
 	for input in input_str:gmatch("[^,]+") do
-		if tonumber(input) == nil then
-			print("invalid input file")
+		local keys, mouse_x, mouse_y, mouse_mask = input:match("(%d*):(%d*):(%d*):(%d*)")
+		if keys == nil or mouse_x == nil or mouse_y == nil or mouse_mask == nil then
+			print("invalid input file: invalid frame: ", input)
 			return
 		else
-			table.insert(new_inputs, tonumber(input))
+			table.insert(new_inputs, {keys = tonumber(keys), mouse_x = tonumber(mouse_x), mouse_y = tonumber(mouse_y), mouse_mask = tonumber(mouse_mask)})
 		end
 	end
 	-- TODO: also read mouse
@@ -708,12 +713,12 @@ function tas:load_input_str(input_str, i)
 		self:full_reset()
 		self.inputstates = {}
 		for i, v in ipairs(new_inputs) do
-			self.inputstates[i] = {keys = v, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+			self.inputstates[i] = {keys = v.keys, mouse_x = v.mouse_x, mouse_y = v.mouse_y, mouse_mask = v.mouse_mask}
 		end
 	else
 		--insert the new inputs before index i
 		for j,v in ipairs(new_inputs) do
-			table.insert(self.inputstates, i+j-1, {keys = v, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
+			table.insert(self.inputstates, i+j-1, {keys = v.keys, mouse_x = v.mouse_x, mouse_y = v.mouse_y, mouse_mask = v.mouse_mask})
 		end
 	end
 	return #new_inputs
@@ -722,11 +727,12 @@ end
 -- i,j optional indices for start and end
 function tas:get_input_str(i,j)
 	-- TODO: also write mouse
-	local keystates = {}
+	local flat_inputs = {}
 	for i, v in ipairs(self.inputstates) do
-		table.insert(keystates, v.keys)
+		local frame_str = string.format("%d:%d:%d:%d", v.keys, v.mouse_x, v.mouse_y, v.mouse_mask)
+		table.insert(flat_inputs, frame_str)
 	end
-	return table.concat(keystates, ",", i, j)
+	return table.concat(flat_inputs, ",", i, j)
 end
 
 -- get the file object of the input file
