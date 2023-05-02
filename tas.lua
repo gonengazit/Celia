@@ -454,6 +454,9 @@ function tas:draw_piano_roll()
 	local y=0
 
 	local inputs={"l","r","u","d","z","x"}
+	if self.mouse_enabled then
+		table.insert(inputs, "M")
+	end
 
 
 	local header={}
@@ -476,16 +479,24 @@ function tas:draw_piano_roll()
 		local current_frame = i == frame_count
 		local s={}
 		for j=1, #inputs do
-			if self:key_down(j-1, i) then
-				if current_frame and self:key_held(j-1) then
-					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+			if inputs[j] ~= "M" then
+				if self:key_down(j-1, i) then
+					if current_frame and self:key_held(j-1) then
+						local r,g,b,a=unpack(pico8.palette[8])
+						s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+					else
+						s[j]={{0,0,0},inputs[j]}
+					end
 				else
-					s[j]={{0,0,0},inputs[j]}
+					s[j]=" "
 				end
-
-			else
-				s[j]=" "
+			else -- mouse buttons column
+				local _, _, mask = self:get_mouse(i)
+				if mask ~= 0 then
+					s[j] = {{0, 0, 0}, string.format("%u", mask)}
+				else
+					s[j]=" "
+				end
 			end
 		end
 		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
@@ -740,7 +751,19 @@ function tas:mousemoved(x, y)
 end
 
 function tas:mousepressed(button)
+	if self.last_selected_frame ~= -1 then
+		self:mousepressed_selection(button)
+	else
+		self:toggle_mouse_button(button)
+	end
+end
+function tas:mousepressed_selection(button)
 	self:toggle_mouse_button(button)
+	for frame =  self:frame_count() + 2, self.last_selected_frame do
+		if love.keyboard.isDown("lalt", "ralt") or self:mouse_button_down(button,frame) ~= self:mouse_button_down(button) then
+			self:toggle_mouse_button(button, frame)
+		end
+	end
 end
 
 -- b is a bitmask of the inputs

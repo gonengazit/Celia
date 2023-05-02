@@ -71,7 +71,7 @@ The mouse input display indicates:
 * "__(..., ...)__" - the position of your mouse
 * "__btns: ...__" - the state of the mouse buttons for the current frame. This field is a bit field, where the left mouse button is 1, the right mouse button is 2, and the middle mouse button is 4. (i.e. if more than one button is pressed the sum is displayed)
 
-The state of the buttons for the current frame can be modified exactly as any regular controller button, by using the mouse buttons instead of a controller button.
+The state of the buttons for the current frame can be modified as any regular controller button, by using the mouse buttons instead of a controller button. The only difference is that you can't toggle the auto-hold (__Shift + controller button__) of a mouse button. It's still possible to frame advance while manually holding the button to set it.
 
 The mouse position is handled as follow:
 * To set the mouse position for the current frame, press __Space__, it will set it to current position of your mouse.
@@ -88,8 +88,8 @@ Visual selection mode allows you to perform operations on a contiguous range of 
 * __ESC__ - exit visual selection mode
 * __End__ - extend selection until last frame
 * __Home__ - reduce selection to the current frame, and the next one.
-* __controller button__ - set/unset the button for all selected frames
-* __Alt + basic button__ - toggle the button for all selected frames
+* __controller button / mouse button__ - set/unset the button for all selected frames
+* __Alt + basic button / mouse button__ - toggle the button for all selected frames
 * __Ctrl + C__ - copy selected frames to clipboard
 * __Ctrl + V__ - replace selection with frames pasted from clipboard
 * __Ctrl + X__ - cut frames to clipboard
