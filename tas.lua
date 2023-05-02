@@ -664,6 +664,7 @@ function tas:keypressed(key, isrepeat)
 		elseif self.mouse_enabled then
 			local _, _, mask = self:get_mouse()
 			local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+			self:push_undo_state() -- TODO: may not be desired
 			self:set_mouse(mouse_x, mouse_y, mask)
 		end
 	else
@@ -759,10 +760,12 @@ function tas:mousepressed(button)
 	if self.last_selected_frame ~= -1 then
 		self:mousepressed_selection(button)
 	else
+		self:push_undo_state()
 		self:toggle_mouse_button(button)
 	end
 end
 function tas:mousepressed_selection(button)
+	self:push_undo_state()
 	self:toggle_mouse_button(button)
 	for frame =  self:frame_count() + 2, self.last_selected_frame do
 		if love.keyboard.isDown("lalt", "ralt") or self:mouse_button_down(button,frame) ~= self:mouse_button_down(button) then

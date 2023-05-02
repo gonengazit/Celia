@@ -66,6 +66,8 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __Ctrl + R__ - reload cart and tas tool (Warning: this cannot be undone!)
 
 ### Mouse input
+* __Ctrl + Shift + Space__ - enables or disables the mouse. If the cart calls `poke(0x5f2d, 1)` in its `_init()` to request the mouse, the tastool starts with the mouse already enabled.
+
 The mouse input display indicates:
 * "__x: ..., y: ...__" - the mouse position for the current frame. This line turns red when __Space__ is pressed. See below for more informations.
 * "__(..., ...)__" - the position of your mouse
