@@ -52,6 +52,26 @@ function tas:set_mouse(x, y, mask, frame)
 	self.inputstates[frame].mouse_mask = mask
 end
 
+-- frame is the current frame, for which the position is wanted
+-- use the mouse position if space is hold, otherwise copy the previous frame
+function tas:get_wanted_mouse_pos(frame)
+	-- look at the previous frame
+	if frame then
+		frame = frame - 1
+	else
+		frame = self:frame_count()
+	end
+	if love.keyboard.isDown("space") then
+		return self.user_mouse_x, self.user_mouse_y
+	else
+		if frame <= 0 then
+			return 0, 0
+		end
+		local x, y = self:get_mouse(frame)
+		return x, y
+	end
+end
+
 -- button is 0, 1 or 2
 function tas:toggle_mouse_button(button, frame)
 	frame = frame or self:frame_count() + 1
@@ -59,11 +79,12 @@ function tas:toggle_mouse_button(button, frame)
 end
 
 function tas:reset_inputs()
-	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0}
 end
 
 function tas:insert_inputstate()
-	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
+	local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0})
 end
 
 function tas:duplicate_inputstate()
@@ -73,7 +94,7 @@ end
 function tas:delete_inputstate()
 	table.remove(self.inputstates, self:frame_count() + 1)
 	if self:frame_count() + 1 > #self.inputstates then
-		table.insert(self.inputstates, {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0})
+		table.insert(self.inputstates, {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0})
 	end
 end
 
@@ -107,9 +128,9 @@ end
 -- depending on its current state, whether the the user is holding down inputs, and the current hold
 --
 -- i.e, if the input is currently right, and up is held, up+right will be returned
--- mouse position is copied from the second to last frame, i.e. the real position of the mouse for the user
 function tas:advance_inputstate(curr_inputstate)
-	curr_inputstate = curr_inputstate or {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+	local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+	curr_inputstate = curr_inputstate or {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0}
 	-- controller buttons
 	curr_inputstate.keys = bit.bor(curr_inputstate.keys, self.hold)
 	if not self.realtime_playback then
@@ -142,7 +163,8 @@ function tas:pushstate()
 	pico8 = clone
 
 	if self.inputstates[self:frame_count()+1] == nil then
-		self.inputstates[self:frame_count()+1] = {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0}
+		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+		self.inputstates[self:frame_count()+1] = {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0}
 	end
 end
 
@@ -201,7 +223,6 @@ function tas:step()
 
 	--advance the state of pressed keys, the mouse position and buttons
 	self.inputstates[self:frame_count()+1] = self:advance_inputstate(self.inputstates[self:frame_count()+1])
-	print("### new mouse_x: ", self.inputstates[self:frame_count() + 1].mouse_x)
 end
 
 function tas:rewind()
@@ -235,12 +256,12 @@ end
 function tas:full_reset()
 	self:full_rewind()
 	self.hold=0
-	self.inputstates={ {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0} }
+	self.inputstates={ {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0} }
 end
 
 function tas:init()
 	self.states={}
-	self.inputstates={ {keys = 0, mouse_x = 0, mouse_y = 0, mouse_mask = 0} }
+	self.inputstates={ {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0} }
 	self.realtime_playback=false
 	self.hold = 0
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
@@ -263,6 +284,10 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+
+	-- mouse
+	self.user_mouse_x = 1
+	self.user_mouse_y = 1
 end
 
 function tas:update()
@@ -459,8 +484,19 @@ function tas:draw_piano_roll()
 	end
 
 end
-function tas:mouse_hud()
-	return ("x: %d, y: %d\nbtns: %u"):format(self:get_mouse())
+function tas:draw_mouse_hud(x, y)
+	setPicoColor(7)
+	local pos_color = {1, 1, 1}
+	if love.keyboard.isDown("space") then
+		pos_color = {1, 0, 0} -- indicates that the mouse position is being set
+	end
+	local m_x, m_y, m_mask = self:get_mouse()
+	local pos_string = ("x: %d, y: %d"):format(m_x, m_y)
+	local user_pos_string = ("(%d, %d)"):format(self.user_mouse_x, self.user_mouse_y)
+	local btns_string = ("btns: %u"):format(m_mask)
+	love.graphics.print({pos_color, pos_string}, x + 1, y + 1, 0, 2/3, 2/3)
+	love.graphics.print(user_pos_string, x + 1, y + 8, 0, 2/3, 2/3)
+	love.graphics.print(btns_string, x + 1, y + 15, 0, 2/3, 2/3)
 end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
@@ -481,8 +517,7 @@ function tas:draw()
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
 
-	setPicoColor(7)
-	love.graphics.print(self:mouse_hud(), 1, 80, 0, 2/3, 2/3)
+	self:draw_mouse_hud(1, 80)
 
 	self:draw_piano_roll()
 
@@ -549,6 +584,10 @@ function tas:keypressed(key, isrepeat)
 		else
 			self:preform_undo()
 		end
+	elseif key == 'space' then
+		local _, _, mask = self:get_mouse()
+		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+		self:set_mouse(mouse_x, mouse_y, mask)
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -624,8 +663,12 @@ function tas:selection_keypress(key, isrepeat)
 end
 
 function tas:mousemoved(x, y)
-	local _, _, mask = self:get_mouse()
-	self:set_mouse(x, y, mask)
+	self.user_mouse_x = x
+	self.user_mouse_y = y
+	if love.keyboard.isDown("space") then
+		local _, _, mask = self:get_mouse()
+		self:set_mouse(x, y, mask)
+	end
 end
 
 function tas:mousepressed(button)
