@@ -65,7 +65,7 @@ function tas:get_wanted_mouse_pos(frame)
 		return self.user_mouse_x, self.user_mouse_y
 	else
 		if frame <= 0 then
-			return 0, 0
+			return 1, 1
 		end
 		local x, y = self:get_mouse(frame)
 		return x, y
@@ -484,10 +484,12 @@ function tas:draw_piano_roll()
 	end
 
 end
-function tas:draw_mouse_hud(x, y)
+
+-- set for_recording if you don't want the current user mouse position
+function tas:draw_mouse_hud(x, y, for_recording)
 	setPicoColor(7)
 	local pos_color = {1, 1, 1}
-	if love.keyboard.isDown("space") then
+	if love.keyboard.isDown("space") and not for_recording then
 		pos_color = {1, 0, 0} -- indicates that the mouse position is being set
 	end
 	local m_x, m_y, m_mask = self:get_mouse()
@@ -495,8 +497,12 @@ function tas:draw_mouse_hud(x, y)
 	local user_pos_string = ("(%d, %d)"):format(self.user_mouse_x, self.user_mouse_y)
 	local btns_string = ("btns: %u"):format(m_mask)
 	love.graphics.print({pos_color, pos_string}, x + 1, y + 1, 0, 2/3, 2/3)
-	love.graphics.print(user_pos_string, x + 1, y + 8, 0, 2/3, 2/3)
-	love.graphics.print(btns_string, x + 1, y + 15, 0, 2/3, 2/3)
+	if not for_recording then
+		love.graphics.print(user_pos_string, x + 1, y + 6, 0, 2/3, 2/3)
+		love.graphics.print(btns_string, x + 1, y + 11, 0, 2/3, 2/3)
+	else
+		love.graphics.print(btns_string, x + 1, y + 6, 0, 2/3, 2/3)
+	end
 end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
@@ -528,6 +534,7 @@ end
 function tas:draw_gif_overlay()
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
+	self:draw_mouse_hud(1, 128 - 11, true)
 end
 
 function tas:keypressed(key, isrepeat)
@@ -724,6 +731,7 @@ function tas:predict(pred, num, inputs)
 
 	for i=1,num do
 		set_btn_state(input_tbl[i] or 0)
+		-- TODO: also set mouse state!
 		rawstep()
 		if pred() then
 			ret=true
