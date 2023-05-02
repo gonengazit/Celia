@@ -662,7 +662,7 @@ function tas:keypressed(key, isrepeat)
 		if ctrl and love.keyboard.isDown('lshift', 'rshift') then
 			self.mouse_enabled = not self.mouse_enabled
 			love.mouse.setVisible(self.mouse_enabled)
-		else
+		elseif self.mouse_enabled then
 			local _, _, mask = self:get_mouse()
 			local mouse_x, mouse_y = self:get_wanted_mouse_pos()
 			self:set_mouse(mouse_x, mouse_y, mask)
@@ -742,6 +742,9 @@ function tas:selection_keypress(key, isrepeat)
 end
 
 function tas:mousemoved(x, y)
+	if not self.mouse_enabled then
+		return
+	end
 	self.user_mouse_x = x
 	self.user_mouse_y = y
 	if only_space_pressed() then -- set mouse pos for the current frame
@@ -751,6 +754,9 @@ function tas:mousemoved(x, y)
 end
 
 function tas:mousepressed(button)
+	if not self.mouse_enabled then
+		return
+	end
 	if self.last_selected_frame ~= -1 then
 		self:mousepressed_selection(button)
 	else
