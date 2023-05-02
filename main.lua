@@ -102,6 +102,7 @@ pico8 = {
 	mouse_x = 0, 
 	mouse_y = 0,
 	mouse_mask = 0,
+	mouse_enabled = false
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",

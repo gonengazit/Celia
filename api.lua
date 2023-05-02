@@ -1269,6 +1269,9 @@ function api.poke(addr, val)
 			-- TODO: screen transformation mode
 		elseif addr == 0x5f2d then
 			love.keyboard.setTextInput(bit.band(val, 1) == 1)
+			if bit.band(val, 1) == 1 then -- may not be accurate, but most of the time this means the mouse is used by the cart
+				pico8.mouse_enabled = true
+			end
 
 			if bit.band(val, 2) == 1 then -- luacheck: ignore 542
 				-- TODO mouse buttons

@@ -69,7 +69,7 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 The mouse input display indicates:
 * "__x: ..., y: ...__" - the mouse position for the current frame. This line turns red when __Space__ is pressed. See below for more informations.
 * "__(..., ...)__" - the position of your mouse
-* "__btns: ...__" - the state of the mouse buttons for the current frame. This field is a bit field, where the left mouse button is 1, the right mouse button is 2, and the middle mouse button is 4. (i.e. if more than one button is pressed the sum is displayed)
+* "__btns: ...__" - the state of the mouse buttons for the current frame. This field is a bitmask, where the left mouse button is 1, the right mouse button is 2, and the middle mouse button is 4. (i.e. if more than one button is pressed the sum is displayed)
 
 The state of the buttons for the current frame can be modified as any regular controller button, by using the mouse buttons instead of a controller button. The only difference is that you can't toggle the auto-hold (__Shift + controller button__) of a mouse button. It's still possible to frame advance while manually holding the button to set it.
 

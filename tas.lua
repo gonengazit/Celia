@@ -293,7 +293,7 @@ function tas:init()
 	self.seek=nil
 
 	-- mouse
-	self.mouse_enabled = false
+	self:set_mouse_enabled(pico8.mouse_enabled)
 	self.user_mouse_x = 1
 	self.user_mouse_y = 1
 end
@@ -660,8 +660,7 @@ function tas:keypressed(key, isrepeat)
 		end
 	elseif key == 'space' then
 		if ctrl and love.keyboard.isDown('lshift', 'rshift') then
-			self.mouse_enabled = not self.mouse_enabled
-			love.mouse.setVisible(self.mouse_enabled)
+			self:set_mouse_enabled(not self.mouse_enabled)
 		elseif self.mouse_enabled then
 			local _, _, mask = self:get_mouse()
 			local mouse_x, mouse_y = self:get_wanted_mouse_pos()
@@ -770,6 +769,12 @@ function tas:mousepressed_selection(button)
 			self:toggle_mouse_button(button, frame)
 		end
 	end
+end
+
+function tas:set_mouse_enabled(v)
+	self.mouse_enabled = v
+	print("### set to ", v)
+	love.mouse.setVisible(v)
 end
 
 -- b is a bitmask of the inputs
