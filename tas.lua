@@ -52,6 +52,9 @@ function tas:set_mouse(x, y, mask, frame)
 	self.inputstates[frame].mouse_mask = mask
 end
 
+local function only_space_pressed()
+	return love.keyboard.isDown("space") and not love.keyboard.isDown('lctrl', 'rctrl', 'lshift', 'rshift', 'lalt', 'ralt')
+end
 -- frame is the current frame, for which the position is wanted
 -- use the mouse position if space is hold, otherwise copy the previous frame
 function tas:get_wanted_mouse_pos(frame)
@@ -61,7 +64,7 @@ function tas:get_wanted_mouse_pos(frame)
 	else
 		frame = self:frame_count()
 	end
-	if love.keyboard.isDown("space") then
+	if only_space_pressed() then
 		return self.user_mouse_x, self.user_mouse_y
 	else
 		if frame <= 0 then
@@ -286,6 +289,7 @@ function tas:init()
 	self.seek=nil
 
 	-- mouse
+	self.mouse_enabled = false
 	self.user_mouse_x = 1
 	self.user_mouse_y = 1
 end
@@ -487,9 +491,12 @@ end
 
 -- set for_recording if you don't want the current user mouse position
 function tas:draw_mouse_hud(x, y, for_recording)
+	if not self.mouse_enabled then
+		return
+	end
 	setPicoColor(7)
 	local pos_color = {1, 1, 1}
-	if love.keyboard.isDown("space") and not for_recording then
+	if only_space_pressed() and not for_recording then
 		pos_color = {1, 0, 0} -- indicates that the mouse position is being set
 	end
 	local m_x, m_y, m_mask = self:get_mouse()
@@ -502,6 +509,14 @@ function tas:draw_mouse_hud(x, y, for_recording)
 		love.graphics.print(btns_string, x + 1, y + 11, 0, 2/3, 2/3)
 	else
 		love.graphics.print(btns_string, x + 1, y + 6, 0, 2/3, 2/3)
+	end
+
+	-- mark user mouse position, and current frame mouse position
+	love.graphics.setColor(1, 0, 0, 0.5)
+	love.graphics.point(self.user_mouse_x + self.hud_w - 1, self.user_mouse_y + self.hud_h - 1)
+	local mouse_x, mouse_y = self:get_mouse()
+	for _, offset in ipairs{ {-1, 0}, {0, -1}, {0, 0}, {1, 0}, {0, 1} } do
+		love.graphics.point(mouse_x + offset[1] + self.hud_w - 1, mouse_y + offset[2] + self.hud_h - 1)
 	end
 end
 function tas:draw()
@@ -592,9 +607,14 @@ function tas:keypressed(key, isrepeat)
 			self:preform_undo()
 		end
 	elseif key == 'space' then
-		local _, _, mask = self:get_mouse()
-		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
-		self:set_mouse(mouse_x, mouse_y, mask)
+		if ctrl and love.keyboard.isDown('lshift', 'rshift') then
+			self.mouse_enabled = not self.mouse_enabled
+			love.mouse.setVisible(self.mouse_enabled)
+		else
+			local _, _, mask = self:get_mouse()
+			local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+			self:set_mouse(mouse_x, mouse_y, mask)
+		end
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
@@ -672,7 +692,7 @@ end
 function tas:mousemoved(x, y)
 	self.user_mouse_x = x
 	self.user_mouse_y = y
-	if love.keyboard.isDown("space") then
+	if only_space_pressed() then -- set mouse pos for the current frame
 		local _, _, mask = self:get_mouse()
 		self:set_mouse(x, y, mask)
 	end

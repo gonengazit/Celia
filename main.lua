@@ -353,7 +353,7 @@ function love.load(argv)
 	love.graphics.setFont(pico8.font)
 	pico8.font:setFilter("nearest", "nearest")
 
-	--love.mouse.setVisible(false)
+	love.mouse.setVisible(false)
 	love.keyboard.setKeyRepeat(true)
 	love.graphics.setLineStyle("rough")
 	love.graphics.setPointSize(1)
