@@ -80,6 +80,10 @@ function tas:toggle_mouse_button(button, frame)
 	frame = frame or self:frame_count() + 1
 	self.inputstates[frame].mouse_mask=bit.bxor(self.inputstates[frame].mouse_mask,2^button)
 end
+function tas:mouse_button_down(button, frame)
+	frame = frame or self:frame_count() + 1
+	return bit.band(self.inputstates[frame].mouse_mask,2^button)~=0
+end
 
 function tas:reset_inputs()
 	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0}
@@ -490,6 +494,7 @@ function tas:draw_piano_roll()
 end
 
 -- set for_recording if you don't want the current user mouse position
+-- also set for_recording if you only want colors from the Pico 8 palette (mandatory for the GIF encoder)
 function tas:draw_mouse_hud(x, y, for_recording)
 	if not self.mouse_enabled then
 		return
@@ -511,12 +516,48 @@ function tas:draw_mouse_hud(x, y, for_recording)
 		love.graphics.print(btns_string, x + 1, y + 6, 0, 2/3, 2/3)
 	end
 
-	-- mark user mouse position, and current frame mouse position
-	love.graphics.setColor(1, 0, 0, 0.5)
-	love.graphics.point(self.user_mouse_x + self.hud_w - 1, self.user_mouse_y + self.hud_h - 1)
-	local mouse_x, mouse_y = self:get_mouse()
+	-- independant of the parametres x and y: draws on the Pico 8 screen:
+	-- mark user mouse position, current frame mouse position
+	local screen_offset = {x = self.hud_w - 1, y = self.hud_h - 1} -- '-1' because the Pico 8 screen starts at 1,1
+	if for_recording then
+		screen_offset = {x = -1, y = -1}
+	end
+	if not for_recording then
+		love.graphics.setColor(1, 0, 0, 0.5)
+		love.graphics.point(self.user_mouse_x + screen_offset.x, self.user_mouse_y + screen_offset.y)
+	else
+		setPicoColor(8)
+	end
+	local mouse_x, mouse_y, mask = self:get_mouse()
 	for _, offset in ipairs{ {-1, 0}, {0, -1}, {0, 0}, {1, 0}, {0, 1} } do
-		love.graphics.point(mouse_x + offset[1] + self.hud_w - 1, mouse_y + offset[2] + self.hud_h - 1)
+		love.graphics.point(mouse_x + offset[1] + screen_offset.x, mouse_y + offset[2] + screen_offset.y)
+	end
+	-- draw button states
+	for b = 0, 2 do
+		local color
+		if self:mouse_button_down(b) then
+			local x_offset, y_offset, width
+			if b == 0 then 
+				x_offset = -2
+				y_offset = -2
+				width = 2
+			elseif b == 1 then
+				x_offset = 1
+				y_offset = -2
+				width = 2
+			else
+				x_offset = 0
+				y_offset = -3
+				width = 1
+			end
+			if not for_recording then
+				love.graphics.setColor(1, 0.47, 0.66, 0.5) -- setPicoColor(14) with transparency
+				love.graphics.rectangle("fill", self.user_mouse_x + x_offset + screen_offset.x, self.user_mouse_y + y_offset + screen_offset.y, width, 2)
+			else
+				setPicoColor(14)
+			end
+			love.graphics.rectangle("fill", mouse_x + x_offset + screen_offset.x, mouse_y + y_offset + screen_offset.y, width, 2)
+		end
 	end
 end
 function tas:draw()
