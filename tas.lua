@@ -16,7 +16,7 @@ local keymap_names = {
 		[3] = "d",
 		[4] = "z",
 		[5] = "x",
-		[6] = "esc" ,
+		[6] = "\\" ,
 		[7] = "?",
 	},
 	[1] = {
@@ -24,7 +24,7 @@ local keymap_names = {
 		[1] = "f",
 		[2] = "e",
 		[3] = "d",
-		[4] = "tab", 
+		[4] = "t",
 		[5] = "1",
 		[6] = "?",
 		[7] = "?",
@@ -576,7 +576,7 @@ function tas:keypressed(key, isrepeat)
 			for i = 0, #pico8.keymap[p] do
 				for _, testkey in pairs(pico8.keymap[p][i]) do
 					if key == testkey  and not isrepeat then
-						if p ~= 0 and ctrl and love.keyboard.isDown("lshift", "rshift") then
+						if (p ~= 0 or i >= 6) and ctrl and love.keyboard.isDown("lshift", "rshift") then
 							-- toggle piano roll display
 							if self.pianoroll_inputs[i + p * 8 + 1] then
 								self.pianoroll_inputs[i + p * 8 + 1] = nil
