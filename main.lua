@@ -971,114 +971,28 @@ function love.textinput(text)
 	end
 end
 
-keybinds.init{
-	default = {
-		-- helper
-		p8ctrl = "ctrl | gui",
-
-		-- generic
-		fullscreen = "alt + return",
-		full_reload = "ctrl + r",
-		full_quit = "ctrl + q",
-
-		-- pico-8 keys
-		k_left  = "left | kp4",
-		k_right = "right | kp6",
-		k_up    = "up | kp8",
-		k_down  = "down | kp5",
-		k_jump  = "z | c | n | kp- | kp1 | insert",
-		k_dash  = "x | v | m | 8 | kp2 | delete",
-		k_pause = "return | escape",
-		k_seven = "7",
-		-- held
-		hold_left  = "shift + k_left",
-		hold_right = "shift + k_right",
-		hold_up    = "shift + k_up",
-		hold_down  = "shift + k_down",
-		hold_jump  = "shift + k_jump",
-		hold_dash  = "shift + k_dash",
-		hold_pause = "shift + k_pause",
-		hold_seven = "shift + k_seven",
-		-- toggle all (visual mode)
-		all_left  = "alt + k_left",
-		all_right = "alt + k_right",
-		all_up    = "alt + k_up",
-		all_down  = "alt + k_down",
-		all_jump  = "alt + k_jump",
-		all_dash  = "alt + k_dash",
-		all_pause = "alt + k_pause",
-		all_seven = "alt + k_seven",
-
-		-- pico-8 tas
-		prev_frame = "k",
-		next_frame = "l",
-		full_rewind = "d",
-		playback = "p",
-		reset_tas = "shift + r",
-		save_tas = "m",
-		open_tas = "shift + w",
-		insert_blank = "insert",
-		duplicate = "p8ctrl + insert",
-		delete = "delete",
-		paste = "p8ctrl + v",
-		undo = "p8ctrl + z",
-		redo = "shift + undo",
-		visual = "shift + l",
-		screenshot = "f1 | f6",
-		gif_rec_start = "f3 | f8 | p8ctrl+8",
-		gif_rec_stop = "f4 | f9 | p8ctrl+9",
-
-		-- console
-		console = "p8ctrl + t",
-		del_backward = "backspace",
-		clear_line = "ctrl + c",
-		send_line = "return",
-		complete_command = "tab",
-		prev_char = "left",
-		next_char = "right",
-		prev_word = "alt + left",
-		next_word = "alt + right",
-		cmd_go_to_start = "ctrl + left",
-		cmd_go_to_end = "ctrl + right",
-		prev_command = "up",
-		next_command = "down",
-
-		-- visual mode
-		exit_visual = "escape",
-		go_to_end = "end",
-		go_to_start = "home",
-		copy = "p8ctrl + c",
-		cut = "p8ctrl + x",
-
-		-- celeste tas
-		prev_level = "s",
-		next_level = "f",
-		rewind = "shift + d",
-		level_gif = "shift + g",
-		clean_save = "u",
-		full_playback = "shift + n",
-		inc_djump = "shift + =",
-		dec_djump = "-",
-		reset_djump = "=",
-		jank_offset = "a",
-			inc_jank = "up",
-			dec_jank = "down",
-			quit_jank = "jank_offset",
-		rng_seeding = "b",
-			prev_object = "left",
-			next_object = "right",
-			inc_rng = "up",
-			dec_rng = "down",
-			quit_rng = "rng_seeding",
-		print_pos = "y",
-	},
-	protected = {"p8ctrl"},
-	file = "keys.conf"
-}
-
-if not love.filesystem.getInfo("keys.conf") then
-	keybinds.create_config("keys.conf")
+if not love.filesystem.getInfo("config","directory") then
+	love.filesystem.createDirectory("config")
 end
+if not love.filesystem.getInfo("config/keys.conf","file") then
+	-- copy
+	local source_fh, source_e = love.filesystem.newFile("default.keys.conf","r")
+	local target_fh, target_e = love.filesystem.newFile("config/keys.conf","w")
+	if source_e or target_e then
+		if source_e then
+			log(source_e)
+		else
+			log(target_e)
+		end
+	else
+		target_fh:write(source_fh:read())
+		source_fh:close()
+		target_fh:close()
+	end
+end
+keybinds.init{
+	file = "config/keys.conf"
+}
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
 	if pico8.cart and pico8.cart._touchdown then
