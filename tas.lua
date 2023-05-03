@@ -101,7 +101,8 @@ end
 function tas:delete_inputstate()
 	table.remove(self.inputstates, self:frame_count() + 1)
 	if self:frame_count() + 1 > #self.inputstates then
-		table.insert(self.inputstates, {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0})
+		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+		table.insert(self.inputstates, {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0})
 	end
 end
 
