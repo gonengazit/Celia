@@ -16,6 +16,7 @@ globals = {
   "love.handlers",
   "love.graphics.newScreenshot",
   "love.graphics.isActive",
+  "ke",
 
   -- functions
   "warning",
@@ -35,6 +36,7 @@ ignore = {
 
 exclude_files = {
   "Love.js-Api-Player",
+  "keybindings.lua",
   "lib",
   "spec",
   ".DS_Store",

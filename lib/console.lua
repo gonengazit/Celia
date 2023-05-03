@@ -410,39 +410,36 @@ function console.execute(command)
 end
 
 function console.keypressed(key, scancode, isrepeat)
-  local ctrl = love.keyboard.isDown("lctrl", "lgui")
-  local shift = love.keyboard.isDown("lshift")
-  local alt = love.keyboard.isDown("lalt")
 
-  if ctrl and key == "t" then
+  if ke.console then
     enabled = not enabled
   end
   -- Ignore if the console isn't enabled.
   if not enabled then return end
 
 
-  if key == 'backspace' then command:delete_backward()
+  if ke.del_backward then command:delete_backward()
 
-  elseif key == "up" then command:previous()
-  elseif key == "down" then command:next()
+  elseif ke.prev_command then command:previous()
+  elseif ke.next_command then command:next()
 
-  elseif alt and key == "left" then command:backward_word()
-  elseif alt and key == "right" then command:forward_word()
+  elseif ke.prev_word then command:backward_word()
+  elseif ke.next_word then command:forward_word()
 
-  elseif ctrl and key == "left" then command:beginning_of_line()
-  elseif ctrl and key == "right" then command:end_of_line()
+  elseif ke.cmd_go_to_start then command:beginning_of_line()
+  elseif ke.cmd_go_to_end then command:end_of_line()
 
-  elseif key == "left" then command:backward_character()
-  elseif key == "right" then command:forward_character()
+  elseif ke.prev_char then command:backward_character()
+  elseif ke.next_char then command:forward_character()
 
-  elseif key == "c" and ctrl then command:clear()
+  elseif ke.clear_line then command:clear()
 
-  elseif key == "return" then
+  elseif ke.send_line then
     console.addHistory(command.text)
     console.execute(command.text)
     command:clear()
 
-  elseif key == "tab" then
+  elseif ke.complete_command then
     command:complete()
   end
 end
