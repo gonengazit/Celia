@@ -1010,7 +1010,7 @@ keybinds.init{
 		all_seven = "alt + k_seven",
 
 		-- pico-8 tas
-		last_frame = "k",
+		prev_frame = "k",
 		next_frame = "l",
 		full_rewind = "d",
 		playback = "p",
@@ -1051,7 +1051,7 @@ keybinds.init{
 		cut = "p8ctrl + x",
 
 		-- celeste tas
-		last_level = "s",
+		prev_level = "s",
 		next_level = "f",
 		rewind = "shift + d",
 		level_gif = "shift + g",
@@ -1065,7 +1065,7 @@ keybinds.init{
 			dec_jank = "down",
 			quit_jank = "jank_offset",
 		rng_seeding = "b",
-			last_object = "left",
+			prev_object = "left",
 			next_object = "right",
 			inc_rng = "up",
 			dec_rng = "down",

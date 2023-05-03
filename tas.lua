@@ -482,7 +482,7 @@ function tas:keypressed(key, isrepeat)
 		else
 			self:step()
 		end
-	elseif ke.last_frame then
+	elseif ke.prev_frame then
 		self:rewind()
 	elseif ke.full_rewind then
 		self:full_rewind()
@@ -528,7 +528,7 @@ end
 
 function tas:selection_keypress(key, isrepeat)
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
-	if ke.last_frame then
+	if ke.prev_frame then
 		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
 	elseif ke.next_frame then
 		self.last_selected_frame = self.last_selected_frame - 1

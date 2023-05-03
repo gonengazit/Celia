@@ -137,7 +137,7 @@ function cctas:keypressed(key, isrepeat)
 	elseif ke.next_level then
 		self:push_undo_state()
 		self:next_level()
-	elseif ke.last_level then
+	elseif ke.prev_level then
 		self:push_undo_state()
 		self:prev_level()
 	elseif ke.rewind then
@@ -219,7 +219,7 @@ function cctas:rng_seed_keypress(key,isrepeat)
 		end
 	elseif ke.next_object then
 		self:advance_seeded_obj(1)
-	elseif ke.last_object then
+	elseif ke.prev_object then
 		self:advance_seeded_obj(-1)
 	elseif ke.quit_rng and not isrepeat then
 		self.modify_rng_seeds = false
