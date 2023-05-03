@@ -28,7 +28,7 @@ build: clean
 	@echo "building \"build/${project_name}.love\" ..."
 	# include .lua, .p8, and .png files (needed for icon and font)
 	# exclude tests
-	find . \( -name '*.lua' -or -name '*.png' -or -name '*.p8' \) \
+	find . \( -name '*.lua' -or -name '*.png' -or -name '*.p8' -or -name '*.conf' \) \
 		-not -path '*test/*' -not -path '*Love.js-Api-Player/*' \
 		-print0 \
 		| cut -z -c3- \
