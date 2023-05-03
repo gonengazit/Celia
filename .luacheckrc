@@ -16,6 +16,7 @@ globals = {
   "love.handlers",
   "love.graphics.newScreenshot",
   "love.graphics.isActive",
+  "ke",
 
   -- functions
   "warning",

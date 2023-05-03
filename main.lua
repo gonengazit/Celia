@@ -9,6 +9,9 @@ local bit = require("bit")
 local api = require("api")
 local cart = require("cart")
 
+local keybinds = require("keybindings")
+ke = keybinds.k
+
 local tas = require("tas")
 local cctas = require("cctas")
 
@@ -851,17 +854,6 @@ local function update_audio(time)
 	end
 end
 
-local function isCtrlOrGuiDown()
-	return love.keyboard.isDown("lctrl")
-		or love.keyboard.isDown("lgui")
-		or love.keyboard.isDown("rctrl")
-		or love.keyboard.isDown("rgui")
-end
-
-local function isAltDown()
-	return love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
-end
-
 function start_gif_recording()
 	-- start recording
 	if not love.filesystem.getInfo("gifs", "directory") and not love.filesystem.createDirectory("gifs") then
@@ -899,7 +891,7 @@ function love.keypressed(key, scancode, isrepeat)
 		return
 	end
 
-	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
+	if ke.full_reload and not ke.alt then
 		api.reload_cart()
 		api.run()
 		tastool = tastool.class()
@@ -913,22 +905,22 @@ function love.keypressed(key, scancode, isrepeat)
 	-- 	api.load(initialcartname)
 	-- 	api.run()
 	-- 	return
-	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
+	elseif ke.full_quit then
 		love.event.quit()
 	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
 	-- 	pico8.clipboard = love.system.getClipboardText()
 	-- elseif pico8.can_pause and (key == "pause" or key == "p") then
 	-- 	paused = not paused
-	elseif key == "f1" or key == "f6" then
+	elseif ke.screenshot then
 		-- screenshot
 		local filename = cartname .. "-" .. os.time() .. ".png"
 		local screenshot = love.graphics.captureScreenshot(filename)
 		log("saved screenshot to", filename)
-	elseif key == "f3" or key == "f8" or (key=="8" and isCtrlOrGuiDown()) then
+	elseif ke.gif_rec_start then
 		start_gif_recording()
-	elseif key == "f4" or key == "f9" or (key=="9" and isCtrlOrGuiDown()) then
+	elseif ke.gif_rec_stop then
 		stop_gif_recording()
-	elseif key == "return" and isAltDown() then
+	elseif ke.fullscreen then
 		local canvas=love.graphics.getCanvas()
 		love.graphics.setCanvas()
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
@@ -978,6 +970,91 @@ function love.textinput(text)
 		return pico8.cart._textinput(text)
 	end
 end
+
+keybinds.init{
+	default = {
+		-- helper
+		p8ctrl = "ctrl | gui",
+
+		-- generic
+		fullscreen = "alt + return",
+		full_reload = "ctrl + r",
+		full_quit = "ctrl + q",
+
+		-- pico-8 keys
+		k_left  = "left | kp4",
+		k_right = "right | kp6",
+		k_up    = "up | kp8",
+		k_down  = "down | kp5",
+		k_jump  = "z | c | n | kp- | kp1 | insert",
+		k_dash  = "x | v | m | 8 | kp2 | delete",
+		k_pause = "return | escape",
+		-- held
+		hold_left  = "shift + k_left",
+		hold_right = "shift + k_right",
+		hold_up    = "shift + k_up",
+		hold_down  = "shift + k_down",
+		hold_jump  = "shift + k_jump",
+		hold_dash  = "shift + k_dash",
+		hold_pause = "shift + k_pause",
+		-- toggle all (visual mode)
+		all_left  = "alt + k_left",
+		all_right = "alt + k_right",
+		all_up    = "alt + k_up",
+		all_down  = "alt + k_down",
+		all_jump  = "alt + k_jump",
+		all_dash  = "alt + k_dash",
+		all_pause = "alt + k_pause",
+
+		-- pico-8 tas
+		last_frame = "k",
+		next_frame = "l",
+		full_rewind = "d",
+		playback = "p",
+		reset_tas = "shift + r",
+		save_tas = "m",
+		open_tas = "shift + w",
+		insert_blank = "insert",
+		duplicate = "p8ctrl + insert",
+		delete = "delete",
+		paste = "p8ctrl + v",
+		undo = "p8ctrl + z",
+		redo = "shift + undo",
+		visual = "shift + l",
+		console = "p8ctrl + t",
+		screenshot = "f1 | f6",
+		gif_rec_start = "f3 | f8 | p8ctrl+8",
+		gif_rec_stop = "f4 | f9 | p8ctrl+9",
+
+		-- visual mode
+		exit_visual = "escape",
+		go_to_end = "end",
+		go_to_start = "home",
+		copy = "p8ctrl + c",
+		cut = "p8ctrl + x",
+
+		-- celeste tas
+		last_level = "f",
+		next_level = "s",
+		rewind = "shift + d",
+		level_gif = "shift + g",
+		clean_save = "u",
+		full_playback = "shift + n",
+		inc_djump = "shift + =",
+		dec_djump = "-",
+		reset_djump = "=",
+		jank_offset = "a",
+			inc_jank = "up",
+			dec_jank = "down",
+		rng_seeding = "b",
+			last_object = "left",
+			next_object = "right",
+			inc_rng = "up",
+			dec_rng = "down",
+		print_pos = "y",
+	},
+	protected = {"p8ctrl"}
+}
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
 	if pico8.cart and pico8.cart._touchdown then
