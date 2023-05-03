@@ -1082,6 +1082,32 @@ function love.graphics.point(x, y)
 	love.graphics.rectangle("fill", x, y, 1, 1)
 end
 
+if love.system.getOS()=='Web' then
+	function love.system.getClipboardText()
+		local fh, e = love.filesystem.newFile("tmp/clipboard","r")
+		if e then
+			print(e)
+			return
+		else
+			local data = fh:read()
+			fh:close()
+			return data
+		end
+	end
+
+	function love.system.setClipboardText(text)
+		local fh, e = love.filesystem.newFile("tmp/set_clipboard","w")
+		if e then
+			print(e)
+			return
+		else
+			fh:write(text)
+			fh:close()
+		end
+	end
+end
+
+
 function love.run()
 	if love.load then
 		love.load(love.arg.parseGameArguments(arg), arg)

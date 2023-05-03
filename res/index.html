@@ -110,6 +110,24 @@
         }
       }, 1500);
 
+      window.setInterval(function() {
+        var prefix = "/home/web_user/love/Celia/";
+        if (FS) {
+          var data = "";
+          if (navigator.clipboard.readText) {
+            data = navigator.clipboard.readText().then();
+          }
+          var prefix = "/home/web_user/love/Celia/";
+          FS.writeFile(prefix+"tmp/clipboard",data);
+          if (FS.analyzePath(prefix+"tmp/set_clipboard").exists) {
+            navigator.clipboard.writeText(new TextDecoder().decode(FS.open(prefix+"tmp/set_clipboard").node.contents)).then(
+              function(){ console.log("Tastool wrote to clipboard"); }
+            );
+            FS.unlink(prefix+"tmp/set_clipboard");
+          } 
+        }
+      }, 1500);
+
       var Module = {
         arguments: ["./game.love"],
         INITIAL_MEMORY: 16777216,
