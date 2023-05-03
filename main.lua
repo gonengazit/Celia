@@ -1034,8 +1034,8 @@ keybinds.init{
 		cut = "p8ctrl + x",
 
 		-- celeste tas
-		last_level = "f",
-		next_level = "s",
+		last_level = "s",
+		next_level = "f",
 		rewind = "shift + d",
 		level_gif = "shift + g",
 		clean_save = "u",
@@ -1046,11 +1046,13 @@ keybinds.init{
 		jank_offset = "a",
 			inc_jank = "up",
 			dec_jank = "down",
+			quit_jank = "jank_offset",
 		rng_seeding = "b",
 			last_object = "left",
 			next_object = "right",
 			inc_rng = "up",
 			dec_rng = "down",
+			quit_rng = "rng_seeding",
 		print_pos = "y",
 	},
 	protected = {"p8ctrl"}
