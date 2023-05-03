@@ -1069,8 +1069,13 @@ keybinds.init{
 			quit_rng = "rng_seeding",
 		print_pos = "y",
 	},
-	protected = {"p8ctrl"}
+	protected = {"p8ctrl"},
+	file = "keys.conf"
 }
+
+if not love.filesystem.getInfo("keys.conf") then
+	keybinds.create_config("keys.conf")
+end
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
 	if pico8.cart and pico8.cart._touchdown then
