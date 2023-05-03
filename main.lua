@@ -1001,6 +1001,9 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
+function love.keyreleased()
+	tastool:clear_dontrepeat()
+end
 -- function love.keyreleased(key)
 --	for p = 0, 1 do
 --		for i = 0, #pico8.keymap[p] do

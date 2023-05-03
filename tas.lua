@@ -9,6 +9,7 @@ tas.hud_w = 48
 tas.hud_h = 0
 tas.scale = 6
 tas.pianoroll_w=65
+tas.dontrepeat = {}
 
 
 --wrapper functions
@@ -521,18 +522,20 @@ function tas:keypressed(key, isrepeat)
 		self:perform_redo()
 	elseif ke.undo then
 		self:preform_undo()
-	else
+	elseif not isrepeat then
 		for i = 0, 7 do
 			if ke[
 				({"hold_left","hold_right","hold_up","hold_down","hold_jump","hold_dash","hold_pause","hold_seven"})
-				[i+1]] then
+				[i+1]] and not self.dontrepeat[i] then
 				self:push_undo_state()
 				self:toggle_hold(i)
+				self.dontrepeat[i]=true
 			elseif ke[
 				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
-				[i+1]] then
+				[i+1]] and not self.dontrepeat[i] then
 				self:push_undo_state()
 				self:toggle_key(i)
+				self.dontrepeat[i]=true
 			end
 		end
 	end
@@ -578,20 +581,26 @@ function tas:selection_keypress(key, isrepeat)
 		for i = 0, 7 do
 			if ke[
 				({"all_left","all_right","all_up","all_down","all_jump","all_dash","all_pause","all_seven"})
-				[i+1]] then
+				[i+1]] and not self.dontrepeat[i] then
 				for frame = self:frame_count() + 2, self.last_selected_frame do
 					if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
 						self:toggle_key(i, frame)
 					end
 				end
+				self.dontrepeat[i]=true
 			elseif ke[
 				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
-				[i+1]] then
+				[i+1]] and not self.dontrepeat[i] then
 				self:push_undo_state()
 				self:toggle_key(i)
+				self.dontrepeat[i]=true
 			end
 		end
 	end
+end
+
+function tas:clear_dontrepeat()
+	self.dontrepeat = {}
 end
 
 -- b is a bitmask of the inputs
