@@ -1021,10 +1021,24 @@ keybinds.init{
 		undo = "p8ctrl + z",
 		redo = "shift + undo",
 		visual = "shift + l",
-		console = "p8ctrl + t",
 		screenshot = "f1 | f6",
 		gif_rec_start = "f3 | f8 | p8ctrl+8",
 		gif_rec_stop = "f4 | f9 | p8ctrl+9",
+
+		-- console
+		console = "p8ctrl + t",
+		del_backward = "backspace",
+		clear_line = "ctrl + c",
+		send_line = "return",
+		complete_command = "tab",
+		prev_char = "left",
+		next_char = "right",
+		prev_word = "alt + left",
+		next_word = "alt + right",
+		cmd_go_to_start = "ctrl + left",
+		cmd_go_to_end = "ctrl + right",
+		prev_command = "up",
+		next_command = "down",
 
 		-- visual mode
 		exit_visual = "escape",
