@@ -487,14 +487,12 @@ function tas:keypressed(key, isrepeat)
 	--TODO: block keypresses even when overloading this func
 	elseif self.last_selected_frame ~= -1 then
 		self:selection_keypress(key, isrepeat)
-	elseif ke.next_frame then
-		if ke.shift then
-			if self:frame_count() + 1 < #self.keystates then
-				self.last_selected_frame = self:frame_count() + 2
-			end
-		else
-			self:step()
+	elseif ke.visual then
+		if self:frame_count() + 1 < #self.keystates then
+			self.last_selected_frame = self:frame_count() + 2
 		end
+	elseif ke.next_frame then
+		self:step()
 	elseif ke.prev_frame then
 		self:rewind()
 	elseif ke.full_rewind then
