@@ -512,13 +512,13 @@ function tas:keypressed(key, isrepeat)
 	else
 		for i = 0, 7 do
 			if ke[
-				({"hold_left","hold_right","hold_up","hold_down","hold_jump","hold_dash"})[i+1]
-				] then
+				({"hold_left","hold_right","hold_up","hold_down","hold_jump","hold_dash","hold_pause","hold_seven"})
+				[i+1]] then
 				self:push_undo_state()
 				self:toggle_hold(i)
 			elseif ke[
-				({"k_left","k_right","k_up","k_down","k_jump","k_dash"})[i+1]
-				] then
+				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
+				[i+1]] then
 				self:push_undo_state()
 				self:toggle_key(i)
 			end
@@ -565,16 +565,16 @@ function tas:selection_keypress(key, isrepeat)
 		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
 		for i = 0, 7 do
 			if ke[
-				({"all_left","all_right","all_up","all_down","all_jump","all_dash"})[i+1]
-				] then
+				({"all_left","all_right","all_up","all_down","all_jump","all_dash","all_pause","all_seven"})
+				[i+1]] then
 				for frame = self:frame_count() + 2, self.last_selected_frame do
 					if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
 						self:toggle_key(i, frame)
 					end
 				end
 			elseif ke[
-				({"k_left","k_right","k_up","k_down","k_jump","k_dash"})[i+1]
-				] then
+				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
+				[i+1]] then
 				self:push_undo_state()
 				self:toggle_key(i)
 			end

@@ -989,6 +989,7 @@ keybinds.init{
 		k_jump  = "z | c | n | kp- | kp1 | insert",
 		k_dash  = "x | v | m | 8 | kp2 | delete",
 		k_pause = "return | escape",
+		k_seven = "7",
 		-- held
 		hold_left  = "shift + k_left",
 		hold_right = "shift + k_right",
@@ -997,6 +998,7 @@ keybinds.init{
 		hold_jump  = "shift + k_jump",
 		hold_dash  = "shift + k_dash",
 		hold_pause = "shift + k_pause",
+		hold_seven = "shift + k_seven",
 		-- toggle all (visual mode)
 		all_left  = "alt + k_left",
 		all_right = "alt + k_right",
@@ -1005,6 +1007,7 @@ keybinds.init{
 		all_jump  = "alt + k_jump",
 		all_dash  = "alt + k_dash",
 		all_pause = "alt + k_pause",
+		all_seven = "alt + k_seven",
 
 		-- pico-8 tas
 		last_frame = "k",
