@@ -34,6 +34,7 @@ ignore = {
 }
 
 exclude_files = {
+  "keybindings.lua",
   "lib",
   "spec",
   ".DS_Store",

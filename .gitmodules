@@ -1,0 +1,3 @@
+[submodule "keybindings.lua"]
+	path = keybindings.lua
+	url = https://github.com/ZatFinn/keybindings.lua
