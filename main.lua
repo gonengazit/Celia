@@ -1041,7 +1041,7 @@ if not love.filesystem.getInfo("config","directory") then
 end
 if not love.filesystem.getInfo("config/keys.conf","file") then
 	-- copy
-	local source_fh, source_e = love.filesystem.newFile("default.keys.conf","r")
+	local source_fh, source_e = love.filesystem.newFile((is_web and "web-" or "").."default.keys.conf","r")
 	local target_fh, target_e = love.filesystem.newFile("config/keys.conf","w")
 	if source_e or target_e then
 		if source_e then
