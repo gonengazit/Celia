@@ -521,19 +521,17 @@ function tas:keypressed(key, isrepeat)
 	elseif ke.undo then
 		self:preform_undo()
 	elseif not isrepeat then
-		for i = 0, 7 do
-			if ke[
-				({"hold_left","hold_right","hold_up","hold_down","hold_jump","hold_dash","hold_pause","hold_seven"})
-				[i+1]] and not self.dontrepeat[i] then
-				self:push_undo_state()
-				self:toggle_hold(i)
-				self.dontrepeat[i]=true
-			elseif ke[
-				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
-				[i+1]] and not self.dontrepeat[i] then
-				self:push_undo_state()
-				self:toggle_key(i)
-				self.dontrepeat[i]=true
+		for i = 0, #pico8.keymap[0] do
+			if not self.dontrepeat[i] then
+				if ke["hold_"..pico8.keymap[0][i]] then
+					self:push_undo_state()
+					self:toggle_hold(i)
+					self.dontrepeat[i]=true
+				elseif ke["k_"..pico8.keymap[0][i]] then
+					self:push_undo_state()
+					self:toggle_key(i)
+					self.dontrepeat[i]=true
+				end
 			end
 		end
 	end
@@ -576,22 +574,16 @@ function tas:selection_keypress(key, isrepeat)
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
 		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
-		for i = 0, 7 do
-			if ke[
-				({"k_left","k_right","k_up","k_down","k_jump","k_dash","k_pause","k_seven"})
-				[i+1]] and not self.dontrepeat[i] then
-				self:push_undo_state()
-				self:toggle_key(i)
-				if ke[
-					({"all_left","all_right","all_up","all_down","all_jump","all_dash","all_pause","all_seven"})
-					[i+1]] and not self.dontrepeat[i] then
+		for i = 0, #pico8.keymap[0] do
+			if ke["k_"..pico8.keymap[0][i]] and not self.dontrepeat[i] then
+					self:push_undo_state()
+					self:toggle_key(i)
 					for frame = self:frame_count() + 2, self.last_selected_frame do
-						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
+						if ke["all_"..pico8.keymap[0][i]] or self:key_down(i,frame) ~= self:key_down(i) then
 							self:toggle_key(i, frame)
 						end
 					end
-				end
-				self.dontrepeat[i]=true
+					self.dontrepeat[i] = true
 			end
 		end
 	end
