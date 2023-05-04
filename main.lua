@@ -1023,8 +1023,20 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
-function love.keyreleased()
-	tastool:clear_dontrepeat()
+-- the existence of this function is itself a sign that keybindings.lua still sucks
+function love.keyreleased(key)
+	if tastool.just_advanced then
+		local mem = keybinds.get_ongoing()
+		local active_chord = table.remove(mem)
+		local prev_chord = table.remove(mem)
+		for k in pairs(prev_chord) do
+			if type(k)=="string" and k~=key and k~="prev_frame" and k~="next_frame" then
+				active_chord[k] = true
+			end
+		end
+		tastool.just_advanced = false
+	end
+	tastool.dontrepeat = {}
 end
 -- function love.keyreleased(key)
 --	for p = 0, 1 do
