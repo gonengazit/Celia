@@ -61,13 +61,6 @@ cross-platform. However without going to the lengths of installing cygwin or
 git bash with info-zip, the [makefile](makefile) recipe won't run, and you'll
 have to do the copying and zipping manually.
 
-**Currently not working on web:**
-
-- Clipboard
-- Many keybindings (as some of them come into conflict with the ones your
-  browser has, and even if that wasn't an issue shift and ctrl modifiers
-  seemingly don't work)
-
 ## Controls
 * __L__ - advance 1 frame forward
 * __K__ - rewind 1 frame back
