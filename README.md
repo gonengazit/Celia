@@ -64,6 +64,7 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __F4__ - stop gif recording
 * __F6__ - take screenshot
 * __Ctrl + R__ - reload cart and tas tool (Warning: this cannot be undone!)
+* __F11__ - hide/show the input overlay (both in the TAS tool and the GIF recordings)
 
 #### Second player inputs
 You can use the inputs of the second player as follow:
