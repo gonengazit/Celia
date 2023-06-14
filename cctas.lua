@@ -697,7 +697,7 @@ end
 function cctas:draw()
 	self.super.draw(self)
 	local offset = 13
-	if self.super.show_second_input_display(self) then
+	if self.super.show_input_display(self, 1) then
 		offset = 12 + 13
 	end
 
