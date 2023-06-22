@@ -579,7 +579,7 @@ function tas:keypressed(key, isrepeat)
 		end
 	elseif key == 'f11' then
 		self.hide_all_input_display = not self.hide_all_input_display
-	elseif not (love.keyboard.isDown('lalt', 'ralt') or ctrl) then
+	elseif not love.keyboard.isDown('lalt', 'ralt') then
 		-- TODO: improve check for modifier absence
 		for p = 0, 1 do
 			for i = 0, #pico8.keymap[p] do
