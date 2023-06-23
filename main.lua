@@ -281,15 +281,9 @@ function love.load(argv)
 	end
 
 	-- make sure necessary files exist
-	if not love.filesystem.getInfo("carts/","directory") then
-		love.filesystem.createDirectory("carts/")
-	end
-	if not love.filesystem.getInfo("tmp/","directory") then
-		love.filesystem.createDirectory("tmp/")
-	end
-	if not love.filesystem.getInfo("config","directory") then
-		love.filesystem.createDirectory("config")
-	end
+	love.filesystem.createDirectory("carts/")
+	love.filesystem.createDirectory("tmp/")
+	love.filesystem.createDirectory("config/")
 	if not love.filesystem.getInfo("config/keys.conf","file") then
 		-- copy default config file to the user's configuration
 		local source_fh, source_e = love.filesystem.newFile((is_web and "web-" or "").."default.keys.conf","r")
