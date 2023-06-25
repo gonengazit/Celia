@@ -880,10 +880,14 @@ end
 
 -- i,j optional indices for start and end
 function tas:get_input_str(i,j)
-	-- TODO: also write mouse
 	local flat_inputs = {}
 	for i, v in ipairs(self.inputstates) do
-		local frame_str = string.format("%d:%d:%d:%d", v.keys, v.mouse_x, v.mouse_y, v.mouse_mask)
+		local frame_str
+		if pico8.mouse_enabled then
+			frame_str = string.format("%d:%d:%d:%d", v.keys, v.mouse_x, v.mouse_y, v.mouse_mask)
+		else
+			frame_str = string.format("%d", v.keys)
+		end
 		table.insert(flat_inputs, frame_str)
 	end
 	return table.concat(flat_inputs, ",", i, j)
