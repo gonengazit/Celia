@@ -95,7 +95,7 @@ function tas:insert_inputstate()
 end
 
 function tas:duplicate_inputstate()
-	table.insert(self.inputstates, self:frame_count() + 1, self.inputstates[self:frame_count()+1])
+	table.insert(self.inputstates, self:frame_count() + 1, deepcopy_no_api(self.inputstates[self:frame_count()+1]))
 end
 
 function tas:delete_inputstate()
