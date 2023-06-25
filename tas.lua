@@ -897,7 +897,13 @@ end
 -- overloads should returns nil if the file cannot be created
 function tas:get_input_file_obj()
 	local stripped_cartname = cartname:match("[^.]+")
-	local filename = stripped_cartname .. ".tas"
+	local extension
+	if pico8.mouse_enabled then
+		extension = ".mtas"
+	else
+		extension = ".tas"
+	end
+	local filename = stripped_cartname .. extension
 	return love.filesystem.newFile(filename)
 end
 
