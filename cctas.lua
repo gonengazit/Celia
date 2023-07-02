@@ -614,7 +614,14 @@ function cctas:get_input_file_obj()
 		file_id=self:level_index()
 	end
 
-	local filename = ("%s/TAS%d.tas"):format(dirname, file_id)
+	local extension
+	if pico8.mouse_enabled then
+		extension = ".mtas"
+	else
+		extension = ".tas"
+	end
+
+	local filename = ("%s/TAS%d%s"):format(dirname, file_id, extension)
 	return love.filesystem.newFile(filename)
 end
 
