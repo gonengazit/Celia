@@ -65,6 +65,29 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __F6__ - take screenshot
 * __Ctrl + R__ - reload cart and tas tool (Warning: this cannot be undone!)
 
+### Mouse input
+* __Ctrl + Shift + Space__ - enables or disables the mouse. If the cart calls `poke(0x5f2d, 1)` in its `_init()` or at top level to request the mouse, the tastool starts with the mouse already enabled.
+
+> **Warning**
+> The mouse inputs are only saved when the mouse is enabled in the cart by calling `poke(0x5f2d, 1)`.
+
+The mouse input display indicates:
+* "__x: ..., y: ...__" - the mouse position for the current frame. This line turns red when __Space__ is pressed. See below for more informations.
+* "__(..., ...)__" - the position of your mouse
+* "__btns: ...__" - the state of the mouse buttons for the current frame. This field is a bitmask, where the left mouse button is 1, the right mouse button is 2, and the middle mouse button is 4. (i.e. if more than one button is pressed the sum is displayed)
+
+The same informations are shown in the Pico 8 screen by 2 indicators, at the mouse position for the current frame and at the position of your mouse:
+* A red cross indicates the mouse position for the current frame
+* A red dot indicates the position of your mouse
+* Pink rectangles are drawn next to these, representing the mouse buttons
+
+The state of the buttons for the current frame can be modified as any regular controller button, by using the mouse buttons instead of a controller button. The only difference is that you can't toggle the auto-hold (__Shift + controller button__) of a mouse button. It's still possible to frame advance while manually holding the button to set it.
+
+The mouse position is handled as follow:
+* To set the mouse position for the current frame, press __Space__, it will set it to current position of your mouse.
+* Generally, when a new mouse position is needed for a frame, if __Space__ is held then the position of your mouse will be used, otherwise the mouse position of the previous frame will be used.
+* To indicate this, when __Space__ is held the mouse input display shows the mouse position for the frame in red.
+
 ### Visual selection mode
 Visual selection mode allows you to perform operations on a contiguous range of inputs. The selected range will always start with the current frame (highlighted blue on the piano roll), and contain all subsequent frames (highlighted gray). You can always exit visual selection mode, by making the selection empty, or pressing __ESC__.
 
@@ -73,8 +96,8 @@ Visual selection mode allows you to perform operations on a contiguous range of 
 * __ESC__ - exit visual selection mode
 * __End__ - extend selection until last frame
 * __Home__ - reduce selection to the current frame, and the next one.
-* __controller button__ - set/unset the button for all selected frames
-* __Alt + basic button__ - toggle the button for all selected frames
+* __controller button / mouse button__ - set/unset the button for all selected frames
+* __Alt + basic button / mouse button__ - toggle the button for all selected frames
 * __Ctrl + C__ - copy selected frames to clipboard
 * __Ctrl + V__ - replace selection with frames pasted from clipboard
 * __Ctrl + X__ - cut frames to clipboard

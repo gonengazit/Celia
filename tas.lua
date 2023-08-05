@@ -15,7 +15,7 @@ tas.pianoroll_w=65
 -- index defaults to the current frame if nil
 function tas:key_down(i, frame)
 	frame = frame or self:frame_count() + 1
-	return bit.band(self.keystates[frame],2^i)~=0
+	return bit.band(self.inputstates[frame].keys,2^i)~=0
 end
 
 function tas:key_held(i)
@@ -24,7 +24,7 @@ end
 
 function tas:toggle_key(i, frame)
 	frame = frame or self:frame_count() + 1
-	self.keystates[frame]=bit.bxor(self.keystates[frame],2^i)
+	self.inputstates[frame].keys=bit.bxor(self.inputstates[frame].keys,2^i)
 
 	--disabling a key on the current frame should also disable that hold
 	if not self:key_down(i) and frame == self:frame_count() + 1 then
@@ -37,32 +37,78 @@ function tas:toggle_hold(i)
 
 	-- holding a key should also set it
 	if self:key_held(i) then
-		self.keystates[self:frame_count()+1]=bit.bor(self.keystates[self:frame_count()+1],2^i)
+		self.inputstates[self:frame_count()+1].keys=bit.bor(self.inputstates[self:frame_count()+1].keys,2^i)
 	end
 end
 
-function tas:reset_keys()
-	self.keystates[self:frame_count()+1]=0
+function tas:get_mouse(frame)
+	frame = frame or self:frame_count() + 1
+	return self.inputstates[frame].mouse_x, self.inputstates[frame].mouse_y, self.inputstates[frame].mouse_mask
+end
+function tas:set_mouse(x, y, mask, frame)
+	frame = frame or self:frame_count() + 1
+	self.inputstates[frame].mouse_x = x
+	self.inputstates[frame].mouse_y = y
+	self.inputstates[frame].mouse_mask = mask
 end
 
-function tas:insert_keystate()
-	table.insert(self.keystates, self:frame_count() + 1, self.hold)
+local function only_space_pressed()
+	return love.keyboard.isDown("space") and not love.keyboard.isDown('lctrl', 'rctrl', 'lshift', 'rshift', 'lalt', 'ralt')
+end
+-- frame is the current frame, for which the position is wanted
+-- use the mouse position if space is hold, otherwise copy the previous frame
+function tas:get_wanted_mouse_pos(frame)
+	-- look at the previous frame
+	if frame then
+		frame = frame - 1
+	else
+		frame = self:frame_count()
+	end
+	if only_space_pressed() then
+		return self.user_mouse_x, self.user_mouse_y
+	else
+		if frame <= 0 then
+			return 1, 1
+		end
+		local x, y = self:get_mouse(frame)
+		return x, y
+	end
 end
 
-function tas:duplicate_keystate()
-	table.insert(self.keystates, self:frame_count() + 1, self.keystates[self:frame_count()+1])
+-- button is 0, 1 or 2
+function tas:toggle_mouse_button(button, frame)
+	frame = frame or self:frame_count() + 1
+	self.inputstates[frame].mouse_mask=bit.bxor(self.inputstates[frame].mouse_mask,2^button)
+end
+function tas:mouse_button_down(button, frame)
+	frame = frame or self:frame_count() + 1
+	return bit.band(self.inputstates[frame].mouse_mask,2^button)~=0
 end
 
-function tas:delete_keystate()
-	table.remove(self.keystates, self:frame_count() + 1)
-	if self:frame_count() + 1 > #self.keystates then
-		table.insert(self.keystates, 0)
+function tas:reset_inputs()
+	self.inputstates[self:frame_count()+1]={keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0}
+end
+
+function tas:insert_inputstate()
+	local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+	table.insert(self.inputstates, self:frame_count() + 1, {keys = self.hold, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0})
+end
+
+function tas:duplicate_inputstate()
+	table.insert(self.inputstates, self:frame_count() + 1, deepcopy_no_api(self.inputstates[self:frame_count()+1]))
+end
+
+function tas:delete_inputstate()
+	table.remove(self.inputstates, self:frame_count() + 1)
+	if self:frame_count() + 1 > #self.inputstates then
+		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+		table.insert(self.inputstates, {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0})
 	end
 end
 
 function tas:delete_selection()
 	for i=self:frame_count()+1, self.last_selected_frame do
-		self:delete_keystate()
+		self:delete_inputstate()
 	end
 	self.last_selected_frame = -1
 end
@@ -71,7 +117,8 @@ function tas:reset_hold()
 	self.hold=0
 end
 
-local function update_buttons(self, input_idx)
+local function update_pico8_from_frame(self, input_idx)
+	-- controller buttons
 	for i = 0, #pico8.keymap[0] do
 			local v = pico8.keypressed[0][i]
 			if self:key_down(i, input_idx) then
@@ -80,27 +127,37 @@ local function update_buttons(self, input_idx)
 				pico8.keypressed[0][i] = nil
 			end
 	end
+	-- mouse
+	pico8.mouse_x , pico8.mouse_y, pico8.mouse_mask = self:get_mouse(input_idx)
 end
 
 
--- returns the keystate of the next frame
+-- returns the inputstate of the next frame
 -- depending on its current state, whether the the user is holding down inputs, and the current hold
 --
 -- i.e, if the input is currently right, and up is held, up+right will be returned
-function tas:advance_keystate(curr_keystate)
-	curr_keystate = curr_keystate or 0
-	curr_keystate= bit.bor(curr_keystate, self.hold)
+function tas:advance_inputstate(curr_inputstate)
+	local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+	curr_inputstate = curr_inputstate or {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0}
+	-- controller buttons
+	curr_inputstate.keys = bit.bor(curr_inputstate.keys, self.hold)
 	if not self.realtime_playback then
 		for i=0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
 				if love.keyboard.isDown(testkey) then
-					curr_keystate = bit.bor(curr_keystate, 2^i)
+					curr_inputstate.keys = bit.bor(curr_inputstate.keys, 2^i)
 					break
 				end
 			end
 		end
 	end
-	return curr_keystate
+	-- mouse
+	for b = 0, 2 do
+		if love.mouse.isDown(b + 1) then
+			curr_inputstate.mouse_mask = bit.bor(curr_inputstate.mouse_mask, 2^b)
+		end
+	end
+	return curr_inputstate
 end
 
 -- deepcopy the current state, and push it to the stack
@@ -113,8 +170,9 @@ function tas:pushstate()
 	table.insert(self.states,pico8)
 	pico8 = clone
 
-	if self.keystates[self:frame_count()+1] == nil then
-		self.keystates[self:frame_count()+1] = 0
+	if self.inputstates[self:frame_count()+1] == nil then
+		local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+		self.inputstates[self:frame_count()+1] = {keys = 0, mouse_x = mouse_x, mouse_y = mouse_y, mouse_mask = 0}
 	end
 end
 
@@ -166,13 +224,13 @@ function tas:step()
 
 	--update based on the buttons of the 'previous' frame
 	--TODO: make this cleaner
-	update_buttons(self,input_idx)
+	update_pico8_from_frame(self,input_idx)
 
 	love.graphics.setCanvas(pico8.screen)
 	rawstep()
 
-	--advance the state of pressed keys
-	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
+	--advance the state of pressed keys, the mouse position and buttons
+	self.inputstates[self:frame_count()+1] = self:advance_inputstate(self.inputstates[self:frame_count()+1])
 end
 
 function tas:rewind()
@@ -191,7 +249,7 @@ function tas:rewind()
 	restore_clip()
 	restore_camera()
 
-	self.keystates[self:frame_count()+1] = self:advance_keystate(self.keystates[self:frame_count()+1])
+	self.inputstates[self:frame_count()+1] = self:advance_inputstate(self.inputstates[self:frame_count()+1])
 end
 
 --rewind to the first frame
@@ -206,12 +264,12 @@ end
 function tas:full_reset()
 	self:full_rewind()
 	self.hold=0
-	self.keystates={0}
+	self.inputstates={ {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0} }
 end
 
 function tas:init()
 	self.states={}
-	self.keystates={0}
+	self.inputstates={ {keys = 0, mouse_x = 1, mouse_y = 1, mouse_mask = 0} }
 	self.realtime_playback=false
 	self.hold = 0
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
@@ -234,6 +292,11 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+
+	-- mouse
+	self:set_mouse_enabled(pico8.mouse_enabled)
+	self.user_mouse_x = 1
+	self.user_mouse_y = 1
 end
 
 function tas:update()
@@ -266,12 +329,12 @@ local function shallow_copy(t)
 end
 -- states are shallow copyied (for perf reasons), meaning mutating them directly will cause undo to desync
 function tas:get_editor_state()
-	return {states = shallow_copy(self.states), keystates = deepcopy(self.keystates), pico8 = pico8}
+	return {states = shallow_copy(self.states), inputstates = deepcopy(self.inputstates), pico8 = pico8}
 end
 
 function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
-	self.keystates = deepcopy(state.keystates)
+	self.inputstates = deepcopy(state.inputstates)
 	pico8 = state.pico8
 end
 
@@ -392,6 +455,9 @@ function tas:draw_piano_roll()
 	local y=0
 
 	local inputs={"l","r","u","d","z","x"}
+	if self.mouse_enabled then
+		table.insert(inputs, "M")
+	end
 
 
 	local header={}
@@ -406,29 +472,105 @@ function tas:draw_piano_roll()
 	--use 1/3rd of the rows for frames before, and 2/3rds for the frames after the curr frame
 	--use make sure to use all the rows on the edges
 	local start_row = math.max(frame_count - math.floor(num_rows/3), self.last_selected_frame - num_rows + 2,1)
-	if start_row + num_rows - 1 > #self.keystates then
-		start_row = math.max(#self.keystates - num_rows + 1, 1)
+	if start_row + num_rows - 1 > #self.inputstates then
+		start_row = math.max(#self.inputstates - num_rows + 1, 1)
 	end
 
-	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
+	for i=start_row, math.min(start_row + num_rows - 1, #self.inputstates) do
 		local current_frame = i == frame_count
 		local s={}
 		for j=1, #inputs do
-			if self:key_down(j-1, i) then
-				if current_frame and self:key_held(j-1) then
-					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+			if inputs[j] ~= "M" then
+				if self:key_down(j-1, i) then
+					if current_frame and self:key_held(j-1) then
+						local r,g,b,a=unpack(pico8.palette[8])
+						s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+					else
+						s[j]={{0,0,0},inputs[j]}
+					end
 				else
-					s[j]={{0,0,0},inputs[j]}
+					s[j]=" "
 				end
-
-			else
-				s[j]=" "
+			else -- mouse buttons column
+				local _, _, mask = self:get_mouse(i)
+				if mask ~= 0 then
+					s[j] = {{0, 0, 0}, string.format("%u", mask)}
+				else
+					s[j]=" "
+				end
 			end
 		end
 		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
 	end
 
+end
+
+-- set for_recording if you don't want the current user mouse position
+-- also set for_recording if you only want colors from the Pico 8 palette (mandatory for the GIF encoder)
+function tas:draw_mouse_hud(x, y, for_recording)
+	if not self.mouse_enabled then
+		return
+	end
+	setPicoColor(7)
+	local pos_color = {1, 1, 1}
+	if only_space_pressed() and not for_recording then
+		pos_color = {1, 0, 0} -- indicates that the mouse position is being set
+	end
+	local m_x, m_y, m_mask = self:get_mouse()
+	local pos_string = ("x: %d, y: %d"):format(m_x, m_y)
+	local user_pos_string = ("(%d, %d)"):format(self.user_mouse_x, self.user_mouse_y)
+	local btns_string = ("btns: %u"):format(m_mask)
+	love.graphics.print({pos_color, pos_string}, x + 1, y + 1, 0, 2/3, 2/3)
+	if not for_recording then
+		love.graphics.print(user_pos_string, x + 1, y + 6, 0, 2/3, 2/3)
+		love.graphics.print(btns_string, x + 1, y + 11, 0, 2/3, 2/3)
+	else
+		love.graphics.print(btns_string, x + 1, y + 6, 0, 2/3, 2/3)
+	end
+
+	-- independant of the parametres x and y: draws on the Pico 8 screen:
+	-- mark user mouse position, current frame mouse position
+	local screen_offset = {x = self.hud_w - 1, y = self.hud_h - 1} -- '-1' because the Pico 8 screen starts at 1,1
+	if for_recording then
+		screen_offset = {x = -1, y = -1}
+	end
+	if not for_recording then
+		love.graphics.setColor(1, 0, 0, 0.5)
+		love.graphics.point(self.user_mouse_x + screen_offset.x, self.user_mouse_y + screen_offset.y)
+	else
+		setPicoColor(8)
+	end
+	local mouse_x, mouse_y, mask = self:get_mouse()
+	for _, offset in ipairs{ {-1, 0}, {0, -1}, {0, 0}, {1, 0}, {0, 1} } do
+		love.graphics.point(mouse_x + offset[1] + screen_offset.x, mouse_y + offset[2] + screen_offset.y)
+	end
+	-- draw button states
+	for b = 0, 2 do
+		local color
+		if self:mouse_button_down(b) then
+			local x_offset, y_offset, width
+			if b == 0 then 
+				x_offset = -2
+				y_offset = -2
+				width = 2
+			elseif b == 1 then
+				x_offset = 1
+				y_offset = -2
+				width = 2
+			else
+				x_offset = 0
+				y_offset = -3
+				width = 1
+			end
+			if not for_recording then
+				love.graphics.setColor(1, 0.47, 0.66, 0.5) -- setPicoColor(14) with transparency
+				love.graphics.rectangle("fill", self.user_mouse_x + x_offset + screen_offset.x, self.user_mouse_y + y_offset + screen_offset.y, width, 2)
+			else
+				setPicoColor(14)
+			end
+			love.graphics.rectangle("fill", mouse_x + x_offset + screen_offset.x, mouse_y + y_offset + screen_offset.y, width, 2)
+		end
+	end
 end
 function tas:draw()
 	love.graphics.setColor(1,1,1,1)
@@ -449,6 +591,8 @@ function tas:draw()
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
 
+	self:draw_mouse_hud(1, 80)
+
 	self:draw_piano_roll()
 
 	love.graphics.setColor(1,1,1,1)
@@ -458,6 +602,7 @@ end
 function tas:draw_gif_overlay()
 	local frame_count_width = self:draw_frame_counter(1,1)
 	self:draw_input_display(1+frame_count_width+1,1)
+	self:draw_mouse_hud(1, 128 - 11, true)
 end
 
 function tas:keypressed(key, isrepeat)
@@ -477,7 +622,7 @@ function tas:keypressed(key, isrepeat)
 		self:selection_keypress(key, isrepeat)
 	elseif key=='l' then
 		if love.keyboard.isDown('lshift', 'rshift') then
-			if self:frame_count() + 1 < #self.keystates then
+			if self:frame_count() + 1 < #self.inputstates then
 				self.last_selected_frame = self:frame_count() + 2
 			end
 		else
@@ -498,13 +643,13 @@ function tas:keypressed(key, isrepeat)
 	elseif key=='insert' then
 		self:push_undo_state()
 		if ctrl then
-			self:duplicate_keystate()
+			self:duplicate_inputstate()
 		else
-			self:insert_keystate()
+			self:insert_inputstate()
 		end
 	elseif key=='delete' then
 		self:push_undo_state()
-		self:delete_keystate()
+		self:delete_inputstate()
 	elseif key == 'v' and ctrl then
 		self:push_undo_state()
 		self:paste_inputs()
@@ -513,6 +658,15 @@ function tas:keypressed(key, isrepeat)
 			self:perform_redo()
 		else
 			self:preform_undo()
+		end
+	elseif key == 'space' then
+		if ctrl and love.keyboard.isDown('lshift', 'rshift') then
+			self:set_mouse_enabled(not self.mouse_enabled)
+		elseif self.mouse_enabled then
+			local _, _, mask = self:get_mouse()
+			local mouse_x, mouse_y = self:get_wanted_mouse_pos()
+			self:push_undo_state() -- TODO: may not be desired
+			self:set_mouse(mouse_x, mouse_y, mask)
 		end
 	else
 		for i = 0, #pico8.keymap[0] do
@@ -535,7 +689,7 @@ end
 function tas:selection_keypress(key, isrepeat)
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
 	if key == 'l' then
-		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
+		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.inputstates)
 	elseif key == 'k' then
 		self.last_selected_frame = self.last_selected_frame - 1
 		if self.last_selected_frame <= self:frame_count() + 1 then
@@ -566,7 +720,7 @@ function tas:selection_keypress(key, isrepeat)
 	elseif key == 'home' then
 		self.last_selected_frame = self:frame_count() + 2
 	elseif key=='end' then
-		self.last_selected_frame = #self.keystates
+		self.last_selected_frame = #self.inputstates
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
@@ -586,6 +740,44 @@ function tas:selection_keypress(key, isrepeat)
 			end
 		end
 	end
+end
+
+function tas:mousemoved(x, y)
+	if not self.mouse_enabled then
+		return
+	end
+	self.user_mouse_x = x
+	self.user_mouse_y = y
+	if only_space_pressed() then -- set mouse pos for the current frame
+		local _, _, mask = self:get_mouse()
+		self:set_mouse(x, y, mask)
+	end
+end
+
+function tas:mousepressed(button)
+	if not self.mouse_enabled then
+		return
+	end
+	if self.last_selected_frame ~= -1 then
+		self:mousepressed_selection(button)
+	else
+		self:push_undo_state()
+		self:toggle_mouse_button(button)
+	end
+end
+function tas:mousepressed_selection(button)
+	self:push_undo_state()
+	self:toggle_mouse_button(button)
+	for frame =  self:frame_count() + 2, self.last_selected_frame do
+		if love.keyboard.isDown("lalt", "ralt") or self:mouse_button_down(button,frame) ~= self:mouse_button_down(button) then
+			self:toggle_mouse_button(button, frame)
+		end
+	end
+end
+
+function tas:set_mouse_enabled(v)
+	self.mouse_enabled = v
+	love.mouse.setVisible(v)
 end
 
 -- b is a bitmask of the inputs
@@ -626,13 +818,18 @@ function tas:predict(pred, num, inputs)
 	if type(inputs)=="table" then
 		input_tbl=inputs
 	elseif inputs then
-		input_tbl={table.unpack(self.keystates,self:frame_count()+1)}
+		input_tbl = {}
+		all_input_tbl={table.unpack(self.inputstates,self:frame_count()+1)}
+		for i, v in pairs(all_input_tbl) do
+			input_tbl[i] = v.keys
+		end
 	else
 		input_tbl={}
 	end
 
 	for i=1,num do
 		set_btn_state(input_tbl[i] or 0)
+		-- TODO: also set mouse state!
 		rawstep()
 		if pred() then
 			ret=true
@@ -652,20 +849,30 @@ end
 function tas:load_input_str(input_str, i)
 	local new_inputs={}
 	for input in input_str:gmatch("[^,]+") do
-		if tonumber(input) == nil then
-			print("invalid input file")
-			return
-		else
-			table.insert(new_inputs, tonumber(input))
+		local keys, mouse_x, mouse_y, mouse_mask = input:match("(%d*):(%d*):(%d*):(%d*)")
+		if keys == nil then
+			keys = input:match("%d*") -- try the old input format
+			mouse_x = 1
+			mouse_y = 1
+			mouse_mask = 0
+			if keys == nil then
+				print("invalid input file: invalid frame: ", input)
+				return
+			end
 		end
+		table.insert(new_inputs, {keys = tonumber(keys), mouse_x = tonumber(mouse_x), mouse_y = tonumber(mouse_y), mouse_mask = tonumber(mouse_mask)})
 	end
+	-- TODO: also read mouse
 	if i == nil then
 		self:full_reset()
-		self.keystates = new_inputs
+		self.inputstates = {}
+		for i, v in ipairs(new_inputs) do
+			self.inputstates[i] = {keys = v.keys, mouse_x = v.mouse_x, mouse_y = v.mouse_y, mouse_mask = v.mouse_mask}
+		end
 	else
 		--insert the new inputs before index i
 		for j,v in ipairs(new_inputs) do
-			table.insert(self.keystates, i+j-1, v)
+			table.insert(self.inputstates, i+j-1, {keys = v.keys, mouse_x = v.mouse_x, mouse_y = v.mouse_y, mouse_mask = v.mouse_mask})
 		end
 	end
 	return #new_inputs
@@ -673,14 +880,30 @@ end
 
 -- i,j optional indices for start and end
 function tas:get_input_str(i,j)
-	return table.concat(self.keystates, ",", i, j)
+	local flat_inputs = {}
+	for i, v in ipairs(self.inputstates) do
+		local frame_str
+		if pico8.mouse_enabled then
+			frame_str = string.format("%d:%d:%d:%d", v.keys, v.mouse_x, v.mouse_y, v.mouse_mask)
+		else
+			frame_str = string.format("%d", v.keys)
+		end
+		table.insert(flat_inputs, frame_str)
+	end
+	return table.concat(flat_inputs, ",", i, j)
 end
 
 -- get the file object of the input file
 -- overloads should returns nil if the file cannot be created
 function tas:get_input_file_obj()
 	local stripped_cartname = cartname:match("[^.]+")
-	local filename = stripped_cartname .. ".tas"
+	local extension
+	if pico8.mouse_enabled then
+		extension = ".mtas"
+	else
+		extension = ".tas"
+	end
+	local filename = stripped_cartname .. extension
 	return love.filesystem.newFile(filename)
 end
 

@@ -99,6 +99,10 @@ pico8 = {
 	spritesheet_data = nil,
 	spritesheet = nil,
 	spritesheet_changed = false,
+	mouse_x = 0, 
+	mouse_y = 0,
+	mouse_mask = 0,
+	mouse_enabled = false
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
@@ -135,6 +139,14 @@ glyph_edgecases = {
 }
 
 local flr, abs = math.floor, math.abs
+local function clamp(x, min, max)
+	if x < min then
+		return min
+	elseif x > max then
+		return max
+	end
+	return x
+end
 
 loaded_code = nil
 
@@ -993,6 +1005,26 @@ end
 
 function love.wheelmoved(_, y)
 	pico8.mwheel = pico8.mwheel + y
+end
+
+function love.mousemoved(x, y, dx, dy, istouch)
+	local orig_x = 0
+	local orig_y = 0
+	local screen_w, screen_h = love.graphics.getDimensions()
+	local tas_w, tas_h = tastool.screen:getDimensions()
+	if screen_w/tas_w > screen_h/tas_h then
+		orig_x = screen_w / 2 - (tas_w / 2 * scale)
+	else
+		orig_y = screen_h / 2 - (tas_h / 2 * scale)
+	end
+	local mouse_x = clamp(math.ceil((x - orig_x) / scale / tastool.scale - tastool.hud_w), 1, pico8.resolution[1])
+	local mouse_y = clamp(math.ceil((y - orig_y) / scale / tastool.scale - tastool.hud_h), 1, pico8.resolution[2])
+	tastool:mousemoved(mouse_x, mouse_y)
+end
+
+function love.mousepressed( x, y, button, istouch, presses )
+	-- löve ranges button from 1 to 3, we want from 0 to 2
+	tastool:mousepressed(button - 1) -- TODO: maybe use x, y as well?
 end
 
 function love.graphics.point(x, y)

@@ -229,6 +229,13 @@ function cctas:rng_seed_keypress(key,isrepeat)
 	end
 end
 
+function cctas:mousemoved(x, y)
+	self.super.mousemoved(self, x, y)
+end
+function cctas:mousepressed(button)
+	self.super.mousepressed(self, button)
+end
+
 -- cycle the rng seed index forward if dir is 1 and backward if it is -1
 -- returns true if a seedable object exists
 function cctas:advance_seeded_obj(dir)
@@ -607,7 +614,14 @@ function cctas:get_input_file_obj()
 		file_id=self:level_index()
 	end
 
-	local filename = ("%s/TAS%d.tas"):format(dirname, file_id)
+	local extension
+	if pico8.mouse_enabled then
+		extension = ".mtas"
+	else
+		extension = ".tas"
+	end
+
+	local filename = ("%s/TAS%d%s"):format(dirname, file_id, extension)
 	return love.filesystem.newFile(filename)
 end
 
