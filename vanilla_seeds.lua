@@ -40,7 +40,7 @@ function chest_seed.inject(pico8)
 		local _rnd = pico8.cart.rnd
 		if this.timer <= 1 then
 			pico8.cart.rnd = function()
-				return this.__tas_seed
+				return this.__tas_seed + 1
 			end
 		end
 		_upd(this)
