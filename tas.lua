@@ -473,16 +473,17 @@ function tas:draw_gif_overlay()
 end
 
 function tas:keypressed(key, isrepeat)
-	if ke.playback then
-		self.realtime_playback = not self.realtime_playback
-	elseif self.realtime_playback then
+	if self.realtime_playback then
 		-- pressing any key during realtime playback stops it
 		self.realtime_playback = false
 	elseif self.seek then
+		-- pressing any key during seek interrupts it
 		if self.seek.finish_on_interrupt then
 			self.seek.on_finish()
 		end
 		self.seek=nil
+	elseif ke.playback then
+		self.realtime_playback = not self.realtime_playback
 	--TODO: block keypresses even when overloading this func
 	elseif self.last_selected_frame ~= -1 then
 		self:selection_keypress(key, isrepeat)

@@ -615,7 +615,7 @@ function cctas:get_input_str(i,j, include_seeds)
 	if i ~= nil and not include_seeds then
 		return self.super.get_input_str(self,i,j)
 	end
-	return ("[%s]%s"):format(table.concat(self:get_rng_seeds(),","),self.super.get_input_str(self))
+	return ("[%s]%s"):format(table.concat(self:get_rng_seeds(),","),self.super.get_input_str(self,i,j))
 end
 
 function cctas:load_input_str(str, i)
@@ -651,7 +651,8 @@ function cctas:save_cleaned_input_file(last_frame)
 		return
 	end
 	if f:open("w") then
-		f:write(self:get_input_str(1, last_frame, true))
+		-- +1 because the input array is 1 indexed
+		f:write(self:get_input_str(1, last_frame+1, true))
 		print(("saved %df cleaned file to %s"):format(last_frame, love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename()))
 	else
 		print("error saving cleaned input file")
