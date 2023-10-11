@@ -1071,7 +1071,7 @@ local function ParseLua(src)
 	end
 
 
-	local function ParseStatement(scope)
+	local function ParseStatement(scope, line)
 		local stat = nil
 		local tokenList = {}
 		if tok:ConsumeKeyword('if', tokenList) then
@@ -1374,7 +1374,9 @@ local function ParseLua(src)
 
 		elseif tok:ConsumeKeyword('return', tokenList) then
 			local exList = {}
-			if not tok:IsKeyword('end') then
+			-- parse shorthand if(x) return correctly
+			-- other, more niche cases, might not parse correctly currently
+			if not tok:IsKeyword('end') and (not line or tok:Peek().Line == line) then
 				local st, firstEx = ParseExpr(scope)
 				if st then
 					exList[1] = firstEx
@@ -1515,7 +1517,7 @@ local function ParseLua(src)
 		--local stats = {}
 		--
 		while not statListCloseKeywords[tok:Peek().Data] and not tok:IsEof() and (not line or tok:Peek().Line <= line) do
-			local st, nodeStatement = ParseStatement(nodeStatlist.Scope)
+			local st, nodeStatement = ParseStatement(nodeStatlist.Scope, line)
 			if not st then return false, nodeStatement end
 			--stats[#stats+1] = nodeStatement
 			nodeStatlist.Body[#nodeStatlist.Body + 1] = nodeStatement
@@ -1530,11 +1532,11 @@ local function ParseLua(src)
 
 		--
 		--nodeStatlist.Body = stats
-		if line then
-			for k,v in ipairs(nodeStatlist.Tokens) do
-				print(v.Print())
-			end
-		end
+		-- if line then
+		-- 	for k,v in ipairs(nodeStatlist.Tokens) do
+		-- 		print(v.Print())
+		-- 	end
+		-- end
 		return true, nodeStatlist
 	end
 
