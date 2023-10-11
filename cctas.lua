@@ -35,6 +35,8 @@ function cctas:init()
 
 
 	rawset(console.ENV,"find_player", self.find_player)
+	console.COMMANDS["set_player_env"]=function() print("switched to player environment") self.set_player_env(self) end
+	console.COMMANDS["unset_player_env"]=function() print("switched to global environment") self.unset_player_env(self) end
 
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
@@ -385,6 +387,33 @@ function cctas:find_player()
 			return v
 		end
 	end
+end
+
+function cctas:set_player_env()
+	setmetatable(console.ENV, {
+		__index = function(table,key)
+			local p=self:find_player()
+			if p and p[key]~=nil then
+				return p[key]
+			end
+			return pico8.cart[key]
+		end,
+		__newindex = function(table, key, val)
+			local p=self:find_player()
+			if p and p[key]~=nil then
+			  p[key]=val
+			else
+				pico8.cart[key] = val
+			end
+		end
+	})
+end
+
+function cctas:unset_player_env()
+	setmetatable(console.ENV, {
+		__index = function(table,key) return pico8.cart[key] end,
+		__newindex = function(table, key, val) pico8.cart[key] = val end
+	})
 end
 
 function cctas:pushstate()

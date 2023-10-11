@@ -40,4 +40,7 @@ by default, the rng seed of balloons and chests can be modified. In the future, 
 
 Warning: rng seeding in the middle of a level can cause a desync if it affects previous parts of it.
 
-
+# Console Commands
+* `find_player()` - returns the player object
+* `set_player_env` - sets the environment to include the player. trying to access/modify variable `var` in the console after doing this will first try to access/modify `player.var`, then, if it doesn't exist, it will access/modify the global `var`
+* `unset_player_env` - reverts the effects of the previous command
