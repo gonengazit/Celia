@@ -1121,6 +1121,9 @@ end
 function api.sfx(n, channel, offset)
 	-- n = -1 stop sound on channel
 	-- n = -2 to stop looping on channel
+	--
+	-- channel = -1 to find a free channel
+	-- channel = -2 to stop the sfx on any channels it plays on
 	channel = channel or -1
 	if n == -1 and channel >= 0 then
 		pico8.audio_channels[channel].sfx = nil
@@ -1138,6 +1141,14 @@ function api.sfx(n, channel, offset)
 		end
 	end
 	if channel == -1 then
+		return
+	end
+	if channel == -2 then
+		for i = 0, 3 do
+			if pico8.audio_channels[i].sfx == n then
+				pico8.audio_channels[i].sfx = nil
+			end
+		end
 		return
 	end
 	local ch = pico8.audio_channels[channel]
