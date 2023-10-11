@@ -11,6 +11,7 @@ local cart = require("cart")
 
 local tas = require("tas")
 local cctas = require("cctas")
+local cc2tas = require("cc2tas")
 
 local console = require("console")
 
@@ -417,6 +418,7 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	local paramcount = 0
 
 	local tas_tools = {
+		cc2tas = cc2tas,
 		cctas = cctas,
 		tas = tas
 	}
