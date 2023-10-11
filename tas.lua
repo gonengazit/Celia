@@ -153,9 +153,13 @@ local function rawstep()
 		pico8.cart._update()
 	end
 
+	love.graphics.push()
+	restore_clip()
+	restore_camera()
 	if pico8.cart._draw then
 		pico8.cart._draw()
 	end
+	love.graphics.pop()
 end
 
 
