@@ -295,7 +295,12 @@ local function Format_Identity(ast)
 				elseif entry.Type == 'Value' then
 					formatExpr(entry.Value)
 				elseif entry.Type == 'KeyString' then
-					appendStr(patch_local_varname(entry.Key))
+					local no_glyph = entry.Key:match("^[%w_]*$")
+					if no_glyph then
+						appendStr(entry.Key)
+					else
+						appendStr(("['%s']"):format(entry.Key))
+					end
 					appendNextToken( "=" )
 					formatExpr(entry.Value)
 				end
