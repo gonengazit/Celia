@@ -798,16 +798,7 @@ function api.ovalfill(x0, y0, x1, y1, r, col)
 	--TODO: implement
 end
 
-function api.line(x0, y0, x1, y1, col)
-	if col then
-		color(col)
-	end
-
-
-	x0 = flr(tonumber(x0) or 0) + 1
-	y0 = flr(tonumber(y0) or 0) + 1
-	x1 = flr(tonumber(x1) or 0) + 1
-	y1 = flr(tonumber(y1) or 0) + 1
+local function get_line_points(x0 ,y0 ,x1 ,y1)
 
 	local dx = x1 - x0
 	local dy = y1 - y0
@@ -872,7 +863,57 @@ function api.line(x0, y0, x1, y1, col)
 			end
 		end
 	end
+	return points
+end
+
+function api.line(x0, y0, x1, y1, col)
+	if col then
+		color(col)
+	end
+
+	x0 = flr(tonumber(x0) or 0) + 1
+	y0 = flr(tonumber(y0) or 0) + 1
+	x1 = flr(tonumber(x1) or 0) + 1
+	y1 = flr(tonumber(y1) or 0) + 1
+
+	local points = get_line_points(x0, y0, x1, y1)
+
 	love.graphics.points(points)
+end
+
+function api.tline(x0, y0, x1, y1, mx, my, mdx, mdy, layers)
+	x0 = flr(tonumber(x0) or 0) + 1
+	y0 = flr(tonumber(y0) or 0) + 1
+	x1 = flr(tonumber(x1) or 0) + 1
+	y1 = flr(tonumber(y1) or 0) + 1
+
+	mx = tonumber(mx) or 0
+	my = tonumber(my) or 0
+	mdx = tonumber(mdx) or 0.125
+	mdy = tonumber(mdy) or 0
+	layers=tonumber(layers) or 0
+
+	local points = get_line_points(x0, y0, x1, y1)
+
+	local colored_points={}
+
+	for _,p in ipairs(points) do
+		local sprite = api.mget(mx,my)
+		--pixels for sprite 0 are not drawn
+		if sprite~=0 and (layers == 0 or bit.band(pico8.spriteflags[sprite], layers) ~= 0) then
+			local c = api.sget((sprite % 16 + mx - flr(mx)) * 8 , (flr(sprite/16) + my - flr(my)) * 8)
+			p[3] = c / 15
+			p[4] = 0
+			p[5] = 0
+			p[6] = 1
+			table.insert(colored_points,p)
+		end
+
+		mx = mx + mdx
+		my = my + mdy
+	end
+
+	love.graphics.points(colored_points)
 end
 
 
