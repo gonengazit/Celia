@@ -7,7 +7,6 @@ local api = require("api")
 
 local console = require("console")
 
-
 --TODO: probably call load_level directly
 --or at least make sure rng seeds are set etc
 function cctas:init()
@@ -52,6 +51,7 @@ function cctas:init()
 	self.full_game_playback = false
 
 	self:state_changed()
+	self:update_working_file()
 end
 
 function cctas:perform_inject()
@@ -120,14 +120,14 @@ function cctas:keypressed(key, isrepeat)
 		self:loading_jank_keypress(key,isrepeat)
 	elseif self.modify_rng_seeds then
 		self:rng_seed_keypress(key,isrepeat)
-	elseif key=='a' and not isrepeat then
+	elseif ke.jank_offset and not isrepeat then
 		-- TODO: telegraph this better?
 		if not self.cart_settings.disable_loading_jank then
 			self:full_rewind()
 			self:push_undo_state()
 			self.modify_loading_jank = true
 		end
-	elseif key=='b' and not isrepeat then
+	elseif ke.rng_seeding and not isrepeat then
 		self.rng_seed_idx = -1
 		-- don't enable rng mode if no seedable objects exist
 		if self:advance_seeded_obj(1) then
@@ -136,36 +136,33 @@ function cctas:keypressed(key, isrepeat)
 			self:push_undo_state()
 			self.modify_rng_seeds = true
 		end
-	elseif key=='f' then
+	elseif ke.next_level then
 		self:push_undo_state()
 		self:next_level()
-	elseif key=='s' then
+	elseif ke.prev_level then
 		self:push_undo_state()
 		self:prev_level()
-	elseif key=='d' and love.keyboard.isDown('lshift', 'rshift') then
+	elseif ke.rewind then
 		self:player_rewind()
-	elseif key=='g' and love.keyboard.isDown('lshift', 'rshift') then
+	elseif ke.level_gif then
 		self:start_gif_recording()
-	elseif key == 'n' and love.keyboard.isDown('lshift', 'rshift') then
+	elseif ke.full_playback then
 		self:push_undo_state()
 		self:begin_full_game_playback()
-	elseif key == 'u' then
+	elseif ke.clean_save then
 		self:push_undo_state()
 		self:begin_cleanup_save()
-	elseif key == '=' then
-		if love.keyboard.isDown('lshift', 'rshift') then
-		-- +
-			if self.max_djump_overload ==-1 then
-				self.max_djump_overload = pico8.cart.max_djump + 1
-			else
-				self.max_djump_overload = self.max_djump_overload + 1
-			end
-			self:load_level(self:level_index(), false)
+	elseif ke.inc_djump then
+		if self.max_djump_overload ==-1 then
+			self.max_djump_overload = pico8.cart.max_djump + 1
 		else
-			self.max_djump_overload = -1
-			self:load_level(self:level_index(), false)
+			self.max_djump_overload = self.max_djump_overload + 1
 		end
-	elseif key == '-' then
+		self:load_level(self:level_index(), false)
+	elseif ke.reset_djump then
+		self.max_djump_overload = -1
+		self:load_level(self:level_index(), false)
+	elseif ke.dec_djump then
 		if self.max_djump_overload ==-1 then
 			self.max_djump_overload = pico8.cart.max_djump - 1
 		else
@@ -173,12 +170,12 @@ function cctas:keypressed(key, isrepeat)
 		end
 		self.max_djump_overload = math.max(self.max_djump_overload, 0)
 		self:load_level(self:level_index(), false)
-	elseif key=='y' then
+	elseif ke.print_pos then
 		local p = self:find_player()
 		if p then
 			print(p)
 		end
-	elseif key=='c' and love.keyboard.isDown('lctrl','rctrl','lgui','rgui') then
+	elseif ke.copy then
 		--copy player position to clipboard
 		local p = self:find_player()
 		if p then
@@ -190,11 +187,11 @@ function cctas:keypressed(key, isrepeat)
 end
 
 function cctas:loading_jank_keypress(key,isrepeat)
-	if key=='up' then
+	if ke.inc_jank then
 		self.loading_jank_offset = math.min(self.loading_jank_offset +1, math.max(#pico8.cart.objects-self.prev_obj_count + 1,0))
-	elseif key == 'down' then
+	elseif ke.dec_jank then
 		self.loading_jank_offset = math.max(self.loading_jank_offset - 1, math.min(-self.prev_obj_count+1,0))
-	elseif key == 'a' and not isrepeat then
+	elseif ke.quit_jank and not isrepeat then
 		self.modify_loading_jank = false
 		self:load_level(self:level_index(),false)
 	end
@@ -203,11 +200,11 @@ end
 
 function cctas:rng_seed_keypress(key,isrepeat)
 	-- TODO: make seed visually update in the current frame, and make rewinding not visually broken
-	if key=='up' or key == 'down' then
+	if ke.inc_rng or ke.dec_rng then
 		local obj = pico8.cart.objects[self.rng_seed_idx]
 		local seed = self:get_seed_handler(obj)
 		if seed ~= nil then
-			if key=='up' then
+			if ke.inc_rng then
 				seed.increase_seed(obj)
 			else
 				seed.decrease_seed(obj)
@@ -222,11 +219,11 @@ function cctas:rng_seed_keypress(key,isrepeat)
 			-- self:rewind()
 			-- self:step()
 		end
-	elseif key == 'right' then
+	elseif ke.next_object then
 		self:advance_seeded_obj(1)
-	elseif key == 'left' then
+	elseif ke.prev_object then
 		self:advance_seeded_obj(-1)
-	elseif key == 'b' and not isrepeat then
+	elseif ke.quit_rng and not isrepeat then
 		self.modify_rng_seeds = false
 	end
 end
@@ -338,7 +335,7 @@ function cctas:load_level(idx, reset_changes)
 		-- for the first level, assume no objects get loading janked by default
 		-- also do not apply loading jank if it is disable
 		self.loading_jank_offset =
-		    (self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
+			(self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
 	end
 
 	for i = self.prev_obj_count+ self.loading_jank_offset, #pico8.cart.objects do
@@ -376,9 +373,11 @@ function cctas:level_index()
 end
 function cctas:next_level()
 	self:load_level(self:level_index()+1,true)
+	self:update_working_file()
 end
 function cctas:prev_level()
 	self:load_level(self:level_index()-1,true)
+	self:update_working_file()
 end
 
 function cctas:find_player()
@@ -493,7 +492,7 @@ function cctas:player_rewind()
 	else
 		self.seek = {
 			finish_condition = function()
-				return  self.inputs_active
+				return	self.inputs_active
 			end,
 			on_finish = function() end,
 			fast_forward=true

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1">
+    <title>Celia</title>
+
+    <!-- Load custom style sheet -->
+    <link rel="stylesheet" type="text/css" href="theme/love.css">
+    <link rel="icon" type="image/png" href="theme/icon.png">
+  </head>
+  <body>
+  <div class="bootup">
+      <img src="theme/p8logo.png"> <img src="theme/icon.png" style="height:1.5em"><br><br>
+      pico-8 0.2.5g<br>
+      (c) 2014-23 lexaloffle games llp<br>
+      <br>
+    </div>
+    &gt; load celia
+    <hr>
+    <center>
+      <div>
+        <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()" width="800" height="600"></canvas>
+        <canvas id="canvas" ondrop="onfiledrop(event)" ondragover="event.preventDefault()" oncontextmenu="event.preventDefault()"></canvas>
+      </div>
+    </center>
+    
+
+    <script type='text/javascript'>
+      function goFullScreen(){
+            var canvas = document.getElementById("canvas");
+            if(canvas.requestFullScreen)
+                canvas.requestFullScreen();
+            else if(canvas.webkitRequestFullScreen)
+                canvas.webkitRequestFullScreen();
+            else if(canvas.mozRequestFullScreen)
+                canvas.mozRequestFullScreen();
+      }
+      function FullScreenHook(){
+        var canvas = document.getElementById("canvas");
+        canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+      }
+      var loadingContext = document.getElementById('loadingCanvas').getContext('2d');
+      function drawLoadingText(text) {
+        var canvas = loadingContext.canvas;
+
+        loadingContext.fillStyle = "#000000";
+        loadingContext.fillRect(0, 0, canvas.scrollWidth, canvas.scrollHeight);
+
+        loadingContext.font = '1em pico-8';
+        loadingContext.textAlign = 'center'
+        loadingContext.fillStyle = "#FFF1E8";
+        loadingContext.fillText(text, canvas.scrollWidth / 2, canvas.scrollHeight / 2);
+
+        loadingContext.fillText("Powered by Emscripten.", canvas.scrollWidth / 2, canvas.scrollHeight / 4);
+        loadingContext.fillText("Powered by LOVE2D.", canvas.scrollWidth / 2, canvas.scrollHeight / 4 * 3);
+      }
+
+      window.onload = function () { window.focus(); };
+      window.onclick = function () { window.focus(); };
+
+      window.addEventListener("keydown", function(e) {
+        // space and arrow keys
+        if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+          e.preventDefault();
+        }
+      }, false);
+
+      function onfiledrop(e) {
+        e.preventDefault();
+        if (FS) {
+          e.dataTransfer.files[0].text().then(function(data) {
+            var prefix = "/home/web_user/love/Celia/";
+            if (/\[(\d+,)*\](\d+,)*/.test(data)) {
+              var working_file = new TextDecoder().decode(FS.open(prefix+"tmp/working_file").node.contents);
+              FS.writeFile(prefix+working_file,data);
+              FS.writeFile(prefix+"tmp/file_pending","tas");
+            } else {
+              var cartname = e.dataTransfer.files[0].name;
+              var dirname = prefix+cartname.replace(/\.[^/.]+$/, "");
+              if (!FS.analyzePath(dirname).exists) {
+                FS.mkdir(dirname);
+              }
+              if (!FS.analyzePath(prefix+"carts/"+cartname).exists) {
+                FS.writeFile(prefix+"carts/"+cartname,data);
+              }
+              FS.writeFile(prefix+"tmp/file_pending",cartname);
+            }
+          });
+        }
+      }
+
+      window.setInterval(function() {
+        var prefix = "/home/web_user/love/Celia/";
+        if (FS && FS.analyzePath(prefix+"tmp/save_pending").exists) {
+          var working_file = new TextDecoder().decode(FS.open(prefix+"tmp/working_file").node.contents);
+          if (FS.analyzePath(prefix+working_file).exists) {
+            var blob = new Blob([FS.readFile(prefix+working_file).buffer], { type: 'application/octet-stream' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = working_file.replace("/","-");
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // very important
+            FS.unlink(prefix+"tmp/save_pending");
+          }
+        }
+      }, 1500);
+
+      window.setInterval(function() {
+        var prefix = "/home/web_user/love/Celia/";
+        if (FS) {
+          var data = "";
+          if (navigator.clipboard.readText) {
+            data = navigator.clipboard.readText().then();
+          }
+          var prefix = "/home/web_user/love/Celia/";
+          FS.writeFile(prefix+"tmp/clipboard",data);
+          if (FS.analyzePath(prefix+"tmp/set_clipboard").exists) {
+            navigator.clipboard.writeText(new TextDecoder().decode(FS.open(prefix+"tmp/set_clipboard").node.contents)).then(
+              function(){ console.log("Tastool wrote to clipboard"); }
+            );
+            FS.unlink(prefix+"tmp/set_clipboard");
+          } 
+        }
+      }, 1500);
+
+      var Module = {
+        arguments: ["./game.love"],
+        INITIAL_MEMORY: 16777216,
+        printErr: console.error.bind(console),
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        setStatus: function(text) {
+          if (text) {
+            drawLoadingText(text);
+          } else if (Module.remainingDependencies === 0) {
+            document.getElementById('loadingCanvas').style.display = 'none';
+            document.getElementById('canvas').style.visibility = 'visible';
+          }
+        },
+        totalDependencies: 0,
+        remainingDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.remainingDependencies = left;
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+      };
+      Module.setStatus('Downloading...');
+      window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.setStatus('Exception thrown, see JavaScript console');
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      };
+
+      var applicationLoad = function(e) {
+        Love(Module);
+      }
+    </script>
+    <script type="text/javascript" src="game.js"></script>
+    <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+    <p>Drag and drop pico-8 carts or TAS files on the game window to open them.</p>
+    <p><a href="https://github.com/CelesteClassic/Celia-web#usage">This program also runs offline, provided you install LOVE2D</a>.</p>
+    <p>Built with <a href="https://github.com/Davidobot/love.js">love.js</a> <button onclick="goFullScreen();">Go Fullscreen</button><br>Hint: Reload the page if screen is blank</p>
+    <hr>
+    <a href="../">Back to Homepage</a>
+  </body>
+</html>

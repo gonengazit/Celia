@@ -42,6 +42,25 @@ In the center of the screen, you'll see the PICO-8 screen, displaying the curren
 On the left, you'll see the HUD, displaying the current frame number, and an input display, with the currently pressed inputs
 On the right, you'll see the pianoroll, which shows the inputs in the frames around the current one
 
+### Web build
+
+Some changes were made to make this project more compatible with
+web/emscripten/wasm. Right now it is a work-in-progress. For building,
+[Davidobot's fork of love.js](https://github.com/Davidobot/love.js) is used, so
+make sure to have the npm package for it installed.
+
+```shell
+$ npm -g install love.js
+$ git clone --recursive https://github.com/gonengazit/Celia && cd Celia
+$ make web
+$ python -m http.server -b 127.0.0.1 -d build/__site/ # example way to host
+```
+
+Building on Windows should be possible as well, since the js tools are
+cross-platform. However without going to the lengths of installing cygwin or
+git bash with info-zip, the [makefile](makefile) recipe won't run, and you'll
+have to do the copying and zipping manually.
+
 ## Controls
 * __L__ - advance 1 frame forward
 * __K__ - rewind 1 frame back
@@ -91,9 +110,7 @@ Warning: making changes to variables in the PICO-8 instance, then rewinding befo
 * [Original Celeste TAS tool by akliant917](https://github.com/CelesteClassic/ClassicTAS)
 * [Lua parser taken and modified from LuaMinify](https://github.com/stravant/LuaMinify)
 
-
-
-
-
-
-
+## Web specific
+* [LuaJIT-like bitops implementation in pure lua by DavidM](https://github.com/davidm/lua-bit-numberlua)
+* [Davidobot's fork of love.js](https://github.com/Davidobot/love.js)
+* [globalizeFS.js from love.js-api-player by MrcSnm (included as a submodule)](https://github.com/MrcSnm/Love.js-Api-Player)

@@ -11,7 +11,7 @@ function love.conf(t)
 	t.version = "11.3"
 
 	t.window.title = "Celia"
-	t.window.icon = "icon.png"
+	t.window.icon = "res/theme/icon.png"
 	t.window.width = 1344
 	t.window.height = 768
 	t.window.resizable = true

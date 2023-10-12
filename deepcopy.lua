@@ -42,14 +42,17 @@ local handle_funcs = {
             end
 
             debug.setupvalue(ret,i,deepcopy(val,seen,upvalues))
-            local uid = debug.upvalueid(orig, i)
-            if upvalues[uid] then
-                local other_func, other_i = unpack(upvalues[uid])
-                debug.upvaluejoin(ret, i , other_func, other_i)
-            else
-                upvalues[uid] = {ret, i}
+            -- TODO: make this web compatible and/or figure out what this even
+            --       does
+            if jit then
+                local uid = debug.upvalueid(orig, i)
+                if upvalues[uid] then
+                    local other_func, other_i = unpack(upvalues[uid])
+                    debug.upvaluejoin(ret, i , other_func, other_i)
+                else
+                    upvalues[uid] = {ret, i}
+                end
             end
-
         end
         return ret
     end,

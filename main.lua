@@ -2,12 +2,18 @@ package.path = package.path .. ";?.lua;lib/?.lua"
 love.filesystem.setRequirePath(package.path)
 
 require("strict")
-local QueueableSource = require("QueueableSource")
 
-local bit = require("bit")
+is_web = love.system.getOS()=="Web"
+-- should be unnecessary, playing it safe anyway for linters and such
+jit = pcall(require,"jit")
+
+local bit = require("numberlua").bit
 
 local api = require("api")
 local cart = require("cart")
+
+local keybinds = require("keybindings")
+ke = keybinds.k
 
 local tas = require("tas")
 local cctas = require("cctas")
@@ -63,24 +69,25 @@ pico8 = {
 	kbdbuffer={},
 	keymap = {
 		[0] = {
-			[0] = { "left", "kp4" },
-			[1] = { "right", "kp6" },
-			[2] = { "up", "kp8" },
-			[3] = { "down", "kp5" },
-			[4] = { "z", "c", "n", "kp-", "kp1", "insert" },
-			[5] = { "x", "v", "m", "8", "kp2", "delete" },
-			[6] = { "return", "escape" },
-			[7] = {},
+			[0] = "left",
+			[1] = "right",
+			[2] = "up",
+			[3] = "down",
+			[4] = "jump",
+			[5] = "dash",
+			[6] = "pause",
+			[7] = "seven",
 		},
 		[1] = {
-			[0] = { "s" },
-			[1] = { "f" },
-			[2] = { "e" },
-			[3] = { "d" },
-			[4] = { "tab", "lshift", "w" },
-			[5] = { "q", "a" },
-			[6] = {},
-			[7] = {},
+			-- subject to renaming
+			[0] = "p2left",
+			[1] = "p2right",
+			[2] = "p2up",
+			[3] = "p2down",
+			[4] = "p2jump",
+			[5] = "p2dash",
+			[6] = "p2pause",
+			[7] = "p2seven",
 		},
 	},
 	mwheel = 0,
@@ -174,6 +181,21 @@ local function _allow_shutdown(value)
 	pico8.can_shutdown = value
 end
 
+local function guess_tool(e)
+	if e.begin_game and e._draw and
+		e.objects and (
+			e.load_level or
+			e.load_room or
+			e.__tas_level_index
+		) and e.player then
+		print("guessed cctas")
+		return cctas
+	else
+		print("guessed tas")
+		return tas
+	end
+end
+
 log = print
 
 function shdr_unpack(thing)
@@ -193,6 +215,7 @@ function setColor(c)
 end
 
 function _load(_cartname)
+	local _cartname = _cartname or "celeste.p8"
 	if type(_cartname) ~= "string" then
 		return false
 	end
@@ -258,6 +281,28 @@ function love.load(argv)
 		love.resize(love.graphics.getDimensions())
 	end
 
+	-- make sure necessary files exist
+	love.filesystem.createDirectory("carts/")
+	love.filesystem.createDirectory("tmp/")
+	love.filesystem.createDirectory("config/")
+	if not love.filesystem.getInfo("config/keys.conf","file") then
+		-- copy default config file to the user's configuration
+		local source_fh, source_e = love.filesystem.newFile((is_web and "web-" or "").."default.keys.conf","r")
+		local target_fh, target_e = love.filesystem.newFile("config/keys.conf","w")
+		if source_e or target_e then
+			if source_e then
+				log(source_e)
+			else
+				log(target_e)
+			end
+		else
+			target_fh:write(source_fh:read())
+			source_fh:close()
+			target_fh:close()
+		end
+	end
+	keybinds.init{ file = "config/keys.conf" }
+
 	osc = {}
 	-- tri
 	osc[0] = function(x)
@@ -315,10 +360,10 @@ function love.load(argv)
 	end
 
 	__audio_channels = {
-		[0] = QueueableSource:new(8),
-		QueueableSource:new(8),
-		QueueableSource:new(8),
-		QueueableSource:new(8),
+		[0] = love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
+		love.audio.newQueueableSource(__sample_rate,bits,channels,8),
 	}
 
 	for i = 0, 3 do
@@ -367,7 +412,11 @@ extern float palette[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(color.r*15.0+0.5);
-	return vec4(palette[index]/15.0, 0.0, 0.0, 1.0);
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			return vec4(palette[x]/15.0, 0.0, 0.0, 1.0);
+		}
+	}
 }]])
 	pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -377,8 +426,12 @@ extern float transparent[16];
 
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
-	float alpha = transparent[index];
-	return vec4(palette[index]/15.0, 0.0, 0.0 ,alpha);
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			float alpha = transparent[x];
+			return vec4(palette[x]/15.0, 0.0, 0.0, alpha);
+		}
+	}
 }]])
 	pico8.sprite_shader:send("palette", shdr_unpack(pico8.draw_palette))
 	pico8.sprite_shader:send("transparent", shdr_unpack(pico8.pal_transparent))
@@ -393,7 +446,11 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	}
 	int index = int(color.r*15.0+0.5);
 	// lookup the color in the palette by index
-	return vec4(palette[index]/15.0, 0.0, 0.0, texcolor.a);
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			return vec4(palette[x]/15.0, 0.0, 0.0, texcolor.a);
+		}
+	}
 }]])
 	pico8.text_shader:send("palette", shdr_unpack(pico8.draw_palette))
 
@@ -403,7 +460,11 @@ extern vec4 palette[16];
 vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
 	int index = int(Texel(texture, texture_coords).r*15.0+0.5);
 	// lookup the color in the palette by index
-	return palette[index]/255.0;
+	for (int x = 0; x < 16; x++) {
+		if (x == index) {
+			return palette[x]/255.0;
+		}
+	}
 }]])
 	pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 
@@ -526,13 +587,16 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 	end
 
 	if initialcartname == nil or initialcartname == "" then
-		initialcartname = "nocart.p8"
+		initialcartname = false
 	end
 
 	_load(initialcartname)
 	api.run()
 
-	if tas_tool_name == nil then
+	if not initialcartname then
+		print("nothing specified, possibly because the user doesn't have a console, defaulting to celestetas.")
+		tas_tool_name = "cctas"
+	elseif tas_tool_name == nil then
 		print("no tas tool specified, defaulting to general pico-8 tas tool")
 		tas_tool_name = "tas"
 	end
@@ -577,7 +641,27 @@ local function inside(x, y, x0, y0, w, h) -- luacheck: no unused
 	return (x >= x0 and x < x0 + w and y >= y0 and y < y0 + h)
 end
 
-function love.update(_)
+function love.update(dt)
+	if is_web and cartname then
+		local filename = "tmp/file_pending"
+		if love.filesystem.getInfo(filename) then
+			local fh, e = love.filesystem.newFile(filename,'r')
+			if e then
+				print(e)
+			else
+				local data = fh:read()
+				fh:close()
+				if data=="tas" then
+					tastool:load_input_file()
+				else
+					_load(data)
+					api.run()
+					tastool=guess_tool(pico8.cart)()
+				end
+			end
+			love.filesystem.remove(filename)
+		end
+	end
 	tastool:update()
 end
 
@@ -845,23 +929,12 @@ local function update_audio(time)
 			ch.bufferpos = ch.bufferpos + 1
 			if ch.bufferpos == __audio_buffer_size then
 				-- queue buffer and reset
-				__audio_channels[channel]:queue(ch.buffer)
+				__audio_channels[channel]:queue(ch.buffer, ch.buffer:getSize())
 				__audio_channels[channel]:play()
 				ch.bufferpos = 0
 			end
 		end
 	end
-end
-
-local function isCtrlOrGuiDown()
-	return love.keyboard.isDown("lctrl")
-		or love.keyboard.isDown("lgui")
-		or love.keyboard.isDown("rctrl")
-		or love.keyboard.isDown("rgui")
-end
-
-local function isAltDown()
-	return love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt")
 end
 
 function start_gif_recording()
@@ -901,36 +974,36 @@ function love.keypressed(key, scancode, isrepeat)
 		return
 	end
 
-	if key == "r" and isCtrlOrGuiDown() and not isAltDown() then
+	if ke.full_reload and not ke.alt then
 		api.reload_cart()
 		api.run()
 		tastool = tastool.class()
 	-- elseif
-	-- 	key == "escape"
-	-- 	and cartname ~= nil
-	-- 	and cartname ~= initialcartname
-	-- 	and cartname ~= "nocart.p8"
-	-- 	and cartname ~= "editor.p8"
+	--	key == "escape"
+	--	and cartname ~= nil
+	--	and cartname ~= initialcartname
+	--	and cartname ~= "nocart.p8"
+	--	and cartname ~= "editor.p8"
 	-- then
 	-- 	api.load(initialcartname)
 	-- 	api.run()
 	-- 	return
-	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
+	elseif ke.full_quit then
 		love.event.quit()
 	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
-	-- 	pico8.clipboard = love.system.getClipboardText()
+	--	pico8.clipboard = love.system.getClipboardText()
 	-- elseif pico8.can_pause and (key == "pause" or key == "p") then
 	-- 	paused = not paused
-	elseif key == "f1" or key == "f6" then
+	elseif ke.screenshot then
 		-- screenshot
 		local filename = cartname .. "-" .. os.time() .. ".png"
 		local screenshot = love.graphics.captureScreenshot(filename)
 		log("saved screenshot to", filename)
-	elseif key == "f3" or key == "f8" or (key=="8" and isCtrlOrGuiDown()) then
+	elseif ke.gif_rec_start then
 		start_gif_recording()
-	elseif key == "f4" or key == "f9" or (key=="9" and isCtrlOrGuiDown()) then
+	elseif ke.gif_rec_stop then
 		stop_gif_recording()
-	elseif key == "return" and isAltDown() then
+	elseif ke.fullscreen then
 		local canvas=love.graphics.getCanvas()
 		love.graphics.setCanvas()
 		love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
@@ -946,20 +1019,35 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
+-- the existence of this function is itself a sign that keybindings.lua still sucks
+function love.keyreleased(key)
+	if tastool.just_advanced then
+		local mem = keybinds.get_ongoing()
+		local active_chord = table.remove(mem)
+		local prev_chord = table.remove(mem)
+		for k in pairs(prev_chord) do
+			if type(k)=="string" and k~=key and k~="prev_frame" and k~="next_frame" then
+				active_chord[k] = true
+			end
+		end
+		tastool.just_advanced = false
+	end
+	tastool.dontrepeat = {}
+end
 -- function love.keyreleased(key)
--- 	for p = 0, 1 do
--- 		for i = 0, #pico8.keymap[p] do
--- 			for _, testkey in pairs(pico8.keymap[p][i]) do
--- 				if key == testkey then
--- 					pico8.keypressed[p][i] = nil
--- 					break
--- 				end
--- 			end
--- 		end
--- 	end
--- 	if pico8.cart and pico8.cart._keyup then
--- 		return pico8.cart._keyup(key)
--- 	end
+--	for p = 0, 1 do
+--		for i = 0, #pico8.keymap[p] do
+--			for _, testkey in pairs(pico8.keymap[p][i]) do
+--				if key == testkey then
+--					pico8.keypressed[p][i] = nil
+--					break
+--				end
+--			end
+--		end
+--	end
+--	if pico8.cart and pico8.cart._keyup then
+--		return pico8.cart._keyup(key)
+--	end
 -- end
 
 function love.textinput(text)
@@ -1000,6 +1088,32 @@ end
 function love.graphics.point(x, y)
 	love.graphics.rectangle("fill", x, y, 1, 1)
 end
+
+if love.system.getOS()=='Web' then
+	function love.system.getClipboardText()
+		local fh, e = love.filesystem.newFile("tmp/clipboard","r")
+		if e then
+			print(e)
+			return
+		else
+			local data = fh:read()
+			fh:close()
+			return data
+		end
+	end
+
+	function love.system.setClipboardText(text)
+		local fh, e = love.filesystem.newFile("tmp/set_clipboard","w")
+		if e then
+			print(e)
+			return
+		else
+			fh:write(text)
+			fh:close()
+		end
+	end
+end
+
 
 function love.run()
 	if love.load then

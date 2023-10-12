@@ -1,3 +1,5 @@
+local bit = require("numberlua").bit
+
 require "deepcopy"
 local class = require("30log")
 
@@ -7,6 +9,8 @@ tas.hud_w = 48
 tas.hud_h = 0
 tas.scale = 6
 tas.pianoroll_w=65
+tas.dontrepeat = {}
+tas.just_advanced = false
 
 
 --wrapper functions
@@ -88,15 +92,13 @@ end
 --
 -- i.e, if the input is currently right, and up is held, up+right will be returned
 function tas:advance_keystate(curr_keystate)
+	self.just_advanced = true
 	curr_keystate = curr_keystate or 0
 	curr_keystate= bit.bor(curr_keystate, self.hold)
 	if not self.realtime_playback then
 		for i=0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if love.keyboard.isDown(testkey) then
-					curr_keystate = bit.bor(curr_keystate, 2^i)
-					break
-				end
+			if ke["k_"..pico8.keymap[0][i]] then
+				curr_keystate = bit.bor(curr_keystate, 2^i)
 			end
 		end
 	end
@@ -141,6 +143,15 @@ function tas:state_iter()
 		elseif i == n+1 then
 			return pico8
 		end
+	end
+end
+
+function tas:update_working_file()
+	if is_web then
+		local file = love.filesystem.newFile("tmp/working_file")
+		file:open("w")
+		file:write(self:get_input_file_obj():getFilename())
+		file:close()
 	end
 end
 
@@ -238,6 +249,7 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+	self:update_working_file()
 end
 
 function tas:update()
@@ -465,7 +477,6 @@ function tas:draw_gif_overlay()
 end
 
 function tas:keypressed(key, isrepeat)
-	local ctrl = love.keyboard.isDown('lctrl', 'rctrl', 'lgui', 'rgui')
 	if self.realtime_playback then
 		-- pressing any key during realtime playback stops it
 		self.realtime_playback = false
@@ -475,62 +486,55 @@ function tas:keypressed(key, isrepeat)
 			self.seek.on_finish()
 		end
 		self.seek=nil
-	elseif key=='p' then
+	elseif ke.playback then
 		self.realtime_playback = not self.realtime_playback
 	--TODO: block keypresses even when overloading this func
 	elseif self.last_selected_frame ~= -1 then
 		self:selection_keypress(key, isrepeat)
-	elseif key=='l' then
-		if love.keyboard.isDown('lshift', 'rshift') then
-			if self:frame_count() + 1 < #self.keystates then
-				self.last_selected_frame = self:frame_count() + 2
-			end
-		else
-			self:step()
+	elseif ke.visual then
+		if self:frame_count() + 1 < #self.keystates then
+			self.last_selected_frame = self:frame_count() + 2
 		end
-	elseif key=='k' then
+	elseif ke.next_frame then
+		self:step()
+	elseif ke.prev_frame then
 		self:rewind()
-	elseif key=='d' then
+	elseif ke.full_rewind then
 		self:full_rewind()
-	elseif key=='r' and love.keyboard.isDown('lshift','rshift') then
+	elseif ke.reset_tas then
 		self:push_undo_state()
 		self:full_reset()
-	elseif key=='m' then
+	elseif ke.save_tas then
 		self:save_input_file()
-	elseif key=='w' and love.keyboard.isDown('lshift', 'rshift') then
+	elseif ke.open_tas then
 		self:push_undo_state()
 		self:load_input_file()
-	elseif key=='insert' then
+	elseif ke.insert_blank then
 		self:push_undo_state()
-		if ctrl then
-			self:duplicate_keystate()
-		else
-			self:insert_keystate()
-		end
-	elseif key=='delete' then
+		self:insert_keystate()
+	elseif ke.duplicate then
+		self:duplicate_keystate()
+	elseif ke.delete then
 		self:push_undo_state()
 		self:delete_keystate()
-	elseif key == 'v' and ctrl then
+	elseif ke.copy then
 		self:push_undo_state()
 		self:paste_inputs()
-	elseif key == 'z' and ctrl then
-		if love.keyboard.isDown('lshift', 'rshift') then
-			self:perform_redo()
-		else
-			self:preform_undo()
-		end
-	else
+	elseif ke.redo then
+		self:perform_redo()
+	elseif ke.undo then
+		self:preform_undo()
+	elseif not isrepeat then
 		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey  and not isrepeat then
-					if love.keyboard.isDown("lshift", "rshift") then
-						self:push_undo_state()
-						self:toggle_hold(i)
-					else
-						self:push_undo_state()
-						self:toggle_key(i)
-					end
-					break
+			if not self.dontrepeat[i] then
+				if ke["hold_"..pico8.keymap[0][i]] then
+					self:push_undo_state()
+					self:toggle_hold(i)
+					self.dontrepeat[i]=true
+				elseif ke["k_"..pico8.keymap[0][i]] then
+					self:push_undo_state()
+					self:toggle_key(i)
+					self.dontrepeat[i]=true
 				end
 			end
 		end
@@ -539,55 +543,51 @@ end
 
 function tas:selection_keypress(key, isrepeat)
 	local ctrl = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
-	if key == 'l' then
+	if ke.next_frame then
 		self.last_selected_frame = math.min(self.last_selected_frame + 1, #self.keystates)
-	elseif key == 'k' then
+	elseif ke.prev_frame then
 		self.last_selected_frame = self.last_selected_frame - 1
 		if self.last_selected_frame <= self:frame_count() + 1 then
 			self.last_selected_frame = -1
 		end
-	elseif key == 'escape' then
+	elseif ke.exit_visual then
 		self.last_selected_frame = -1
 
-	elseif key=='delete' then
+	elseif ke.delete then
 		self:push_undo_state()
 		self:delete_selection()
-	elseif key == 'c' and ctrl then
+	elseif ke.copy then
 		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
-	elseif key == 'x' and ctrl then
+	elseif ke.cut then
 		love.system.setClipboardText(self:get_input_str(self:frame_count() + 1, self.last_selected_frame))
 		self:push_undo_state()
 		self:delete_selection()
-	elseif key == 'v' and ctrl then
+	elseif ke.paste then
 		self:push_undo_state()
 		self:delete_selection()
 		self:paste_inputs()
-	elseif key == 'z' and ctrl then
-		if love.keyboard.isDown('lshift', 'rshift') then
-			self:perform_redo()
-		else
-			self:preform_undo()
-		end
-	elseif key == 'home' then
+	elseif ke.redo then
+		self:perform_redo()
+	elseif ke.undo then
+		self:preform_undo()
+	elseif ke.go_to_start then
 		self.last_selected_frame = self:frame_count() + 2
-	elseif key=='end' then
+	elseif ke.go_to_end then
 		self.last_selected_frame = #self.keystates
 	elseif not isrepeat then
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
 		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
 		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey then
+			if ke["k_"..pico8.keymap[0][i]] and not self.dontrepeat[i] then
 					self:push_undo_state()
 					self:toggle_key(i)
 					for frame = self:frame_count() + 2, self.last_selected_frame do
-						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
+						if ke["all_"..pico8.keymap[0][i]] or self:key_down(i,frame) ~= self:key_down(i) then
 							self:toggle_key(i, frame)
 						end
 					end
-					break
-				end
+					self.dontrepeat[i] = true
 			end
 		end
 	end
@@ -696,6 +696,14 @@ function tas:save_input_file()
 	end
 	if f:open("w") then
 		f:write(self:get_input_str())
+		if is_web then
+			local t,e = love.filesystem.newFile("tmp/save_pending","w")
+			if e then
+				print(e)
+				return
+			end
+			t:close()
+		end
 		print("saved file to ".. love.filesystem.getRealDirectory(f:getFilename()).."/"..f:getFilename())
 	else
 		print("error saving input file")
