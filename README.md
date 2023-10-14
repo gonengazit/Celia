@@ -24,7 +24,7 @@ Celia has 3 uses:
 # Limitations and caveats
 
 * Celia is based on [this](https://github.com/gonengazit/picolove) fork of picolove. Carts not supported by it will not work. in particular, some more advanced/newer PICO-8 features might not be avaliable (though it does have many features not present in other picolove forks, such as support for \_ENV and bitwise ops).
-* Due to the last point, Celia uses floats instead of 16.16 Fixed point numbers, which may cause some differences from PICO-8
+* Due to the last point, by default Celia uses floats instead of 16.16 Fixed point numbers, which may cause some differences from PICO-8. There is experimental fixed point emulation using the command line argument `--fixp`
 * No support for seeding reproducing randomness deterministically (yet)
 * No support for coroutines, as they cannot be serialized in standard lua, as far as I know
 * The spritesheet and music/sfx data are not serialized as part of the state, and will not rewind correctly.
