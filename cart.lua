@@ -464,7 +464,7 @@ function cart.load_p8(filename)
 	return true
 end
 
-function patch_lua(lua)
+function patch_lua(lua, disable_env_optimization)
 	--replace glyphs with respective ascii chars
 
 	-- very carefully replace these glyphs with the respective ascii chars
@@ -496,7 +496,9 @@ function patch_lua(lua)
 
 
 	-- not strictly required, but should help improve performance
-	lua = "local _ENV = _ENV " .. lua
+	if not disable_env_optimization then
+		lua = "local _ENV = _ENV " .. lua
+	end
 
 	local status, ast =parse.ParseLua(lua)
 	if not status then

@@ -396,12 +396,19 @@ function console.execute(command)
   -- Reprint the command + the prompt string.
   print(console.PROMPT .. command)
 
-  local chunk, error = load("return " .. command)
-  if not chunk then
-    chunk, error = load(command)
-  end
+  --patch pico-8 syntax
+  local status,error=pcall(patch_lua,"return ".. command, true)
 
+  if not status then
+    status, error = pcall(patch_lua, command, true)
+  end
+  local chunk
+  if status then
+    local patched_command = error
+    chunk, error=load(patched_command)
+  end
   if chunk then
+    rawset(console.ENV,"_ENV",console.ENV)
     setfenv(chunk, console.ENV)
     local values = pack(pcall(chunk))
     if values[1] then
