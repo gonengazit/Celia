@@ -46,7 +46,7 @@ Not Yet Implemented:
 
 Differences:
 
- * Uses floating point numbers not fixed point
+ * Uses floating point numbers not fixed point (experimental fixed point mode supported)
  * sqrt doesn't freeze
  * Uses LuaJIT not lua 5.2
 
@@ -61,6 +61,7 @@ Extra features:
  * `_touchup`, `_touchdown` allow using touch input
  * `_getcursorx()`, `_getcursory()` allow access to the cursor position
  * `_getpicoloveversion()` returns the version of picolove
+ * use command line flag `--fixp` for experimental fixed point mode
 
 Android Packaging:
 
