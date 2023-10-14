@@ -1,4 +1,5 @@
 local bit = require("bit")
+local consts=require("fix32_constants")
 local exponent=2^16
 local max32=2^32
 local mask=exponent-1
@@ -227,6 +228,32 @@ local function fix32_run_ext()
 end
 
 
+
+
+local function fix32_sin(x)
+	x=fix32_tonumber(x)*exponent
+	local index=bit.band(bit.rshift(x+0x4002,2), 0x3fff)
+	if index > 0x1fff then
+		index = 0x4000 - index
+	end
+	if index < 0x1000 then
+		return bit.tobit(consts.cos_val[index])/exponent
+	end
+	return bit.tobit(-consts.cos_val[0x2000-index])/exponent
+end
+
+local function fix32_cos(x)
+	x=fix32_tonumber(x)*exponent
+	local index=bit.band(bit.rshift(x+2,2), 0x3fff)
+	if index > 0x1fff then
+		index = 0x4000 - index
+	end
+	if index < 0x1000 then
+		return bit.tobit(consts.cos_val[index])/exponent
+	end
+	return bit.tobit(-consts.cos_val[0x2000-index])/exponent
+end
+
 local function fix32_init()
 	fixed_point_enabled = true
 	print("fixed point enabled!")
@@ -250,14 +277,16 @@ local function fix32_init()
 	api.rnd=fix32_rnd
 	api.srand=fix32_srand
 
+	api.sin=fix32_sin
+	api.cos=fix32_cos
+
 	local api_run=api.run
 	function api.run()
 		fix32_run_ext()
 		api_run()
 	end
 end
-
-	return {
+return {
 	add=fix32_add,
 	sub=fix32_sub,
 	mul=fix32_mul,
@@ -276,7 +305,9 @@ end
 	rnd=fix32_rnd,
 	srand=fix32_srand,
 	run_ext=fix32_run_ext,
-	init=fix32_init
+	init=fix32_init,
+	sin=fix32_sin,
+	cos=fix32_cos
 }
 
 
