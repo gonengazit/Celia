@@ -887,16 +887,16 @@ function api.line(x0, y0, x1, y1, col)
 end
 
 function api.tline(x0, y0, x1, y1, mx, my, mdx, mdy, layers)
-	x0 = flr(tonumber(x0) or 0) + 1
-	y0 = flr(tonumber(y0) or 0) + 1
-	x1 = flr(tonumber(x1) or 0) + 1
-	y1 = flr(tonumber(y1) or 0) + 1
+	x0 = flr(api._tonumber(x0) or 0) + 1
+	y0 = flr(api._tonumber(y0) or 0) + 1
+	x1 = flr(api._tonumber(x1) or 0) + 1
+	y1 = flr(api._tonumber(y1) or 0) + 1
 
-	mx = tonumber(mx) or 0
-	my = tonumber(my) or 0
-	mdx = tonumber(mdx) or 0.125
-	mdy = tonumber(mdy) or 0
-	layers=tonumber(layers) or 0
+	mx = api._tonumber(mx) or 0
+	my = api._tonumber(my) or 0
+	mdx = api._tonumber(mdx) or 0.125
+	mdy = api._tonumber(mdy) or 0
+	layers=api._tonumber(layers) or 0
 
 	local points = get_line_points(x0, y0, x1, y1)
 
