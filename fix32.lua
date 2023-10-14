@@ -1,5 +1,6 @@
 local bit = require("bit")
 local exponent=2^16
+local max32=2^32
 local mask=exponent-1
 local inf=0x7fffffff/exponent
 local neginf=bit.tobit(0x80000001)/exponent
@@ -181,7 +182,82 @@ local function str_to_fix32_str(s)
 	return string.format("%a",bit.tobit(trunc(tonumber(numstr)*exponent))/exponent)
 end
 
-return {
+local function fix32_tonumber(x)
+	if type(x)=="string" then
+		return tonumber(str_to_fix32_str(x))
+	end
+	return tonumber(x)
+end
+
+local function fix32_rnd(x)
+	if type(x)=="table" then
+		return x[math.floor(fix32_rnd(#x)+1)]
+	else
+		x = (fix32_tonumber(x) or 1) * exponent
+		if(x==0) then
+			return 0
+		end
+		x = x % max32
+		pico8.rng_high=bit.bor(bit.lshift(pico8.rng_high,16), bit.rshift(pico8.rng_high, 16))
+		pico8.rng_high=bit.tobit(pico8.rng_low + pico8.rng_high)
+		pico8.rng_low=bit.tobit(pico8.rng_low + pico8.rng_high)
+		return bit.tobit(pico8.rng_high % max32 % x)/exponent
+	end
+end
+
+local function fix32_srand(x)
+	x = (fix32_tonumber(x) or 0) * exponent
+	if(x==0) then
+		pico8.rng_high=0x60009755
+		x=0xdeadbeef
+	else
+		pico8.rng_high=bit.bxor(x, 0xbead29ba)
+	end
+
+	for _=1,0x20 do
+		pico8.rng_high=bit.bor(bit.lshift(pico8.rng_high,16), bit.rshift(pico8.rng_high, 16))
+		pico8.rng_high=bit.tobit(pico8.rng_high + x)
+		x = bit.tobit(x + pico8.rng_high)
+	end
+	pico8.rng_low = x
+end
+
+local function fix32_run_ext()
+	fix32_srand(love.math.random(max32-1)/exponent)
+end
+
+
+local function fix32_init()
+	fixed_point_enabled = true
+	print("fixed point enabled!")
+	local api=require("api")
+	api.__fix_add=fix32_add
+	api.__fix_sub=fix32_sub
+	api.__fix_mul=fix32_mul
+	api.__fix_div=fix32_div
+	api.__fix_mod=fix32_mod
+	api.__fix_pow=fix32_pow
+	api.__fix_unm=fix32_unm
+	api.sqrt=fix32_sqrt
+
+	api._tonumber = fix32_tonumber
+
+	function api.time()
+		return fix32_div(pico8.frames,30)
+	end
+	api.t=api.time
+
+	api.rnd=fix32_rnd
+	api.srand=fix32_srand
+
+	local api_run=api.run
+	function api.run()
+		fix32_run_ext()
+		api_run()
+	end
+end
+
+	return {
 	add=fix32_add,
 	sub=fix32_sub,
 	mul=fix32_mul,
@@ -196,7 +272,11 @@ return {
 	sqrt=fix32_sqrt,
 	pow=fix32_pow,
 	from_int=fix32_from_int,
-	str_to_fix32_str= str_to_fix32_str
+	str_to_fix32_str= str_to_fix32_str,
+	rnd=fix32_rnd,
+	srand=fix32_srand,
+	run_ext=fix32_run_ext,
+	init=fix32_init
 }
 
 

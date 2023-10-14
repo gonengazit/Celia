@@ -10,6 +10,7 @@ fixed_point_enabled=false
 
 local api = require("api")
 local cart = require("cart")
+local fix32=require("fix32")
 
 
 cartname = nil -- used by api.reload
@@ -96,6 +97,8 @@ pico8 = {
 	spritesheet_data = nil,
 	spritesheet = nil,
 	spritesheet_changed = false,
+	rng_low = 0,
+	rng_high = 0,
 }
 pico8_glyphs = { [0] = "\0",
 	"¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "\t", "\n", "ᵇ",
@@ -506,8 +509,7 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 				require("test")
 			elseif argv[argpos] == "--fixp" then
 				paramcount = 0
-				fixed_point_enabled = true
-				print("fixed point enabled!")
+				fix32.init()
 			else
 				if initialcartname == nil or initialcartname == "" then
 					initialcartname = argv[argc]
