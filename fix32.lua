@@ -1,5 +1,6 @@
 local bit = require("bit")
 local consts=require("fix32_constants")
+local api=require("api")
 local exponent=2^16
 local max32=2^32
 local mask=exponent-1
@@ -254,10 +255,29 @@ local function fix32_cos(x)
 	return bit.tobit(-consts.cos_val[0x2000-index])/exponent
 end
 
+local function fix32_atan2(dx,dy)
+	local quot=fix32_div(-dy,dx)
+	local sign=api.sgn(quot)
+	local abs=fix32_abs(quot)
+	quot = quot*exponent
+	abs = abs*exponent
+	local ret
+	if abs<0x10001 then
+		ret=sign * consts.atan_val[bit.rshift(abs,5)]
+	else
+		abs=fix32_abs(fix32_div(dx,-dy))*exponent
+		ret = sign * (0x4000 - consts.atan_val[bit.rshift(abs,5)])
+	end
+
+	if dx<0 then
+		ret = ret + 0x8000
+	end
+	return bit.band(ret%max32,0xffff)/exponent
+end
+
 local function fix32_init()
 	fixed_point_enabled = true
 	print("fixed point enabled!")
-	local api=require("api")
 	api.__fix_add=fix32_add
 	api.__fix_sub=fix32_sub
 	api.__fix_mul=fix32_mul
@@ -279,6 +299,7 @@ local function fix32_init()
 
 	api.sin=fix32_sin
 	api.cos=fix32_cos
+	api.atan2=fix32_atan2
 
 	local api_run=api.run
 	function api.run()
@@ -307,7 +328,8 @@ return {
 	run_ext=fix32_run_ext,
 	init=fix32_init,
 	sin=fix32_sin,
-	cos=fix32_cos
+	cos=fix32_cos,
+	atan2=fix32_atan2
 }
 
 
