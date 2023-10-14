@@ -1,5 +1,8 @@
 local bit = require("bit")
+local consts=require("fix32_constants")
+local api=require("api")
 local exponent=2^16
+local max32=2^32
 local mask=exponent-1
 local inf=0x7fffffff/exponent
 local neginf=bit.tobit(0x80000001)/exponent
@@ -181,6 +184,129 @@ local function str_to_fix32_str(s)
 	return string.format("%a",bit.tobit(trunc(tonumber(numstr)*exponent))/exponent)
 end
 
+local function fix32_tonumber(x)
+	if type(x)=="string" then
+		return tonumber(str_to_fix32_str(x))
+	end
+	return tonumber(x)
+end
+
+local function fix32_rnd(x)
+	if type(x)=="table" then
+		return x[math.floor(fix32_rnd(#x)+1)]
+	else
+		x = (fix32_tonumber(x) or 1) * exponent
+		if(x==0) then
+			return 0
+		end
+		x = x % max32
+		pico8.rng_high=bit.bor(bit.lshift(pico8.rng_high,16), bit.rshift(pico8.rng_high, 16))
+		pico8.rng_high=bit.tobit(pico8.rng_low + pico8.rng_high)
+		pico8.rng_low=bit.tobit(pico8.rng_low + pico8.rng_high)
+		return bit.tobit(pico8.rng_high % max32 % x)/exponent
+	end
+end
+
+local function fix32_srand(x)
+	x = (fix32_tonumber(x) or 0) * exponent
+	if(x==0) then
+		pico8.rng_high=0x60009755
+		x=0xdeadbeef
+	else
+		pico8.rng_high=bit.bxor(x, 0xbead29ba)
+	end
+
+	for _=1,0x20 do
+		pico8.rng_high=bit.bor(bit.lshift(pico8.rng_high,16), bit.rshift(pico8.rng_high, 16))
+		pico8.rng_high=bit.tobit(pico8.rng_high + x)
+		x = bit.tobit(x + pico8.rng_high)
+	end
+	pico8.rng_low = x
+end
+
+local function fix32_run_ext()
+	fix32_srand(love.math.random(max32-1)/exponent)
+end
+
+
+
+
+local function fix32_sin(x)
+	x=fix32_tonumber(x)*exponent
+	local index=bit.band(bit.rshift(x+0x4002,2), 0x3fff)
+	if index > 0x1fff then
+		index = 0x4000 - index
+	end
+	if index < 0x1000 then
+		return bit.tobit(consts.cos_val[index])/exponent
+	end
+	return bit.tobit(-consts.cos_val[0x2000-index])/exponent
+end
+
+local function fix32_cos(x)
+	x=fix32_tonumber(x)*exponent
+	local index=bit.band(bit.rshift(x+2,2), 0x3fff)
+	if index > 0x1fff then
+		index = 0x4000 - index
+	end
+	if index < 0x1000 then
+		return bit.tobit(consts.cos_val[index])/exponent
+	end
+	return bit.tobit(-consts.cos_val[0x2000-index])/exponent
+end
+
+local function fix32_atan2(dx,dy)
+	local quot=fix32_div(-dy,dx)
+	local sign=api.sgn(quot)
+	local abs=fix32_abs(quot)
+	quot = quot*exponent
+	abs = abs*exponent
+	local ret
+	if abs<0x10001 then
+		ret=sign * consts.atan_val[bit.rshift(abs,5)]
+	else
+		abs=fix32_abs(fix32_div(dx,-dy))*exponent
+		ret = sign * (0x4000 - consts.atan_val[bit.rshift(abs,5)])
+	end
+
+	if dx<0 then
+		ret = ret + 0x8000
+	end
+	return bit.band(ret%max32,0xffff)/exponent
+end
+
+local function fix32_init()
+	fixed_point_enabled = true
+	print("fixed point enabled!")
+	api.__fix_add=fix32_add
+	api.__fix_sub=fix32_sub
+	api.__fix_mul=fix32_mul
+	api.__fix_div=fix32_div
+	api.__fix_mod=fix32_mod
+	api.__fix_pow=fix32_pow
+	api.__fix_unm=fix32_unm
+	api.sqrt=fix32_sqrt
+
+	api._tonumber = fix32_tonumber
+
+	function api.time()
+		return fix32_div(pico8.frames,30)
+	end
+	api.t=api.time
+
+	api.rnd=fix32_rnd
+	api.srand=fix32_srand
+
+	api.sin=fix32_sin
+	api.cos=fix32_cos
+	api.atan2=fix32_atan2
+
+	local api_run=api.run
+	function api.run()
+		fix32_run_ext()
+		api_run()
+	end
+end
 return {
 	add=fix32_add,
 	sub=fix32_sub,
@@ -196,7 +322,14 @@ return {
 	sqrt=fix32_sqrt,
 	pow=fix32_pow,
 	from_int=fix32_from_int,
-	str_to_fix32_str= str_to_fix32_str
+	str_to_fix32_str= str_to_fix32_str,
+	rnd=fix32_rnd,
+	srand=fix32_srand,
+	run_ext=fix32_run_ext,
+	init=fix32_init,
+	sin=fix32_sin,
+	cos=fix32_cos,
+	atan2=fix32_atan2
 }
 
 
