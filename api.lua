@@ -1315,18 +1315,18 @@ end
 
 function api.peek2(addr)
 	local val = 0
-	val = val + api.peek(addr + 0)
-	val = val + api.peek(addr + 1) * 0x100
+	val = bit.bor(val,  api.peek(addr + 0))
+	val = bit.bor(val,  api.peek(addr + 1) * 0x100)
 	return val
 end
 
 function api.peek4(addr)
 	local val = 0
-	val = val + api.peek(addr + 0) / 0x10000
-	val = val + api.peek(addr + 1) / 0x100
-	val = val + api.peek(addr + 2)
-	val = val + api.peek(addr + 3) * 0x100
-	return val
+	val = bit.bor(val, api.peek(addr + 0))
+	val = bit.bor(val,  api.peek(addr + 1) * 0x100)
+	val = bit.bor(val,  api.peek(addr + 2) * 0x10000)
+	val = bit.bor(val,  api.peek(addr + 3) * 0x1000000)
+	return val/0x10000
 end
 
 function api.poke2(addr, val)
