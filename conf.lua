@@ -16,3 +16,8 @@ function love.conf(t)
 	t.window.height = 768
 	t.window.resizable = true
 end
+
+return {
+	-- automatically enable pianoroll columns when reading a file
+	auto_display_inputs = false,
+}
