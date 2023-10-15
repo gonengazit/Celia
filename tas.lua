@@ -18,7 +18,7 @@ local keymap_names = {
 		[3] = "d",
 		[4] = "z",
 		[5] = "x",
-		[6] = "\\" ,
+		[6] = "\\",
 		[7] = "?",
 	},
 	[1] = {
@@ -401,6 +401,12 @@ function tas:draw_input_display(x,y,player)
 	self:draw_button(x + 16, y + 6, 3 + player * 8) -- d
 	self:draw_button(x + 2, y + 6, 4 + player * 8) -- z
 	self:draw_button(x + 6, y + 6, 5 + player * 8) -- x
+	if self:key_down(6 + player * 8) then
+		self:draw_button(x + 6, y + 2, 6 + player * 8)
+	end
+	if self:key_down(7 + player * 8) then
+		self:draw_button(x + 2, y + 2, 7 + player * 8)
+	end
 end
 
 -- can be overloaded to define different timing methods
