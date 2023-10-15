@@ -1,5 +1,6 @@
 require "deepcopy"
 local class = require("30log")
+local conf = require("conf")
 
 local tas = class("tas")
 local console = require("console")
@@ -7,7 +8,30 @@ tas.hud_w = 48
 tas.hud_h = 0
 tas.scale = 6
 tas.pianoroll_w=65
+tas.hide_all_input_display = false
 
+local keymap_names = {
+	[0] = {
+		[0] = "l",
+		[1] = "r",
+		[2] = "u",
+		[3] = "d",
+		[4] = "z",
+		[5] = "x",
+		[6] = "\\",
+		[7] = "?",
+	},
+	[1] = {
+		[0] = "s",
+		[1] = "f",
+		[2] = "e",
+		[3] = "d",
+		[4] = "t",
+		[5] = "1",
+		[6] = "?",
+		[7] = "?",
+	},
+}
 
 --wrapper functions
 
@@ -72,14 +96,16 @@ function tas:reset_hold()
 end
 
 local function update_buttons(self, input_idx)
-	for i = 0, #pico8.keymap[0] do
-			local v = pico8.keypressed[0][i]
-			if self:key_down(i, input_idx) then
-				pico8.keypressed[0][i] = (v or -1) + 1
-			else
-				pico8.keypressed[0][i] = nil
-			end
-	end
+	for p = 0, 1 do
+		for i = 0, #pico8.keymap[p] do
+				local v = pico8.keypressed[p][i]
+				if self:key_down(i + p * 8, input_idx) then
+					pico8.keypressed[p][i] = (v or -1) + 1
+				else
+					pico8.keypressed[p][i] = nil
+				end
+		end
+	end -- foreach player
 end
 
 
@@ -91,14 +117,16 @@ function tas:advance_keystate(curr_keystate)
 	curr_keystate = curr_keystate or 0
 	curr_keystate= bit.bor(curr_keystate, self.hold)
 	if not self.realtime_playback then
-		for i=0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if love.keyboard.isDown(testkey) then
-					curr_keystate = bit.bor(curr_keystate, 2^i)
-					break
+		for p = 0, 1 do
+			for i=0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if love.keyboard.isDown(testkey) then
+						curr_keystate = bit.bor(curr_keystate, 2^(i + p * 8))
+						break
+					end
 				end
 			end
-		end
+		end -- foreach player
 	end
 	return curr_keystate
 end
@@ -238,6 +266,11 @@ function tas:init()
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
+
+	self.pianoroll_inputs = {
+		[0] = "l", [1] = "r", [2] = "u", [3] = "d", [4] = "z", [5] = "x",
+		--[12] = "t",
+	}
 end
 
 function tas:update()
@@ -343,15 +376,41 @@ function tas:draw_button(x,y,i)
 	love.graphics.rectangle("fill", x, y, 3, 3)
 end
 
-function tas:draw_input_display(x,y)
+function tas:show_input_display(player)
+	if self.hide_all_input_display then
+		return false
+	end
+	for i = 0 + player * 8, 8 + player * 8 do
+		if self.pianoroll_inputs[i] or self:key_down(i) then
+			return true
+		end
+	end
+	return false
+end
+function tas:draw_input_display(x,y,player)
+	if not player then
+		if self:show_input_display(0) then
+			self:draw_input_display(x, y, 0)
+		end
+		if self:show_input_display(1) then
+			self:draw_input_display(x, y + 12, 1)
+		end
+		return
+	end
 	setPicoColor(0)
 	love.graphics.rectangle("fill", x, y, 25,11)
-	self:draw_button(x + 12, y + 6, 0) -- l
-	self:draw_button(x + 20, y + 6, 1) -- r
-	self:draw_button(x + 16, y + 2, 2) -- u
-	self:draw_button(x + 16, y + 6, 3) -- d
-	self:draw_button(x + 2, y + 6, 4) -- z
-	self:draw_button(x + 6, y + 6, 5) -- x
+	self:draw_button(x + 12, y + 6, 0 + player * 8) -- l
+	self:draw_button(x + 20, y + 6, 1 + player * 8) -- r
+	self:draw_button(x + 16, y + 2, 2 + player * 8) -- u
+	self:draw_button(x + 16, y + 6, 3 + player * 8) -- d
+	self:draw_button(x + 2, y + 6, 4 + player * 8) -- z
+	self:draw_button(x + 6, y + 6, 5 + player * 8) -- x
+	if self:key_down(6 + player * 8) then
+		self:draw_button(x + 6, y + 2, 6 + player * 8)
+	end
+	if self:key_down(7 + player * 8) then
+		self:draw_button(x + 2, y + 2, 7 + player * 8)
+	end
 end
 
 -- can be overloaded to define different timing methods
@@ -372,22 +431,34 @@ end
 
 --tbl is a table of coloredTexts, of the entries of the table
 local function draw_inputs_row(tbl, x, y, c, frame_num)
-	local box_w = 48/#tbl
+	local input_count = 0
+	for _, _ in pairs(tbl) do
+		input_count = input_count + 1
+	end
+
+	local x_scale = 1 -- to make the text less wide if needed
+	if input_count > 8 then
+		x_scale = 1 - (input_count - 8) / 10
+	end
+	local idx_w = math.ceil(17 * x_scale)
+	local box_w = (48 + 17 - idx_w)/input_count
 
 	-- draw the frame number
 	setPicoColor(c)
-	love.graphics.rectangle("fill", x, y, 17, 7)
+	love.graphics.rectangle("fill", x, y, idx_w, 7)
 	setPicoColor(0)
-	love.graphics.rectangle("line", x, y, 17, 7)
-	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right")
+	love.graphics.rectangle("line", x, y, idx_w, 7)
+	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right", 0, x_scale, 1)
 
-	for i=1, #tbl do
+	local i = 1
+	for input, _ in pairs(tbl) do
 		setPicoColor(c)
-		love.graphics.rectangle("fill", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("fill", x+(i-1)*box_w+idx_w, y, box_w, 7)
 		setPicoColor(0)
-		love.graphics.rectangle("line", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("line", x+(i-1)*box_w+idx_w, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.printf(tbl[i], x+(i-1)*box_w+17, y+1, box_w, "center")
+		love.graphics.printf(tbl[input], x+(i-1)*box_w+idx_w, y+1, box_w / x_scale, "center", 0, x_scale, 1)
+		i = i + 1
 	end
 end
 
@@ -395,12 +466,11 @@ function tas:draw_piano_roll()
 	local x=pico8.resolution[1] + self.hud_w
 	local y=0
 
-	local inputs={"l","r","u","d","z","x"}
-
+	-- local inputs={"l","r","u","d","z","x"}
 
 	local header={}
-	for i,v in ipairs(inputs) do
-		header[i]={{0,0,0},v}
+	for i,v in pairs(self.pianoroll_inputs) do
+		header[i + 1]={{0,0,0},v}
 	end
 	draw_inputs_row(header,x,y,10,"idx")
 
@@ -417,17 +487,17 @@ function tas:draw_piano_roll()
 	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
 		local current_frame = i == frame_count
 		local s={}
-		for j=1, #inputs do
-			if self:key_down(j-1, i) then
-				if current_frame and self:key_held(j-1) then
+		for j, name in pairs(self.pianoroll_inputs) do
+			if self:key_down(j, i) then
+				if current_frame and self:key_held(j) then
 					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},inputs[j]}
+					s[j + 1]={{r/255,g/255, b/255,a/255},name}
 				else
-					s[j]={{0,0,0},inputs[j]}
+					s[j + 1]={{0,0,0},name}
 				end
 
 			else
-				s[j]=" "
+				s[j + 1]=" "
 			end
 		end
 		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
@@ -519,21 +589,33 @@ function tas:keypressed(key, isrepeat)
 		else
 			self:preform_undo()
 		end
-	else
-		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey  and not isrepeat then
-					if love.keyboard.isDown("lshift", "rshift") then
-						self:push_undo_state()
-						self:toggle_hold(i)
-					else
-						self:push_undo_state()
-						self:toggle_key(i)
+	elseif key == 'f11' then
+		self.hide_all_input_display = not self.hide_all_input_display
+	elseif not love.keyboard.isDown('lalt', 'ralt') then
+		-- TODO: improve check for modifier absence
+		for p = 0, 1 do
+			for i = 0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if key == testkey  and not isrepeat then
+						if ctrl and love.keyboard.isDown("lshift", "rshift") then
+							-- toggle piano roll display
+							if self.pianoroll_inputs[i + p * 8] then
+								self.pianoroll_inputs[i + p * 8] = nil
+							else
+								self.pianoroll_inputs[i + p * 8] = keymap_names[p][i]
+							end
+						elseif love.keyboard.isDown("lshift", "rshift") then
+							self:push_undo_state()
+							self:toggle_hold(i + p * 8)
+						else
+							self:push_undo_state()
+							self:toggle_key(i + p * 8)
+						end
+						break
 					end
-					break
 				end
 			end
-		end
+		end -- foreach player
 	end
 end
 
@@ -576,33 +658,37 @@ function tas:selection_keypress(key, isrepeat)
 		-- change the state of the key in all selected frames
 		-- if alt is held, toggle the state in all the frames
 		-- otherwise, toggle it in the first frame, and set all other selected frames to match it
-		for i = 0, #pico8.keymap[0] do
-			for _, testkey in pairs(pico8.keymap[0][i]) do
-				if key == testkey then
-					self:push_undo_state()
-					self:toggle_key(i)
-					for frame = self:frame_count() + 2, self.last_selected_frame do
-						if love.keyboard.isDown("lalt", "ralt") or self:key_down(i,frame) ~= self:key_down(i) then
-							self:toggle_key(i, frame)
+		for p = 0, 1 do
+			for i = 0, #pico8.keymap[p] do
+				for _, testkey in pairs(pico8.keymap[p][i]) do
+					if key == testkey then
+						self:push_undo_state()
+						self:toggle_key(i + p * 8)
+						for frame = self:frame_count() + 2, self.last_selected_frame do
+							if love.keyboard.isDown("lalt", "ralt") or self:key_down((i + p * 8),frame) ~= self:key_down((i + p * 8)) then
+								self:toggle_key(i + p * 8, frame)
+							end
 						end
+						break
 					end
-					break
 				end
 			end
-		end
+		end -- foreach players
 	end
 end
 
 -- b is a bitmask of the inputs
 local function set_btn_state(b)
-	for i = 0, #pico8.keymap[0] do
-			local v = pico8.keypressed[0][i]
-			if bit.band(b, 2^i)~=0 then
-				pico8.keypressed[0][i] = (v or -1) + 1
-			else
-				pico8.keypressed[0][i] = nil
-			end
-	end
+	for p = 0, 1 do
+		for i = 0, #pico8.keymap[p] do
+				local v = pico8.keypressed[p][i]
+				if bit.band(b, 2^(i + p * 8))~=0 then
+					pico8.keypressed[p][i] = (v or -1) + 1
+				else
+					pico8.keypressed[p][i] = nil
+				end
+		end
+	end -- foreach player
 end
 -- check whether the predicate returns truthy within num frames
 -- if respect_inputs is true the current inputs are used
@@ -661,7 +747,18 @@ function tas:load_input_str(input_str, i)
 			print("invalid input file")
 			return
 		else
+			input = tonumber(input)
 			table.insert(new_inputs, tonumber(input))
+			if conf.auto_display_inputs then -- ensure each key of the input is displayed
+				local input_n = 0
+				while input > 0 do
+					if bit.band(input, 1) == 1 and self.pianoroll_inputs[input_n] == nil then
+						self.pianoroll_inputs[input_n] = keymap_names[math.floor(input_n / 8)][input_n % 8]
+					end
+					input_n = input_n + 1
+					input = math.floor(input / 2)
+				end
+			end
 		end
 	end
 	if i == nil then
