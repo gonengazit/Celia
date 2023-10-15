@@ -376,7 +376,7 @@ function tas:show_input_display(player)
 		return false
 	end
 	for i = 0 + player * 8, 8 + player * 8 do
-		if self.pianoroll_inputs[i] then
+		if self.pianoroll_inputs[i] or self:key_down(i) then
 			return true
 		end
 	end
