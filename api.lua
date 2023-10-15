@@ -1333,7 +1333,7 @@ function api.poke(addr, val)
 			-- TODO: screen transformation mode
 		elseif addr == 0x5f2d then
 			love.keyboard.setTextInput(bit.band(val, 1) == 1)
-		end
+
 			if bit.band(val, 2) == 1 then -- luacheck: ignore 542
 				-- TODO mouse buttons
 			else -- luacheck: ignore 542
@@ -1343,6 +1343,7 @@ function api.poke(addr, val)
 				-- TODO pointer lock
 			else -- luacheck: ignore 542
 			end
+		end
 	elseif addr < 0x5f80 then -- luacheck: ignore 542
 		-- TODO: hardware state
 		if addr >= 0x5f44 and addr < 0x5f48 then
