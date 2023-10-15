@@ -386,6 +386,18 @@ function console.textinput(input)
 end
 
 
+
+--patch pico-8 syntax
+local function patch_and_load(command)
+  local status,error=pcall(patch_lua, command, true)
+  if not status then
+    return status,error
+  end
+  local patched_command=error
+  local chunk
+  chunk,error=load(patched_command)
+  return chunk,error
+end
 function console.execute(command)
   -- If this is a builtin command, execute it and return immediately.
   if console.COMMANDS[command] then
@@ -396,17 +408,11 @@ function console.execute(command)
   -- Reprint the command + the prompt string.
   print(console.PROMPT .. command)
 
-  --patch pico-8 syntax
-  local status,error=pcall(patch_lua,"return ".. command, true)
+  local chunk, error = patch_and_load("return " .. command)
+  if not chunk then
+    chunk, error = patch_and_load(command)
+  end
 
-  if not status then
-    status, error = pcall(patch_lua, command, true)
-  end
-  local chunk
-  if status then
-    local patched_command = error
-    chunk, error=load(patched_command)
-  end
   if chunk then
     rawset(console.ENV,"_ENV",console.ENV)
     setfenv(chunk, console.ENV)
