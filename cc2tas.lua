@@ -42,9 +42,9 @@ end
 
 function cc2tas:perform_inject()
 	-- add tostring metamethod to objects, for use with the console
-	local init_object = pico8.cart.init_object
-	pico8.cart.init_object = function(...)
-		local o = init_object(...)
+	local create = pico8.cart.create
+	pico8.cart.create = function(...)
+		local o = create(...)
 		if type(o)~='table' then
 			return o
 		end
