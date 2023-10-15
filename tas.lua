@@ -263,8 +263,8 @@ function tas:init()
 	self.seek=nil
 
 	self.pianoroll_inputs = {
-		[1] = "l", [2] = "r", [3] = "u", [4] = "d", [5] = "z", [6] = "x",
-		--[13] = "t",
+		[0] = "l", [1] = "r", [2] = "u", [3] = "d", [4] = "z", [5] = "x",
+		--[12] = "t",
 	}
 end
 
@@ -459,7 +459,7 @@ function tas:draw_piano_roll()
 
 	local header={}
 	for i,v in pairs(self.pianoroll_inputs) do
-		header[i]={{0,0,0},v}
+		header[i + 1]={{0,0,0},v}
 	end
 	draw_inputs_row(header,x,y,10,"idx")
 
@@ -476,17 +476,17 @@ function tas:draw_piano_roll()
 	for i=start_row, math.min(start_row + num_rows - 1, #self.keystates) do
 		local current_frame = i == frame_count
 		local s={}
-		for j, _ in pairs(self.pianoroll_inputs) do
-			if self:key_down(j-1, i) then
-				if current_frame and self:key_held(j-1) then
+		for j, name in pairs(self.pianoroll_inputs) do
+			if self:key_down(j, i) then
+				if current_frame and self:key_held(j) then
 					local r,g,b,a=unpack(pico8.palette[8])
-					s[j]={{r/255,g/255, b/255,a/255},self.pianoroll_inputs[j]}
+					s[j + 1]={{r/255,g/255, b/255,a/255},name}
 				else
-					s[j]={{0,0,0},self.pianoroll_inputs[j]}
+					s[j + 1]={{0,0,0},name}
 				end
 
 			else
-				s[j]=" "
+				s[j + 1]=" "
 			end
 		end
 		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
@@ -587,10 +587,10 @@ function tas:keypressed(key, isrepeat)
 					if key == testkey  and not isrepeat then
 						if ctrl and love.keyboard.isDown("lshift", "rshift") then
 							-- toggle piano roll display
-							if self.pianoroll_inputs[i + p * 8 + 1] then
-								self.pianoroll_inputs[i + p * 8 + 1] = nil
+							if self.pianoroll_inputs[i + p * 8] then
+								self.pianoroll_inputs[i + p * 8] = nil
 							else
-								self.pianoroll_inputs[i + p * 8 + 1] = keymap_names[p][i]
+								self.pianoroll_inputs[i + p * 8] = keymap_names[p][i]
 							end
 						elseif love.keyboard.isDown("lshift", "rshift") then
 							self:push_undo_state()
@@ -740,8 +740,8 @@ function tas:load_input_str(input_str, i)
 			-- ensure each key of the input is displayed
 			local input_n = 0
 			while input > 0 do
-				if bit.band(input, 1) == 1 and self.pianoroll_inputs[input_n + 1] == nil then
-					self.pianoroll_inputs[input_n + 1] = keymap_names[math.floor(input_n / 8)][input_n % 8]
+				if bit.band(input, 1) == 1 and self.pianoroll_inputs[input_n] == nil then
+					self.pianoroll_inputs[input_n] = keymap_names[math.floor(input_n / 8)][input_n % 8]
 				end
 				input_n = input_n + 1
 				input = math.floor(input / 2)
