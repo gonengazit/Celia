@@ -735,7 +735,17 @@ function tas:load_input_str(input_str, i)
 			print("invalid input file")
 			return
 		else
+			input = tonumber(input)
 			table.insert(new_inputs, tonumber(input))
+			-- ensure each key of the input is displayed
+			local input_n = 0
+			while input > 0 do
+				if bit.band(input, 1) == 1 and self.pianoroll_inputs[input_n + 1] == nil then
+					self.pianoroll_inputs[input_n + 1] = keymap_names[math.floor(input_n / 8)][input_n % 8]
+				end
+				input_n = input_n + 1
+				input = math.floor(input / 2)
+			end
 		end
 	end
 	if i == nil then
