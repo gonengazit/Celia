@@ -316,7 +316,7 @@ function cart.load_p8(filename)
 					local lo = pico8.spritesheet_data:getPixel(sx, sy) * 15
 					local hi = pico8.spritesheet_data:getPixel(sx + 1, sy) * 15
 					local v = bit.bor(bit.lshift(hi, 4), lo)
-					pico8.map[ty][tx] = math.floor(v+0.5)
+					pico8.map[ty][tx] = v
 					shared = shared + 1
 					tx = tx + 1
 					if tx == 128 then
