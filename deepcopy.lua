@@ -4,6 +4,10 @@ if not love11_4 then
     table_new=function() return {} end
 end
 
+if not debug.upvalueid or not debug.upvaluejoin then
+    print("debug.upvalueid or debug.upvaluejoin are not available; expect breakage with rewinding")
+end
+
 local handle_funcs = {
     ["nil"] = function(orig) return orig end,
     number = function(orig) return orig end,
@@ -42,9 +46,7 @@ local handle_funcs = {
             end
 
             debug.setupvalue(ret,i,deepcopy(val,seen,upvalues))
-            -- TODO: make this web compatible and/or figure out what this even
-            --       does
-            if jit then
+            if debug.upvalueid and debug.upvaluejoin then
                 local uid = debug.upvalueid(orig, i)
                 if upvalues[uid] then
                     local other_func, other_i = unpack(upvalues[uid])
