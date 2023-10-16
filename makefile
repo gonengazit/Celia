@@ -37,7 +37,8 @@ build: clean
 web: build
 	@command -v love.js \
 		&& love.js -c -t ${project_name} build/${project_name}.love build/__site/ \
-		|| ( echo "love.js not found in PATH"; exit 1 )
+		|| node_modules/love.js/index.js -c -t ${project_name} build/${project_name}.love build/__site/ \
+		|| ( echo "love.js executable not found"; exit 1 )
 	cp -f res/index.html build/__site/index.html
 	cp -f -r res/theme/ build/__site/
 	cd build/__site/ && node ../../Love.js-Api-Player/globalizeFS.js
