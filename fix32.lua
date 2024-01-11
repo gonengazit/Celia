@@ -180,6 +180,11 @@ local function str_to_fix32_str(s)
 		numstr=s
 	end
 
+	--invalid number
+	if not tonumber(numstr) then
+		return nil
+	end
+
 	--return a string that will be parsed correctly as this number
 	return string.format("%a",bit.tobit(trunc(tonumber(numstr)*exponent))/exponent)
 end
