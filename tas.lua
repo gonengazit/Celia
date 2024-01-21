@@ -849,9 +849,9 @@ end
 function tas:load_input_str(input_str, i)
 	local new_inputs={}
 	for input in input_str:gmatch("[^,]+") do
-		local keys, mouse_x, mouse_y, mouse_mask = input:match("(%d*):(%d*):(%d*):(%d*)")
+		local keys, mouse_x, mouse_y, mouse_mask = input:match("(%d+):(%d+):(%d+):(%d+)")
 		if keys == nil then
-			keys = input:match("%d*") -- try the old input format
+			keys = input:match("%d+") -- try the old input format
 			mouse_x = 1
 			mouse_y = 1
 			mouse_mask = 0
