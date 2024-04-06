@@ -40,7 +40,8 @@ function chest_seed.inject(pico8)
 		local _rnd = pico8.cart.rnd
 		if this.timer <= 1 then
 			pico8.cart.rnd = function()
-				return this.__tas_seed + 1
+				--add a small value becase noninteger rng values give the berry a slightly bigger hitbox
+				return this.__tas_seed + 1 + 0x0.0001
 			end
 		end
 		_upd(this)
