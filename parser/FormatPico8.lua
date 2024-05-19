@@ -214,8 +214,8 @@ local function Format_Identity(ast)
 				value=require("fix32").str_to_fix32_str(value)
 			end
 
-
-			appendStr( value , no_leading_white)
+			-- append a space because "123do" is allowed in pico8 but not in lua
+			appendStr( value.." " , no_leading_white)
 
 		elseif expr.AstType == 'StringExpr' then
 			appendToken( expr.Value , no_leading_white)

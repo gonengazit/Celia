@@ -292,8 +292,9 @@ local function LexLua(src)
 					if consume('.') then
 						while HexDigits[peek()] do get() end
 					end
-					if consume('Pp') then
-						consume('+-')
+					if (peek() == 'p' or peek() == 'P') and (peek(1) == '+' or peek(1) == '-') then
+						get()
+						get()
 						while HexDigits[peek()] do get() end
 					end
 
@@ -309,8 +310,9 @@ local function LexLua(src)
 					if consume('.') then
 						while Digits[peek()] do get() end
 					end
-					if consume('Ee') then
-						consume('+-')
+					if (peek() == 'e' or peek() == 'E') and (peek(1) == '+' or peek(1) == '-') then
+						get()
+						get()
 						while Digits[peek()] do get() end
 					end
 				end
