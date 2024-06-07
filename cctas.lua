@@ -726,8 +726,12 @@ end
 
 function cctas:draw()
 	self.super.draw(self)
+	local offset = 13
+	if self.super.show_input_display(self, 1) then
+		offset = 12 + 13
+	end
 
-	love.graphics.print(self:hud(),1,13,0,2/3,2/3)
+	love.graphics.print(self:hud(),1,offset,0,2/3,2/3)
 
 	if self.modify_loading_jank then
 		love.graphics.push()
