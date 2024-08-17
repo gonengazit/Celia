@@ -207,6 +207,23 @@ function tas:full_rewind()
 	self:rewind()
 end
 
+function tas:goto_frame(i)
+	if self:frame_count() < i then
+		self.seek = {
+			finish_condition = function()
+				return self:frame_count() >= i
+			end,
+			on_finish = function() end,
+			fast_forward = true,
+		}
+	elseif 0 <= i and i < self:frame_count() then
+		while i < self:frame_count() - 1 do
+			self:popstate()
+		end
+		self:rewind()
+	end
+end
+
 function tas:full_reset()
 	self:full_rewind()
 	self.hold=0
@@ -476,7 +493,11 @@ function tas:keypressed(key, isrepeat)
 		end
 		self.seek=nil
 	elseif key=='p' then
-		self.realtime_playback = not self.realtime_playback
+		if love.keyboard.isDown('lshift', 'rshift') then
+			self:goto_frame(#self.keystates - 1)
+		else
+			self.realtime_playback = not self.realtime_playback
+		end
 	--TODO: block keypresses even when overloading this func
 	elseif self.last_selected_frame ~= -1 then
 		self:selection_keypress(key, isrepeat)
