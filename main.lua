@@ -337,6 +337,8 @@ function love.load(argv)
 		}
 	end
 
+	love.audio.setVolume(0)
+
 	love.graphics.clear()
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	pico8.screen =
@@ -520,6 +522,9 @@ vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) 
 			elseif argv[argpos] == "--fixp" then
 				paramcount = 0
 				fix32.init()
+			elseif argv[argpos] == "--audio" then
+				paramcount = 0
+				love.audio.setVolume(1)
 			elseif tas_tools[argv[argpos]] and tas_tool_name == nil then
 				paramcount = 0
 				tas_tool_name = argv[argpos]
