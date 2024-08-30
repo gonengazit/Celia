@@ -253,6 +253,8 @@ function tas:init()
 		__newindex = function(table, key, val) pico8.cart[key] = val end
 	})
 
+	rawset(console.ENV, "goto_frame", function(...) self:goto_frame(...) end)
+
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
 end

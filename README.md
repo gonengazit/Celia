@@ -85,6 +85,8 @@ Using the console, you can access and modify the variables of the PICO-8 instanc
 
 Warning: making changes to variables in the PICO-8 instance, then rewinding before the changes will lose the changes. It's very easy to make TASes that desync by modifying the variables of the cart, so use it carefully.
 
+The console also implements a function `goto_frame(i)` which seeks the TAS to the i'th frame.
+
 # Acknowledgements
 * [gamax92/picolove](https://github.com/gamax92/picolove) and [picolove/picolove](https://github.com/picolove/picolove)
 * [Love2d integrated console by rameshvarun](https://github.com/rameshvarun/love-console)
