@@ -472,6 +472,13 @@ function cctas:full_rewind()
 	self:reset_editor_state()
 end
 
+function cctas:goto_frame(i)
+	self.super.goto_frame(self, i)
+
+	self:state_changed()
+	self:reset_editor_state()
+end
+
 function cctas:full_reset()
 	self.super.full_reset(self)
 

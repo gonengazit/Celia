@@ -49,6 +49,7 @@ On the right, you'll see the pianoroll, which shows the inputs in the frames aro
 * __Shift__ + __controller button__ - toggle hold of the respective button. held buttons will be pressed when advancing/rewinding to a frame
 * __D__ - preform a full-rewind, return to frame 0
 * __P__ - start realtime playback. The TAS will play back in real time, and inputs can't be modified. any keypress during realtime playback will stop it.
+* __Shift + P__ - fast forward until the last input frame
 * __Shift + R__ - reset, clear the inputs, and rewind to frame 0
 * __M__ - save the current inputs to a file <cartname>.lua, in the games data folder (By default, on windows this is %appdata%/love/Celia, and on linux ~/.local/share/love/Celia). The filepath will be outputted to the terminal.
 * __Shift + W__ - Load the input file from the data folder
