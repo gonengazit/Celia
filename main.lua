@@ -76,12 +76,12 @@ pico8 = {
 			[7] = {},
 		},
 		[1] = {
-			[0] = { "s" },
-			[1] = { "f" },
-			[2] = { "e" },
-			[3] = { "d" },
-			[4] = { "tab", "lshift", "w" },
-			[5] = { "q", "a" },
+			[0] = { ",", "[" }, -- "s"
+			[1] = { "/" , "\\"}, -- "f"
+			[2] = { ";" }, -- "e"
+			[3] = { "." , "]"}, -- "d"
+			[4] = { "tab", "w" }, -- remove "lshift", because of conflicts with the tool's bindings
+			[5] = { "q", "1"}, -- "a" is used for loading jank
 			[6] = {},
 			[7] = {},
 		},
