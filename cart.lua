@@ -465,6 +465,15 @@ function cart.load_p8(filename)
 end
 
 function patch_lua(lua, disable_env_optimization)
+	local header_data, header_size = love.filesystem.read("header_inject.lua")
+	if not header_data or header_size == 0 then
+		log("warning: unable to open header_inject.lua")
+	else
+		lua = header_data .. lua
+	end
+
+
+
 	--replace glyphs with respective ascii chars
 
 	-- very carefully replace these glyphs with the respective ascii chars
