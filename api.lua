@@ -487,6 +487,10 @@ function api.print(...)
 
 	love.graphics.setShader(pico8.text_shader)
 	love.graphics.print(to_print, flr(x), flr(y))
+
+	-- return x position of next character to be printed
+	local font = love.graphics.getFont()
+	return x + font:getWidth(to_print)
 end
 
 api.printh = print
