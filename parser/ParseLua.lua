@@ -669,8 +669,12 @@ local function ParseLua(src)
 			ParsePrimaryExpr,
 			ParseSuffixedExpr
 
-	local function ParseFunctionArgsAndBody(scope, tokenList)
+	local function ParseFunctionArgsAndBody(scope, tokenList, isColonFunction)
 		local funcScope = CreateScope(scope)
+		if isColonFunction then
+			funcScope:CreateLocal("self")
+		end
+
 		if not tok:ConsumeSymbol('(', tokenList) then
 			return false, GenerateError("`(` expected.")
 		end
@@ -981,7 +985,7 @@ local function ParseLua(src)
 			return true, v
 
 		elseif tok:ConsumeKeyword('function', tokenList) then
-			local st, func = ParseFunctionArgsAndBody(scope, tokenList)
+			local st, func = ParseFunctionArgsAndBody(scope, tokenList, false)
 			if not st then return false, func end
 			--
 			func.IsLocal = true
@@ -1292,8 +1296,9 @@ local function ParseLua(src)
 			end
 			local st, name = ParseSuffixedExpr(scope, true) --true => only dots and colons
 			if not st then return false, name end
+			local isColonFunction = name.Indexer == ":"
 			--
-			local st, func = ParseFunctionArgsAndBody(scope, tokenList)
+			local st, func = ParseFunctionArgsAndBody(scope, tokenList, isColonFunction)
 			if not st then return false, func end
 			--
 			func.IsLocal = false
@@ -1349,7 +1354,7 @@ local function ParseLua(src)
 				local name = tok:Get(tokenList).Data
 				local localVar = scope:CreateLocal(name)
 				--
-				local st, func = ParseFunctionArgsAndBody(scope, tokenList)
+				local st, func = ParseFunctionArgsAndBody(scope, tokenList, false)
 				if not st then return false, func end
 				--
 				func.Name         = localVar
