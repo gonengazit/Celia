@@ -389,7 +389,7 @@ end
 
 --patch pico-8 syntax
 local function patch_and_load(command)
-  local status,error=pcall(patch_lua, command, true)
+  local status,error=pcall(patch_lua, command, true, true)
   if not status then
     return status,error
   end

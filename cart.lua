@@ -464,12 +464,14 @@ function cart.load_p8(filename)
 	return true
 end
 
-function patch_lua(lua, disable_env_optimization)
-	local header_data, header_size = love.filesystem.read("header_inject.lua")
-	if not header_data or header_size == 0 then
-		log("warning: unable to open header_inject.lua")
-	else
-		lua = header_data .. lua
+function patch_lua(lua, disable_env_optimization, dont_inject_header)
+	if not dont_inject_header then
+		local header_data, header_size = love.filesystem.read("header_inject.lua")
+		if not header_data or header_size == 0 then
+			log("warning: unable to open header_inject.lua")
+		else
+			lua = header_data .. lua
+		end
 	end
 
 
