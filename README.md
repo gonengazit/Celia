@@ -28,7 +28,7 @@ Celia has 3 uses:
 * No support for seeding reproducing randomness deterministically (yet)
 * No support for coroutines, as they cannot be serialized in standard lua, as far as I know
 * The spritesheet and music/sfx data are not serialized as part of the state, and will not rewind correctly.
-* Right now Celia is a bit of a memory hog, consuming ~0.5MB per frame (depending on the cart). A more "traditional" savestate-based TAS tool could be created to address this issue
+* Right now Celia is a bit of a memory hog, consuming ~0.5MB per frame (depending on the cart). A more "traditional" savestate-based TAS tool could be created to address this issue (using the `savestate_every` console command can also help alleviate this issue)
 
 # Usage
 
@@ -85,7 +85,9 @@ Using the console, you can access and modify the variables of the PICO-8 instanc
 
 Warning: making changes to variables in the PICO-8 instance, then rewinding before the changes will lose the changes. It's very easy to make TASes that desync by modifying the variables of the cart, so use it carefully.
 
-The console also implements a function `goto_frame(i)` which seeks the TAS to the i'th frame.
+#### Console Functions
+* `goto_frame(i)` - fast forwards/rewinds the TAS to the i'th frame.
+* `savetate_every(n)` - create savestates every `n` frames, instead of every frame. if `n=0` the tas tool will not savestate at all. (n=1 is the normal mode). when rewinding, it will rewind to the last saved frame
 
 # Acknowledgements
 * [gamax92/picolove](https://github.com/gamax92/picolove) and [picolove/picolove](https://github.com/picolove/picolove)

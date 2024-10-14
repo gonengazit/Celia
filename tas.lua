@@ -103,21 +103,27 @@ function tas:advance_keystate(curr_keystate)
 	return curr_keystate
 end
 
--- deepcopy the current state, and push it to the stack
+-- if save_state is true - deepcopy the current state, and push it to the stack
+-- if save_state is false - push a dummy (empty) state to the stack - as a marker we didn't save this frame
 -- if frame_count is overloaded, it must be updated/increased *before* calling pushstate
-function tas:pushstate()
-	-- don't copy any non-cart functions
-	local clone=deepcopy_no_api(pico8)
+function tas:pushstate(save_state)
+	if save_state then
+		-- don't copy any non-cart functions
+		local clone=deepcopy_no_api(pico8)
 
-	--push the actual pico8 instance (and not the clone) to support undoing
-	table.insert(self.states,pico8)
-	pico8 = clone
+		--push the actual pico8 instance (and not the clone) to support undoing
+		table.insert(self.states,pico8)
+		pico8 = clone
+	else
+		table.insert(self.states, self.EMPTY_STATE)
+	end
 
 	if self.keystates[self:frame_count()+1] == nil then
 		self.keystates[self:frame_count()+1] = 0
 	end
 end
 
+-- pop the top state off the state stack. if it was an unsaved state, it will just be tas.EMPTY_STATE
 function tas:popstate()
 	return table.remove(self.states)
 end
@@ -166,7 +172,9 @@ end
 function tas:step()
 	local input_idx = self:frame_count() + 1
 	--store the state
-	self:pushstate()
+	local save_state = #self.states == 0 or (self.savestate_interval~=0 and (input_idx-1)%self.savestate_interval==0)
+	self:pushstate(save_state)
+
 
 	--update based on the buttons of the 'previous' frame
 	--TODO: make this cleaner
@@ -184,7 +192,8 @@ function tas:rewind()
 		return
 	end
 
-	pico8 = self:popstate()
+	-- pop states until reaching a state that was saved
+	repeat pico8 = self:popstate() until pico8 ~= self.EMPTY_STATE
 
 	love.graphics.setCanvas(pico8.screen)
 	pico8.draw_shader:send("palette", shdr_unpack(pico8.draw_palette))
@@ -231,10 +240,14 @@ function tas:full_reset()
 end
 
 function tas:init()
+	--unique identifier for empty states
+	self.EMPTY_STATE = {}
+
 	self.states={}
 	self.keystates={0}
 	self.realtime_playback=false
 	self.hold = 0
+	self.savestate_interval = 1
 	tas.screen = love.graphics.newCanvas((pico8.resolution[1]+self.hud_w + self.pianoroll_w)*self.scale, (pico8.resolution[2] + self.hud_h)*self.scale)
 
 	-- duplicated code is kinda eh but i am lazy
@@ -254,6 +267,7 @@ function tas:init()
 	})
 
 	rawset(console.ENV, "goto_frame", function(...) self:goto_frame(...) end)
+	rawset(console.ENV, "savestate_every", function(new_interval) self.savestate_interval = new_interval end)
 
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
@@ -449,7 +463,10 @@ function tas:draw_piano_roll()
 				s[j]=" "
 			end
 		end
-		draw_inputs_row(s,x,y+7*(i - start_row + 1), current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or 7, i-1)
+		local corrosponding_state_idx = #self.states + 1 - frame_count + i
+		local non_savestate_frame = corrosponding_state_idx <= #self.states and self.states[corrosponding_state_idx] == self.EMPTY_STATE
+		local row_color = current_frame and 12 or (i > frame_count and i <= self.last_selected_frame) and 13 or non_savestate_frame and 5 or 7
+		draw_inputs_row(s,x,y+7*(i - start_row + 1), row_color, i-1)
 	end
 
 end

@@ -416,11 +416,11 @@ function cctas:unset_player_env()
 	})
 end
 
-function cctas:pushstate()
+function cctas:pushstate(save_state)
 	if self.level_time>0 or self.inputs_active then
 		self.level_time = self.level_time + 1
 	end
-	self.super.pushstate(self)
+	self.super.pushstate(self, save_state)
 end
 
 function cctas:popstate()
