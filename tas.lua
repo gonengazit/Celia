@@ -269,6 +269,26 @@ function tas:init()
 	rawset(console.ENV, "goto_frame", function(...) self:goto_frame(...) end)
 	rawset(console.ENV, "savestate_every", function(new_interval) self.savestate_interval = new_interval end)
 
+	-- support goto_frame x for absolute, or goto_frame +x or -x for relative
+	console.COMMANDS["goto_frame"] = function(arg)
+		print("goto_frame "..(arg or ""))
+		if arg == nil then
+			console.colorprint({console.ERROR_COLOR, "must give a single argument (number or offset)"})
+			return
+		end
+
+		local offset = 0
+		if arg:sub(1,1) == "+" or arg:sub(1,1) == "-" then
+			offset = self:frame_count()
+		end
+		local value = tonumber(arg)
+		if value == nil then
+			console.colorprint({console.ERROR_COLOR, "argument must be a number or offset"})
+			return
+		end
+		self:goto_frame(value + offset)
+	end
+
 	--(func)on_finish, (func)finish_condition, (bool)fast_forward, (bool)finish_on_interrupt
 	self.seek=nil
 end

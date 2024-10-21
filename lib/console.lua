@@ -398,10 +398,15 @@ local function patch_and_load(command)
   chunk,error=load(patched_command)
   return chunk,error
 end
+
 function console.execute(command)
   -- If this is a builtin command, execute it and return immediately.
-  if console.COMMANDS[command] then
-    console.COMMANDS[command]()
+  local space_sperated_command = {}
+  for word in command:gmatch("(%S+)") do
+    table.insert(space_sperated_command, word)
+  end
+  if console.COMMANDS[space_sperated_command[1]] then
+    console.COMMANDS[space_sperated_command[1]](unpack(space_sperated_command, 2))
     return
   end
 

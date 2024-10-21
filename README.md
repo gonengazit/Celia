@@ -87,6 +87,11 @@ Warning: making changes to variables in the PICO-8 instance, then rewinding befo
 
 #### Console Functions
 * `goto_frame(i)` - fast forwards/rewinds the TAS to the i'th frame.
+   * there is also a console command version of this which also supports relative offsets
+   * `goto_frame i` goes to the i'th frame
+   * `goto_frame +i` steps i frames forwards
+   * `goto_frame -i` rewinds i steps backwards
+   * this version also allows giving a parameter greater than 2^16 in fixed point mode
 * `savetate_every(n)` - create savestates every `n` frames, instead of every frame. if `n=0` the tas tool will not savestate at all. (n=1 is the normal mode). when rewinding, it will rewind to the last saved frame
 
 # Acknowledgements
