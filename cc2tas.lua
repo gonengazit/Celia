@@ -147,6 +147,10 @@ function cc2tas:load_level(idx)
 	--backup the current state, in case of a crash
 	local state_backup=self:clonestate()
 
+	-- also clone the pico8 instance - so undoing after switching a level isn't screwed up
+	pico8 = self:clonestate()
+	love.graphics.setCanvas(pico8.screen)
+
 	local status, err = pcall(self.load_room_wrap, self, idx)
 	if not status then
 		print("could not load level")

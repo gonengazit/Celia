@@ -290,6 +290,10 @@ function cctas:load_level(idx, reset_changes)
 	--backup the current state, in case of a crash
 	local state_backup=self:clonestate()
 
+	-- also clone the pico8 instance - so undoing after switching a level isn't screwed up
+	pico8 = self:clonestate()
+	love.graphics.setCanvas(pico8.screen)
+
 	if self.max_djump_overload ~= -1 then
 		pico8.cart.max_djump = self.max_djump_overload
 	elseif self.cart_type == "vanilla" then
