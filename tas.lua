@@ -429,18 +429,18 @@ local function draw_inputs_row(tbl, x, y, c, frame_num)
 
 	-- draw the frame number
 	setPicoColor(c)
-	love.graphics.rectangle("fill", x, y, 17, 7)
+	love.graphics.rectangle("fill", x + 1, y, 17, 7)
 	setPicoColor(0)
-	love.graphics.rectangle("line", x, y, 17, 7)
-	love.graphics.printf(tostring(frame_num), x, y+1, 17, "right")
+	love.graphics.rectangle("line", x + 1, y, 17, 7)
+	love.graphics.printf(tostring(frame_num), x + 1 , y+1, 17, "right")
 
 	for i=1, #tbl do
 		setPicoColor(c)
-		love.graphics.rectangle("fill", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("fill", x+(i-1)*box_w+18, y, box_w, 7)
 		setPicoColor(0)
-		love.graphics.rectangle("line", x+(i-1)*box_w+17, y, box_w, 7)
+		love.graphics.rectangle("line", x+(i-1)*box_w+18, y, box_w, 7)
 		love.graphics.setColor(1,1,1,1)
-		love.graphics.printf(tbl[i], x+(i-1)*box_w+17, y+1, box_w, "center")
+		love.graphics.printf(tbl[i], x+(i-1)*box_w+18, y+1, box_w, "center")
 	end
 end
 
