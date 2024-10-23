@@ -114,6 +114,7 @@ function tas:pushstate(save_state)
 		--push the actual pico8 instance (and not the clone) to support undoing
 		table.insert(self.states,pico8)
 		pico8 = clone
+		love.graphics.setCanvas(pico8.screen)
 	else
 		table.insert(self.states, self.EMPTY_STATE)
 	end
@@ -180,7 +181,6 @@ function tas:step()
 	--TODO: make this cleaner
 	update_buttons(self,input_idx)
 
-	love.graphics.setCanvas(pico8.screen)
 	rawstep()
 
 	--advance the state of pressed keys
@@ -333,6 +333,7 @@ function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
 	self.keystates = deepcopy(state.keystates)
 	pico8 = state.pico8
+	love.graphics.setCanvas(pico8.screen)
 end
 
 function tas:get_undo_state()
@@ -408,6 +409,7 @@ function tas:new_tab()
 	self:full_rewind()
 	--make the first state also not shared
 	pico8 = self:clonestate()
+	love.graphics.setCanvas(pico8.screen)
 end
 
 function tas:close_tab()
