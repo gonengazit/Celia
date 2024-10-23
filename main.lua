@@ -922,7 +922,7 @@ function love.keypressed(key, scancode, isrepeat)
 	-- 	api.load(initialcartname)
 	-- 	api.run()
 	-- 	return
-	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
+	elseif key == "q" and isCtrlOrGuiDown() and love.keyboard.isDown('lshift', 'rshift') and not isAltDown() then
 		love.event.quit()
 	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
 	-- 	pico8.clipboard = love.system.getClipboardText()
