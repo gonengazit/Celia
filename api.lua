@@ -420,7 +420,7 @@ function api.pget(x, y)
 		local r = __screen_img:getPixel(flr(x), flr(y))
 		return r * 15
 	end
-	warning(string.format("pget out of screen %d, %d", x, y))
+	-- warning(string.format("pget out of screen %d, %d", x, y))
 	return 0
 end
 
