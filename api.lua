@@ -420,7 +420,7 @@ function api.pget(x, y)
 		local r = __screen_img:getPixel(flr(x), flr(y))
 		return r * 15
 	end
-	warning(string.format("pget out of screen %d, %d", x, y))
+	-- warning(string.format("pget out of screen %d, %d", x, y))
 	return 0
 end
 
@@ -1222,9 +1222,28 @@ function api.peek(addr)
 		return pico8.map[flr(addr / 128)][addr % 128]
 	elseif addr < 0x3100 then
 		return pico8.spriteflags[addr - 0x3000]
-	elseif addr < 0x3200 then -- luacheck: ignore 542
-		-- TODO: music data
-	elseif addr < 0x4300 then -- luacheck: ignore 542
+	elseif addr < 0x3200 then
+		-- TODO: check that this works
+		local _music = math.floor((addr - 0x3100) / 4)
+		local byte = pico8.music[_music][addr % 4]
+		byte = bit.bor(byte, bit.band(bit.lshift(pico8.music[_music].loop, 7-addr %4), 0x80))
+		return byte
+	elseif addr < 0x4300 then
+		local _sfx = math.floor((addr - 0x3200) / 68)
+		local step = (addr - 0x3200) % 68
+		if step < 64 then
+			local sfx = pico8.sfx[_sfx][math.floor(step / 2)]
+			local note = bit.bor(sfx[1], bit.lshift(bit.band(sfx[2],7),6), bit.lshift(sfx[3],9), bit.lshift(sfx[4], 12), bit.lshift(bit.band(sfx[2],8), 12))
+			return bit.band(bit.rshift(note, (addr%2)*8), 0xff)
+		elseif step == 64 then
+			return pico8.sfx[_sfx].editor_mode
+		elseif step == 65 then
+			return pico8.sfx[_sfx].speed
+		elseif step == 66 then
+			return pico8.sfx[_sfx].loop_start
+		elseif step == 67 then
+			return pico8.sfx[_sfx].loop_end
+		end
 		-- TODO: sfx data
 	elseif addr < 0x5e00 then
 		return pico8.usermemory[addr - 0x4300]
@@ -1401,38 +1420,13 @@ function api.poke4(addr, val)
 end
 
 function api.memcpy(dest_addr, source_addr, len)
-	--GTODO
 	if len < 1 or dest_addr == source_addr then
 		return
 	end
 
-	-- only for range 0x6000 + 0x8000
-	if source_addr < 0x6000 or dest_addr < 0x6000 then
-		return
-	end
-	if source_addr + len > 0x8000 or dest_addr + len > 0x8000 then
-		return
-	end
-	love.graphics.setCanvas()
-	local img = pico8.screen:newImageData()
-	love.graphics.setCanvas(pico8.screen)
-	for i = 0, len - 1 do
-		local x = flr(source_addr - 0x6000 + i) % 64 * 2
-		local y = flr((source_addr - 0x6000 + i) / 64)
-		--TODO: why are colors broken?
-		local c = api.ceil(img:getPixel(x, y) / 16)
-		local d = api.ceil(img:getPixel(x + 1, y) / 16)
-		if c ~= 0 then
-			c = c - 1
-		end
-		if d ~= 0 then
-			d = d - 1
-		end
-
-		local dx = flr(dest_addr - 0x6000 + i) % 64 * 2
-		local dy = flr((dest_addr - 0x6000 + i) / 64)
-		api.pset(dx, dy, c)
-		api.pset(dx + 1, dy, d)
+	for i=0, len-1 do
+		local val = api.peek(source_addr+i)
+		api.poke(dest_addr+i, val)
 	end
 end
 

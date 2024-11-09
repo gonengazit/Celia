@@ -190,10 +190,12 @@ local function str_to_fix32_str(s)
 end
 
 local function fix32_tonumber(x)
-	if type(x)=="string" then
+	local orig_tonumber = tonumber(x)
+	-- if this is not a valid number string - just return nil
+	if orig_tonumber and type(x)=="string" then
 		return tonumber(str_to_fix32_str(x))
 	end
-	return tonumber(x)
+	return orig_tonumber
 end
 
 local function fix32_rnd(x)
