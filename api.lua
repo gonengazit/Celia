@@ -1419,38 +1419,13 @@ function api.poke4(addr, val)
 end
 
 function api.memcpy(dest_addr, source_addr, len)
-	--GTODO
 	if len < 1 or dest_addr == source_addr then
 		return
 	end
 
-	-- only for range 0x6000 + 0x8000
-	if source_addr < 0x6000 or dest_addr < 0x6000 then
-		return
-	end
-	if source_addr + len > 0x8000 or dest_addr + len > 0x8000 then
-		return
-	end
-	love.graphics.setCanvas()
-	local img = pico8.screen:newImageData()
-	love.graphics.setCanvas(pico8.screen)
-	for i = 0, len - 1 do
-		local x = flr(source_addr - 0x6000 + i) % 64 * 2
-		local y = flr((source_addr - 0x6000 + i) / 64)
-		--TODO: why are colors broken?
-		local c = api.ceil(img:getPixel(x, y) / 16)
-		local d = api.ceil(img:getPixel(x + 1, y) / 16)
-		if c ~= 0 then
-			c = c - 1
-		end
-		if d ~= 0 then
-			d = d - 1
-		end
-
-		local dx = flr(dest_addr - 0x6000 + i) % 64 * 2
-		local dy = flr((dest_addr - 0x6000 + i) / 64)
-		api.pset(dx, dy, c)
-		api.pset(dx + 1, dy, d)
+	for i=0, len-1 do
+		local val = api.peek(source_addr+i)
+		api.poke(dest_addr+i, val)
 	end
 end
 
