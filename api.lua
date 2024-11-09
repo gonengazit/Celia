@@ -1221,9 +1221,28 @@ function api.peek(addr)
 		return pico8.map[flr(addr / 128)][addr % 128]
 	elseif addr < 0x3100 then
 		return pico8.spriteflags[addr - 0x3000]
-	elseif addr < 0x3200 then -- luacheck: ignore 542
-		-- TODO: music data
-	elseif addr < 0x4300 then -- luacheck: ignore 542
+	elseif addr < 0x3200 then
+		-- TODO: check that this works
+		local _music = math.floor((addr - 0x3100) / 4)
+		local byte = pico8.music[_music][addr % 4]
+		byte = bit.bor(byte, bit.band(bit.lshift(pico8.music[_music].loop, 7-addr %4), 0x80))
+		return byte
+	elseif addr < 0x4300 then
+		local _sfx = math.floor((addr - 0x3200) / 68)
+		local step = (addr - 0x3200) % 68
+		if step < 64 then
+			local sfx = pico8.sfx[_sfx][math.floor(step / 2)]
+			local note = bit.bor(sfx[1], bit.lshift(bit.band(sfx[2],7),6), bit.lshift(sfx[3],9), bit.lshift(sfx[4], 12), bit.lshift(bit.band(sfx[2],8), 12))
+			return bit.band(bit.rshift(note, (addr%2)*8), 0xff)
+		elseif step == 64 then
+			return pico8.sfx[_sfx].editor_mode
+		elseif step == 65 then
+			return pico8.sfx[_sfx].speed
+		elseif step == 66 then
+			return pico8.sfx[_sfx].loop_start
+		elseif step == 67 then
+			return pico8.sfx[_sfx].loop_end
+		end
 		-- TODO: sfx data
 	elseif addr < 0x5e00 then
 		return pico8.usermemory[addr - 0x4300]
