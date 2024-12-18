@@ -725,8 +725,16 @@ function cctas:hud()
 	if p == nil then
 		return ""
 	end
-	--TODO: make this more comprehensive and/or general?
-	return ("%6s%7s\npos:% -7g% g\nrem:% -7.3f% .3f\nspd:% -7.3f% .3f\n\ngrace: %s"):format("x","y",p.x,p.y,p.rem.x,p.rem.y, p.spd.x, p.spd.y, p.grace)
+
+	local s = ""
+	s = s .. ("%6s%7s\n"          ):format("x", "y")
+	s = s .. ("pos:% -7g% g\n"    ):format(p.x, p.y)
+	s = s .. ("rem:% -7.3f% .3f\n"):format(p.rem.x, p.rem.y)
+	s = s .. ("spd:% -7.3f% .3f\n"):format(p.spd.x, p.spd.y)
+	s = s .. "\n"
+	s = s .. ("grace: %s\n"       ):format(p.grace or "?")
+	s = s .. ("dash time: %s\n"   ):format(p.dash_time or "?")
+	return s
 end
 
 function cctas:offset_camera()
