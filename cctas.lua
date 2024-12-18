@@ -732,7 +732,8 @@ function cctas:hud()
 	s = s .. ("rem:% -7.3f% .3f\n"):format(p.rem.x, p.rem.y)
 	s = s .. ("spd:% -7.3f% .3f\n"):format(p.spd.x, p.spd.y)
 	s = s .. "\n"
-	s = s .. ("grace: %s"         ):format(p.grace)
+	s = s .. ("grace: %s\n"       ):format(p.grace or "?")
+	s = s .. ("dash time: %s\n"   ):format(p.dash_time or "?")
 	return s
 end
 
