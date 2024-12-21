@@ -12,6 +12,8 @@ carts not based on these may or may not work. for a cart that uses a different s
 in addition, a table called `__tas_settings` may be defined, which may contain the following values
 * `disable_loading_jank` - if set to true, don't apply loading jank on any level, and don't allow modifying it
 
+in order to add custom elements to the hud - the function `__tas_hud` may be defined - which returns a string to be displayed on the hud
+
 # Keybinds
 * __F__ - go to next level
 * __S__ - go to previous level

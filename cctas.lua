@@ -738,6 +738,15 @@ function cctas:hud()
 	s = s .. "\n"
 	s = s .. ("grace: %s\n"       ):format(p.grace or "?")
 	s = s .. ("dash time: %s\n"   ):format(p.dash_time or "?")
+
+	-- add custom per-cart hud
+	if pico8.cart.__tas_hud then
+		local status, ret = pcall(pico8.cart.__tas_hud)
+		if status then
+			s = s .. ret
+		end
+	end
+
 	return s
 end
 
