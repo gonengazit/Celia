@@ -86,7 +86,7 @@ Celia allows creating multiple tabs - allowing tasing multiple concurrent instan
 * Ctrl + W - close a tab
 * Ctrl + Tab - Switch to the next tab (cyclically)
 * Ctrl + Shift + Tab - Switch to the previous tab (cyclically)
-* Ctrl + <number> - switch to the n'th tab
+* Ctrl + \<number\> - switch to the n'th tab
 
 ### Console
 Using the console, you can access and modify the variables of the PICO-8 instance. it supports standard terminal keybindings, and allows you to input and run lua code on the pico8 instance.
