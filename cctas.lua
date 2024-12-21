@@ -284,6 +284,10 @@ end
 -- if reset changes is false, loading jank and rng seeds will not be touched
 -- otherwise, they will be reset
 function cctas:load_level(idx, reset_changes)
+	-- close all tabs when switching a level
+	while #self.tabs > 1 do
+		self:close_tab()
+	end
 	-- load the room from the initial state of the level, to reset variables like berries
 	self:full_rewind()
 

@@ -66,13 +66,13 @@ pico8 = {
 	kbdbuffer={},
 	keymap = {
 		[0] = {
-			[0] = { "left", "kp4" },
-			[1] = { "right", "kp6" },
-			[2] = { "up", "kp8" },
-			[3] = { "down", "kp5" },
-			[4] = { "z", "c", "n", "kp-", "kp1", "insert" },
-			[5] = { "x", "v", "m", "8", "kp2", "delete" },
-			[6] = { "return", "escape" },
+			[0] = { "left" },
+			[1] = { "right" },
+			[2] = { "up" },
+			[3] = { "down" },
+			[4] = { "z", "c" },
+			[5] = { "x" },
+			[6] = {},
 			[7] = {},
 		},
 		[1] = {
@@ -922,7 +922,7 @@ function love.keypressed(key, scancode, isrepeat)
 	-- 	api.load(initialcartname)
 	-- 	api.run()
 	-- 	return
-	elseif key == "q" and isCtrlOrGuiDown() and not isAltDown() then
+	elseif key == "q" and isCtrlOrGuiDown() and love.keyboard.isDown('lshift', 'rshift') and not isAltDown() then
 		love.event.quit()
 	-- elseif key == "v" and isCtrlOrGuiDown() and not isAltDown() then
 	-- 	pico8.clipboard = love.system.getClipboardText()

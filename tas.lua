@@ -114,6 +114,7 @@ function tas:pushstate(save_state)
 		--push the actual pico8 instance (and not the clone) to support undoing
 		table.insert(self.states,pico8)
 		pico8 = clone
+		love.graphics.setCanvas(pico8.screen)
 	else
 		table.insert(self.states, self.EMPTY_STATE)
 	end
@@ -180,7 +181,6 @@ function tas:step()
 	--TODO: make this cleaner
 	update_buttons(self,input_idx)
 
-	love.graphics.setCanvas(pico8.screen)
 	rawstep()
 
 	--advance the state of pressed keys
@@ -257,6 +257,9 @@ function tas:init()
 
 	self.last_selected_frame = -1
 
+	self.tabs = {self.EMPTY_STATE}
+	self.tab_idx = 1
+
 	self.undo_states = {}
 	self.undo_idx = 0
 	self:push_undo_state()
@@ -330,6 +333,17 @@ function tas:load_editor_state(state)
 	self.states = shallow_copy(state.states)
 	self.keystates = deepcopy(state.keystates)
 	pico8 = state.pico8
+	love.graphics.setCanvas(pico8.screen)
+end
+
+function tas:get_undo_state()
+	return {editor_state = self:get_editor_state(), tabs=shallow_copy(self.tabs), tab_idx = self.tab_idx}
+end
+
+function tas:load_undo_state(state)
+	self:load_editor_state(state.editor_state)
+	self.tabs = state.tabs
+	self.tab_idx = state.tab_idx
 end
 
 --undo_idx points the state to be loaded if undo is preformed
@@ -339,7 +353,7 @@ function tas:push_undo_state()
 	while #self.undo_states >= self.undo_idx do
 		table.remove(self.undo_states)
 	end
-	table.insert(self.undo_states, self:get_editor_state())
+	table.insert(self.undo_states, self:get_undo_state())
 
 	-- limit undo history to depth 30, to avoid overusing memory
 	if #self.undo_states>30 then
@@ -354,8 +368,8 @@ function tas:preform_undo()
 		return
 	end
 	local new_state = self.undo_states[self.undo_idx]
-	local curr_state = self:get_editor_state()
-	self:load_editor_state(new_state)
+	local curr_state = self:get_undo_state()
+	self:load_undo_state(new_state)
 	self.undo_states[self.undo_idx] = curr_state
 	self.undo_idx = self.undo_idx - 1
 	self.hold = 0
@@ -368,11 +382,48 @@ function tas:perform_redo()
 	end
 	self.undo_idx = self.undo_idx + 1
 	local new_state = self.undo_states[self.undo_idx]
-	local curr_state = self:get_editor_state()
-	self:load_editor_state(new_state)
+	local curr_state = self:get_undo_state()
+	self:load_undo_state(new_state)
 	self.undo_states[self.undo_idx] = curr_state
 	self.hold = 0
 	self.last_selected_frame = -1
+end
+
+function tas:switch_tab(new_tab_idx)
+	self.tabs[self.tab_idx] = self:get_editor_state()
+
+	self:load_editor_state(self.tabs[new_tab_idx])
+	-- all tabs are stored in the tabs array, except for the current tab, which is replaced by a placeholder
+	self.tabs[new_tab_idx] = self.EMPTY_STATE
+	self.tab_idx = new_tab_idx
+end
+
+function tas:new_tab()
+	self.tabs[self.tab_idx] = self:get_editor_state()
+	table.insert(self.tabs, self.EMPTY_STATE)
+	self.tab_idx = #self.tabs
+
+	-- this is important - in order to make it so that the states aren't shared between tabs
+	-- (so if the states are changed in the console or by the tas tool, it won't change other tabs)
+	-- if the state architecture is ever changed so that states are immutable and there's deepcopy on rewind as well - can remove this
+	self:full_rewind()
+	--make the first state also not shared
+	pico8 = self:clonestate()
+	love.graphics.setCanvas(pico8.screen)
+end
+
+function tas:close_tab()
+	if #self.tabs <=1 then
+		return
+	end
+	-- go to the next tab, or the previous one if this is the last tab
+	-- make sure to do this before deleting the current tab (otherwise things will mess up)
+	local tab_to_switch_to = self.tab_idx == #self.tabs and self.tab_idx-1 or self.tab_idx+1
+	self:switch_tab(tab_to_switch_to)
+	table.remove(self.tabs, self.tab_idx)
+	if self.tab_idx > #self.tabs then
+		self.tab_idx = self.tab_idx - 1
+	end
 end
 
 function setPicoColor(c)
@@ -455,9 +506,23 @@ function tas:draw_piano_roll()
 	for i,v in ipairs(inputs) do
 		header[i]={{0,0,0},v}
 	end
+
+	local draw_tabs = #self.tabs > 1
+	if draw_tabs then
+		local tab_w = 9
+		for i = 1, #self.tabs do
+			setPicoColor(self.tab_idx == i and 12 or 7)
+			love.graphics.rectangle("fill", x + 1 + tab_w*(i-1), y, tab_w, 7)
+			setPicoColor(0)
+			love.graphics.rectangle("line", x + 1 + tab_w*(i-1), y, tab_w, 7)
+			love.graphics.printf(tostring(i), x + 2 + tab_w*(i-1), y+1, tab_w, "center")
+		end
+		-- draw everything else below tab row
+		y=y+7
+	end
 	draw_inputs_row(header,x,y,10,"idx")
 
-	local num_rows= math.floor(pico8.resolution[2]/7)-1
+	local num_rows= math.floor(pico8.resolution[2]/7)- (draw_tabs and 2 or 1)
 	local frame_count = self:frame_count() + 1
 
 	--use 1/3rd of the rows for frames before, and 2/3rds for the frames after the curr frame
@@ -579,6 +644,26 @@ function tas:keypressed(key, isrepeat)
 		else
 			self:preform_undo()
 		end
+	elseif key == 'n' and ctrl then
+		self:push_undo_state()
+		self:new_tab()
+	elseif key == 'w' and ctrl then
+		self:push_undo_state()
+		self:close_tab()
+	elseif key:match("%d") and ctrl then
+		local new_idx = tonumber(key)
+		if 1 <= new_idx and new_idx <= #self.tabs then
+			self:switch_tab(new_idx)
+		end
+	elseif key=='tab' and ctrl then
+		local new_idx
+		if love.keyboard.isDown('lshift', 'rshift') then
+			-- subtract one from index cyclically
+			new_idx = (self.tab_idx - 2) % #self.tabs + 1
+		else
+			new_idx = self.tab_idx % #self.tabs + 1
+		end
+		self:switch_tab(new_idx)
 	else
 		for i = 0, #pico8.keymap[0] do
 			for _, testkey in pairs(pico8.keymap[0][i]) do
