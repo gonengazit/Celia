@@ -80,6 +80,14 @@ Visual selection mode allows you to perform operations on a contiguous range of 
 * __Ctrl + V__ - replace selection with frames pasted from clipboard
 * __Ctrl + X__ - cut frames to clipboard
 
+### Tabs
+Celia allows creating multiple tabs - allowing tasing multiple concurrent instances of the same game. This is useful in order to compare different versions of your tas side by side.
+* Ctrl + N - create a new tab
+* Ctrl + W - close a tab
+* Ctrl + Tab - Switch to the next tab (cyclically)
+* Ctrl + Shift + Tab - Switch to the previous tab (cyclically)
+* Ctrl + <number> - switch to the n'th tab
+
 ### Console
 Using the console, you can access and modify the variables of the PICO-8 instance. it supports standard terminal keybindings, and allows you to input and run lua code on the pico8 instance.
 
