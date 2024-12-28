@@ -1611,6 +1611,20 @@ function api.run()
 		love.graphics.setCanvas(pico8.screen)
 		love.graphics.origin()
 		restore_clip()
+
+		--implement string indexing with []
+		getmetatable('').__index = function(str,i)
+			if type(i) == 'number' then
+				local c =  string.sub(str,i,i)
+				if c=="" then
+					return nil
+				end
+				return c
+			else
+				return string[i]
+			end
+		end
+
 		ok, e = pcall(f)
 		if not ok then
 			error("Error running lua: " .. tostring(e))
