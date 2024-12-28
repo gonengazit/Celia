@@ -730,7 +730,6 @@ function get_transformed_pico8_screen()
 		-- no transform - just return the canvas we already have
 		return pico8.screen
 	end
-	--hacky solution for the partial mirrors - draw the screen twice - once normally, and once with the transformation
 	local shader = love.graphics.getShader()
 	transformed_screen:renderTo(function()
 		love.graphics.setShader()
