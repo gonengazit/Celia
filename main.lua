@@ -598,8 +598,6 @@ function love.draw()
 		pico8.cart._draw()
 	end
 
-	perform_transform()
-
 	-- draw the contents of pico screen to our screen
 	flip_screen()
 end
@@ -618,10 +616,12 @@ function flip_screen()
 	love.graphics.setBackgroundColor(3/255, 5/255, 10/255)
 	love.graphics.clear()
 
+	local transformed_pico8_screen = get_transformed_pico8_screen()
+
 	local screen_w, screen_h = love.graphics.getDimensions()
 	if screen_w > screen_h then
 		love.graphics.draw(
-			pico8.screen,
+			transformed_pico8_screen,
 			screen_w / 2 - 64 * scale,
 			ypadding * scale,
 			0,
@@ -630,7 +630,7 @@ function flip_screen()
 		)
 	else
 		love.graphics.draw(
-			pico8.screen,
+			transformed_pico8_screen,
 			xpadding * scale,
 			screen_h / 2 - 64 * scale,
 			0,
@@ -643,7 +643,7 @@ function flip_screen()
 
 	if gif_canvas then
 		love.graphics.setCanvas(gif_canvas)
-		love.graphics.draw(pico8.screen, 0, 0, 0, 2, 2)
+		love.graphics.draw(transformed_pico8_screen, 0, 0, 0, 2, 2)
 		love.graphics.setCanvas()
 		gif_recording:frame(gif_canvas:newImageData())
 	end
@@ -654,7 +654,7 @@ function flip_screen()
 	restore_camera()
 end
 
-function perform_transform()
+function get_transformed_pico8_screen()
 	local transform = nil
 	local scissor_x, scissor_y, scissor_w, scissor_h = 0,0, pico8.screen:getDimensions()
 	if pico8.transform_mode == 1 then
@@ -686,24 +686,29 @@ function perform_transform()
 	elseif pico8.transform_mode == 135 then
 		transform = love.math.newTransform(0, pico8.screen:getHeight(), -math.pi/2)
 	else
-		return
+		-- no transform - just return the canvas we already have
+		return pico8.screen
 	end
-	-- it's impossible to draw a canvas on top of itself in love2d - so we copy to a different canvas - then draw it on pico8.screen with the transformation applied
-	local tmp_canvas = love.graphics.newCanvas(pico8.screen:getDimensions())
-	tmp_canvas:renderTo(function()
+	local transformed_screen = love.graphics.newCanvas(pico8.screen:getDimensions())
+	--hacky solution for the partial mirrors - draw the screen twice - once normally, and once with the transformation
+	local shader = love.graphics.getShader()
+	transformed_screen:renderTo(function()
 			love.graphics.setShader()
 			love.graphics.origin()
 			love.graphics.setScissor()
 			love.graphics.setColor(1,1,1)
 			love.graphics.draw(pico8.screen, 0, 0)
 	end)
-	pico8.screen:renderTo(function()
+	transformed_screen:renderTo(function()
 			love.graphics.setShader()
 			love.graphics.origin()
 			love.graphics.setScissor(scissor_x, scissor_y, scissor_w, scissor_h)
 			love.graphics.setColor(1,1,1)
-			love.graphics.draw(tmp_canvas, transform)
+			love.graphics.draw(pico8.screen, transform)
 	end)
+	love.graphics.setScissor()
+	love.graphics.setShader(shader)
+	return transformed_screen
 end
 
 function love.focus(f)
