@@ -656,7 +656,7 @@ end
 
 function get_transformed_pico8_screen()
 	local transform = nil
-	local scissor_x, scissor_y, scissor_w, scissor_h = 0,0, pico8.screen:getDimensions()
+	local transformed_screen = love.graphics.newCanvas(pico8.screen:getDimensions())
 	if pico8.transform_mode == 1 then
 		transform = love.math.newTransform(0, 0, 0, 2, 1)
 	elseif pico8.transform_mode == 2 then
@@ -665,16 +665,57 @@ function get_transformed_pico8_screen()
 		transform = love.math.newTransform(0, 0, 0, 2, 2)
 	elseif pico8.transform_mode == 5 then
 		--mirror left half of screen
-		transform = love.math.newTransform(pico8.screen:getWidth(),0 ,0, -1, 1)
-		scissor_x = pico8.screen:getWidth()/2
-		scissor_w = pico8.screen:getWidth()/2
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor(0, 0, pico8.screen:getWidth()/2, pico8.screen:getHeight())
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(pico8.screen)
+			love.graphics.setScissor(pico8.screen:getWidth()/2, 0, pico8.screen:getWidth(), pico8.screen:getHeight())
+			love.graphics.draw(pico8.screen, pico8.screen:getWidth(), 0, 0, -1, 1)
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
 	elseif pico8.transform_mode == 6 then
 		--mirror top half of screen
-		transform = love.math.newTransform(0, pico8.screen:getHeight(),0, 1, -1)
-		scissor_y = pico8.screen:getHeight()/2
-		scissor_h = pico8.screen:getHeight()/2
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor(0, 0, pico8.screen:getWidth(), pico8.screen:getHeight()/2)
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(pico8.screen)
+			love.graphics.setScissor(0, pico8.screen:getHeight()/2, pico8.screen:getWidth(), pico8.screen:getHeight())
+			love.graphics.draw(pico8.screen, 0, pico8.screen:getHeight(), 0, 1, -1)
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
 	elseif pico8.transform_mode == 7 then
-		--TODO: mirror top left quadrent to all 4 quadrents
+		--mirror top left quadrent to all 4 quadrents
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setColor(1,1,1)
+			for quadx =0,1 do
+				for quady = 0,1 do
+					love.graphics.setScissor(quadx * pico8.screen:getWidth()/2, quady * pico8.screen:getHeight()/2, pico8.screen:getWidth()/2, pico8.screen:getHeight()/2)
+					love.graphics.draw(pico8.screen,
+						quadx * pico8.screen:getWidth(),
+						quady * pico8.screen:getHeight(),
+						0,
+						quadx == 0 and 1 or -1,
+						quady == 0 and 1 or -1
+					)
+				end
+			end
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
 	elseif pico8.transform_mode == 129 then
 		transform = love.math.newTransform(pico8.screen:getWidth(),0 ,0, -1, 1)
 	elseif pico8.transform_mode == 130 then
@@ -689,22 +730,14 @@ function get_transformed_pico8_screen()
 		-- no transform - just return the canvas we already have
 		return pico8.screen
 	end
-	local transformed_screen = love.graphics.newCanvas(pico8.screen:getDimensions())
 	--hacky solution for the partial mirrors - draw the screen twice - once normally, and once with the transformation
 	local shader = love.graphics.getShader()
 	transformed_screen:renderTo(function()
-			love.graphics.setShader()
-			love.graphics.origin()
-			love.graphics.setScissor()
-			love.graphics.setColor(1,1,1)
-			love.graphics.draw(pico8.screen, 0, 0)
-	end)
-	transformed_screen:renderTo(function()
-			love.graphics.setShader()
-			love.graphics.origin()
-			love.graphics.setScissor(scissor_x, scissor_y, scissor_w, scissor_h)
-			love.graphics.setColor(1,1,1)
-			love.graphics.draw(pico8.screen, transform)
+		love.graphics.setShader()
+		love.graphics.origin()
+		love.graphics.setScissor()
+		love.graphics.setColor(1,1,1)
+		love.graphics.draw(pico8.screen, transform)
 	end)
 	love.graphics.setScissor()
 	love.graphics.setShader(shader)
