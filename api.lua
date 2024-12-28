@@ -1275,8 +1275,8 @@ function api.peek(addr)
 			return pico8.camera_y % 256
 		elseif addr == 0x5f2b then
 			return flr(pico8.camera_y / 256)
-		elseif addr == 0x5f2c then -- luacheck: ignore 542
-			-- TODO: screen transformation mode
+		elseif addr == 0x5f2c then
+			return pico8.transform_mode
 		elseif addr == 0x5f2d then
 			-- TODO: fully implement
 			return love.keyboard.hasTextInput()
@@ -1353,8 +1353,8 @@ function api.poke(addr, val)
 			pico8.camera_y = flr(pico8.camera_y / 256) + val % 256
 		elseif addr == 0x5f2b then
 			pico8.camera_y = flr((val % 256) * 256) + pico8.camera_y % 256
-		elseif addr == 0x5f2c then -- luacheck: ignore 542
-			-- TODO: screen transformation mode
+		elseif addr == 0x5f2c then
+			pico8.transform_mode = val
 		elseif addr == 0x5f2d then
 			love.keyboard.setTextInput(bit.band(val, 1) == 1)
 

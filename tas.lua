@@ -556,6 +556,8 @@ function tas:draw_piano_roll()
 
 end
 function tas:draw()
+	local transformed_pico8_screen = get_transformed_pico8_screen()
+
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(tas.screen)
 	love.graphics.setShader(pico8.display_shader)
@@ -565,7 +567,7 @@ function tas:draw()
 	love.graphics.clear(0.1, 0.1, 0.1)
 
 	love.graphics.scale(tas.scale,tas.scale)
-	love.graphics.draw(pico8.screen, self.hud_w, self.hud_h, 0)
+	love.graphics.draw(transformed_pico8_screen, self.hud_w, self.hud_h, 0)
 	love.graphics.setShader()
 
 

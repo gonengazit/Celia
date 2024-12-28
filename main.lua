@@ -90,6 +90,7 @@ pico8 = {
 	cursor = { 0, 0 },
 	camera_x = 0,
 	camera_y = 0,
+	transform_mode = 0,
 	can_pause = true,
 	can_shutdown = false,
 	draw_palette = {},
@@ -116,8 +117,8 @@ pico8_glyphs = { [0] = "\0",
 	"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "[", "\\", "]",
 	"^", "_", "`", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
 	"m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "{",
-	"|", "}", "~", "○", "█", "▒", "🐱", "⬇️", "░", "✽", "●",
-	"♥", "☉", "웃", "⌂", "⬅️", "😐", "♪", "🅾️", "◆",
+	"|", "}", "~", "○", "█", "▒", "�", "⬇️", "░", "✽", "●",
+	"♥", "☉", "웃", "⌂", "⬅️", "�", "♪", "�️", "◆",
 	"…", "➡️", "★", "⧗", "⬆️", "ˇ", "∧", "❎", "▤", "▥",
 	"あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ",
 	"し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に",
@@ -134,7 +135,7 @@ pico8_glyphs = { [0] = "\0",
 -- switch 2 utf-8 character glyphs with the respective 1 character alternative
 glyph_edgecases = {
 	["⬇️"] = "⬇",
-	["🅾️"] = "🅾",
+	["�️"] = "�",
 	["➡️"] = "➡",
 	["⬆️"] = "⬆",
 	["⬅️"] = "⬅"
@@ -648,9 +649,11 @@ function flip_screen()
 	love.graphics.present()
 
 	if gif_canvas then
+
 		love.graphics.setShader(pico8.display_shader)
 		love.graphics.setCanvas(gif_canvas)
-		love.graphics.draw(pico8.screen, 0, 0, 0, 2, 2)
+		local transformed_pico8_screen = get_transformed_pico8_screen()
+		love.graphics.draw(transformed_pico8_screen, 0, 0, 0, 2, 2)
 
 		love.graphics.setShader()
 		love.graphics.push()
@@ -666,6 +669,95 @@ function flip_screen()
 	love.graphics.setCanvas(pico8.screen)
 	restore_clip()
 	restore_camera()
+end
+
+function get_transformed_pico8_screen()
+	local transform = nil
+	local transformed_screen = love.graphics.newCanvas(pico8.screen:getDimensions())
+	if pico8.transform_mode == 1 then
+		transform = love.math.newTransform(0, 0, 0, 2, 1)
+	elseif pico8.transform_mode == 2 then
+		transform = love.math.newTransform(0, 0, 0, 1, 2)
+	elseif pico8.transform_mode == 3 then
+		transform = love.math.newTransform(0, 0, 0, 2, 2)
+	elseif pico8.transform_mode == 5 then
+		--mirror left half of screen
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor(0, 0, pico8.screen:getWidth()/2, pico8.screen:getHeight())
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(pico8.screen)
+			love.graphics.setScissor(pico8.screen:getWidth()/2, 0, pico8.screen:getWidth(), pico8.screen:getHeight())
+			love.graphics.draw(pico8.screen, pico8.screen:getWidth(), 0, 0, -1, 1)
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
+	elseif pico8.transform_mode == 6 then
+		--mirror top half of screen
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor(0, 0, pico8.screen:getWidth(), pico8.screen:getHeight()/2)
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(pico8.screen)
+			love.graphics.setScissor(0, pico8.screen:getHeight()/2, pico8.screen:getWidth(), pico8.screen:getHeight())
+			love.graphics.draw(pico8.screen, 0, pico8.screen:getHeight(), 0, 1, -1)
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
+	elseif pico8.transform_mode == 7 then
+		--mirror top left quadrent to all 4 quadrents
+		local shader = love.graphics.getShader()
+		transformed_screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setColor(1,1,1)
+			for quadx =0,1 do
+				for quady = 0,1 do
+					love.graphics.setScissor(quadx * pico8.screen:getWidth()/2, quady * pico8.screen:getHeight()/2, pico8.screen:getWidth()/2, pico8.screen:getHeight()/2)
+					love.graphics.draw(pico8.screen,
+						quadx * pico8.screen:getWidth(),
+						quady * pico8.screen:getHeight(),
+						0,
+						quadx == 0 and 1 or -1,
+						quady == 0 and 1 or -1
+					)
+				end
+			end
+		end)
+		love.graphics.setScissor()
+		love.graphics.setShader(shader)
+		return transformed_screen
+	elseif pico8.transform_mode == 129 then
+		transform = love.math.newTransform(pico8.screen:getWidth(),0 ,0, -1, 1)
+	elseif pico8.transform_mode == 130 then
+		transform = love.math.newTransform(0, pico8.screen:getHeight(),0, 1, -1)
+	elseif pico8.transform_mode == 131  or pico8.transform_mode == 134 then
+		transform = love.math.newTransform(pico8.screen:getWidth(), pico8.screen:getHeight(),0, -1, -1)
+	elseif pico8.transform_mode == 133 then
+		transform = love.math.newTransform(pico8.screen:getWidth(), 0, math.pi/2)
+	elseif pico8.transform_mode == 135 then
+		transform = love.math.newTransform(0, pico8.screen:getHeight(), -math.pi/2)
+	else
+		-- no transform - just return the canvas we already have
+		return pico8.screen
+	end
+	local shader = love.graphics.getShader()
+	transformed_screen:renderTo(function()
+		love.graphics.setShader()
+		love.graphics.origin()
+		love.graphics.setScissor()
+		love.graphics.setColor(1,1,1)
+		love.graphics.draw(pico8.screen, transform)
+	end)
+	love.graphics.setScissor()
+	love.graphics.setShader(shader)
+	return transformed_screen
 end
 
 function love.focus(f)
