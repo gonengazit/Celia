@@ -84,6 +84,7 @@ pico8 = {
 	cursor = { 0, 0 },
 	camera_x = 0,
 	camera_y = 0,
+	transform_mode = 0,
 	can_pause = true,
 	can_shutdown = false,
 	draw_palette = {},
@@ -597,6 +598,8 @@ function love.draw()
 		pico8.cart._draw()
 	end
 
+	perform_transform()
+
 	-- draw the contents of pico screen to our screen
 	flip_screen()
 end
@@ -649,6 +652,58 @@ function flip_screen()
 	love.graphics.setCanvas(pico8.screen)
 	restore_clip()
 	restore_camera()
+end
+
+function perform_transform()
+	local transform = nil
+	local scissor_x, scissor_y, scissor_w, scissor_h = 0,0, pico8.screen:getDimensions()
+	if pico8.transform_mode == 1 then
+		transform = love.math.newTransform(0, 0, 0, 2, 1)
+	elseif pico8.transform_mode == 2 then
+		transform = love.math.newTransform(0, 0, 0, 1, 2)
+	elseif pico8.transform_mode == 3 then
+		transform = love.math.newTransform(0, 0, 0, 2, 2)
+	elseif pico8.transform_mode == 5 then
+		--mirror left half of screen
+		transform = love.math.newTransform(pico8.screen:getWidth(),0 ,0, -1, 1)
+		scissor_x = pico8.screen:getWidth()/2
+		scissor_w = pico8.screen:getWidth()/2
+	elseif pico8.transform_mode == 6 then
+		--mirror top half of screen
+		transform = love.math.newTransform(0, pico8.screen:getHeight(),0, 1, -1)
+		scissor_y = pico8.screen:getHeight()/2
+		scissor_h = pico8.screen:getHeight()/2
+	elseif pico8.transform_mode == 7 then
+		--TODO: mirror top left quadrent to all 4 quadrents
+	elseif pico8.transform_mode == 129 then
+		transform = love.math.newTransform(pico8.screen:getWidth(),0 ,0, -1, 1)
+	elseif pico8.transform_mode == 130 then
+		transform = love.math.newTransform(0, pico8.screen:getHeight(),0, 1, -1)
+	elseif pico8.transform_mode == 131  or pico8.transform_mode == 134 then
+		transform = love.math.newTransform(pico8.screen:getWidth(), pico8.screen:getHeight(),0, -1, -1)
+	elseif pico8.transform_mode == 133 then
+		transform = love.math.newTransform(pico8.screen:getWidth(), 0, math.pi/2)
+	elseif pico8.transform_mode == 135 then
+		transform = love.math.newTransform(0, pico8.screen:getHeight(), -math.pi/2)
+	else
+		return
+	end
+	-- it's impossible to draw a canvas on top of itself in love2d - so we copy to a different canvas - then draw it on pico8.screen with the transformation applied
+	local tmp_canvas = love.graphics.newCanvas(pico8.screen:getDimensions())
+	tmp_canvas:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor()
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(pico8.screen, 0, 0)
+	end)
+	pico8.screen:renderTo(function()
+			love.graphics.setShader()
+			love.graphics.origin()
+			love.graphics.setScissor(scissor_x, scissor_y, scissor_w, scissor_h)
+			love.graphics.setColor(1,1,1)
+			love.graphics.draw(tmp_canvas, transform)
+	end)
 end
 
 function love.focus(f)
