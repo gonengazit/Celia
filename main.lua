@@ -50,6 +50,7 @@ pico8 = {
 	music = {},
 	current_music = nil,
 	usermemory = {},
+	extended_memory = {},
 	cartdata = {},
 	cart = nil,
 	clipboard = "",

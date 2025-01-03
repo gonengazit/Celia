@@ -1298,6 +1298,8 @@ function api.peek(addr)
 		local low = api.pget(dx, dy)
 		local high = bit.lshift(api.pget(dx + 1, dy), 4)
 		return bit.bor(low, high)
+	elseif addr < 0x10000  then
+		return pico8.extended_memory[addr - 0x8000] or 0
 	end
 	return 0
 end
@@ -1307,7 +1309,7 @@ function api.poke(addr, val)
 		return
 	end
 	addr, val = flr(api._tonumber(addr) or 0), flr(val) % 256
-	if addr < 0 or addr >= 0x8000 then
+	if addr < 0 or addr >= 0x10000 then
 		error("bad memory access")
 	elseif addr < 0x1000 then -- luacheck: ignore 542
 		local lo=val%16
@@ -1386,6 +1388,8 @@ function api.poke(addr, val)
 		local dy = flr(addr / 64)
 		api.pset(dx, dy, bit.band(val, 15))
 		api.pset(dx + 1, dy, bit.rshift(val, 4))
+	elseif addr < 0x10000 then
+		pico8.extended_memory[addr - 0x8000] = val
 	end
 end
 
@@ -1594,6 +1598,8 @@ function api.run()
 	for addr = 0x4300, 0x5e00 - 1 do
 		pico8.usermemory[addr - 0x4300] = 0
 	end
+
+	pico8.extended_memory = {}
 
 	for i = 0, 63 do
 		pico8.cartdata[i] = 0
