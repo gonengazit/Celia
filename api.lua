@@ -1058,6 +1058,12 @@ function api.mset(x, y, v)
 	v = flr(api._tonumber(v) or 0) % 256
 	if x >= 0 and x < 128 and y >= 0 and y < 64 then
 		pico8.map[y][x] = v
+		-- shared map and spritesheet data
+		if y>=32 then
+			local px, py = (x%64)*2, y*2 + math.floor(x/64)
+			api.sset(px,py, v%16)
+			api.sset(px+1,py, math.floor(v/16))
+		end
 	end
 end
 
@@ -1126,6 +1132,15 @@ function api.sset(x, y, c)
 	if x>=0 and x<128 and y>=0 and y<128 then
 		pico8.spritesheet_data:setPixel(x, y, c / 15, 0, 0, 1)
 		pico8.spritesheet_changed = true --lazy
+		--shared map and spritesheet data
+		if y>=64 then
+			local mx, my =math.floor(x/2)+(y%2)*64, math.floor(y/2)
+			if x%2 == 0 then
+				pico8.map[my][mx] = bit.band(pico8.map[my][mx], 0xf0) + c
+			else
+				pico8.map[my][mx] = bit.band(pico8.map[my][mx], 0x0f) + c*16
+			end
+		end
 	end
 end
 
