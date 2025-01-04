@@ -1933,6 +1933,11 @@ function api.rawlen(table) -- luacheck: no unused
 end
 api.rawequal = rawequal
 api.next = next
+local lua_inext = ipairs{}
+-- pico8 inext converts a missing 2nd argument to 0 - so let's match that behaviour
+api.inext = function(t, k)
+	return lua_inext(t, k or 0)
+end
 api.unpack = unpack
 api.pack = table.pack
 
