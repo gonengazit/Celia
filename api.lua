@@ -981,6 +981,14 @@ function api.palt(c, t)
 				__alpha_modified = true
 			end
 		end
+	elseif t == nil then
+		for i = 0, 15 do
+			local v = bit.band(c,2^(15-i)) == 0 and 1 or 0
+			if pico8.pal_transparent[i] ~= v then
+				pico8.pal_transparent[i] = v
+				__alpha_modified = true
+			end
+		end
 	else
 		c = flr(c) % 16
 		local v = t and 0 or 1
