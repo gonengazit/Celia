@@ -1217,7 +1217,7 @@ function api.sfx(n, channel, offset)
 end
 
 function api.peek(addr)
-	addr = flr(api._tonumber(addr) or 0)
+	addr = flr(api._tonumber(addr) or 0) % 0x10000
 	if addr < 0 then
 		return 0
 	elseif addr < 0x2000 then
@@ -1316,10 +1316,8 @@ function api.poke(addr, val)
 	if api._tonumber(val) == nil then
 		return
 	end
-	addr, val = flr(api._tonumber(addr) or 0), flr(val) % 256
-	if addr < 0 or addr >= 0x10000 then
-		error("bad memory access")
-	elseif addr < 0x1000 then -- luacheck: ignore 542
+	addr, val = flr(api._tonumber(addr) or 0) % 0x10000, flr(val) % 256
+	if addr < 0x1000 then -- luacheck: ignore 542
 		local lo=val%16
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
