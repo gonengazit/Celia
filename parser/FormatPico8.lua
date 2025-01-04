@@ -214,8 +214,8 @@ local function Format_Identity(ast)
 				value=require("fix32").str_to_fix32_str(value)
 			end
 
-			-- append a space because "123do" is allowed in pico8 but not in lua
-			appendStr( value.." " , no_leading_white)
+			-- surround with spaces because "or123do" is allowed in pico8 but not in lua
+			appendStr(" "..value.." " , no_leading_white)
 
 		elseif expr.AstType == 'StringExpr' then
 			appendToken( expr.Value , no_leading_white)
@@ -582,7 +582,8 @@ local function Format_Identity(ast)
 			appendStr( patch_local_varname(statement.Label ))
 
 		elseif statement.AstType == 'PrintStatement' then
-			appendStr("print(")
+			-- add leading space because then?1,2,3 is valid syntax
+			appendStr(" print(")
 			for i, arg in ipairs(statement.Arguments) do
 				formatExpr(arg)
 				appendComma(i ~= #statement.Arguments)
