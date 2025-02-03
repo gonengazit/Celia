@@ -1089,7 +1089,7 @@ local function ParseLua(src)
 			repeat
 				local st, nodeCond = ParseExpr(scope)
 				if not st then return false, nodeCond end
-				if tok:ConsumeKeyword('then', tokenList) then
+				if tok:ConsumeKeyword('then', tokenList) or tok:ConsumeKeyword('do', tokenList) then
 					local st, nodeBody = ParseStatementList(scope)
 					if not st then return false, nodeBody end
 					nodeIfStat.Clauses[#nodeIfStat.Clauses+1] = {

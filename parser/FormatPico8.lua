@@ -352,7 +352,7 @@ local function Format_Identity(ast)
 			assert(tok, string.format("Not enough tokens for %q. First token at %i:%i",
 				str, statement.Tokens[1].Line, statement.Tokens[1].Char))
 			assert(tok.Data == str,
-				string.format('Expected token %q, got %q', str, tok.Data))
+				string.format('Expected token %q, got %q , token at %i:%i', str, tok.Data, tok.Line, tok.Char))
 			out:appendToken( tok )
 			tok_it = tok_it + 1
 		end
@@ -374,6 +374,20 @@ local function Format_Identity(ast)
 			   or (tok_it < #statement.Tokens and statement.Tokens[tok_it].Data == ",") then
 			   appendNextToken( "," )
 			end
+		end
+		local function peek()
+			if tok_it < #statement.Tokens then
+				return statement.Tokens[tok_it].Data
+			end
+		end
+		local function replaceNextToken(expected, replacement)
+			local tok = statement.Tokens[tok_it];
+			assert(tok, string.format("Not enough tokens for %q. First token at %i:%i",
+				expected, statement.Tokens[1].Line, statement.Tokens[1].Char))
+			assert(tok.Data == expected,
+				string.format('Expected token %q, got %q', expected, tok.Data))
+			appendWhite()
+			out:appendStr(replacement)
 		end
 
 		debug_printf("")
@@ -453,8 +467,11 @@ local function Format_Identity(ast)
 			-- add then and end to pico8 shorthand if
 			appendNextToken( "if" )
 			formatExpr( statement.Clauses[1].Condition )
+
 			if statement.shorthand then
 				out:appendStr(" then ")
+			elseif peek() == "do" then
+				replaceNextToken("do", "then")
 			else
 			 appendNextToken( "then" )
 			end
@@ -464,7 +481,11 @@ local function Format_Identity(ast)
 				if st.Condition then
 					appendNextToken( "elseif" )
 					formatExpr(st.Condition)
-					appendNextToken( "then" )
+					if peek() == "do" then
+						replaceNextToken("do", "then")
+					else
+						appendNextToken( "then" )
+					end
 				else
 					appendNextToken( "else" )
 				end
