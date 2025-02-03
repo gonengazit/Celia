@@ -982,6 +982,14 @@ function api.palt(c, t)
 				__alpha_modified = true
 			end
 		end
+	elseif t == nil then
+		for i = 0, 15 do
+			local v = bit.band(c,2^(15-i)) == 0 and 1 or 0
+			if pico8.pal_transparent[i] ~= v then
+				pico8.pal_transparent[i] = v
+				__alpha_modified = true
+			end
+		end
 	else
 		c = flr(c) % 16
 		local v = t and 0 or 1
@@ -1051,6 +1059,12 @@ function api.mset(x, y, v)
 	v = flr(api._tonumber(v) or 0) % 256
 	if x >= 0 and x < 128 and y >= 0 and y < 64 then
 		pico8.map[y][x] = v
+		-- shared map and spritesheet data
+		if y>=32 then
+			local px, py = (x%64)*2, y*2 + math.floor(x/64)
+			api.sset(px,py, v%16)
+			api.sset(px+1,py, math.floor(v/16))
+		end
 	end
 end
 
@@ -1119,6 +1133,15 @@ function api.sset(x, y, c)
 	if x>=0 and x<128 and y>=0 and y<128 then
 		pico8.spritesheet_data:setPixel(x, y, c / 15, 0, 0, 1)
 		pico8.spritesheet_changed = true --lazy
+		--shared map and spritesheet data
+		if y>=64 then
+			local mx, my =math.floor(x/2)+(y%2)*64, math.floor(y/2)
+			if x%2 == 0 then
+				pico8.map[my][mx] = bit.band(pico8.map[my][mx], 0xf0) + c
+			else
+				pico8.map[my][mx] = bit.band(pico8.map[my][mx], 0x0f) + c*16
+			end
+		end
 	end
 end
 
@@ -1210,7 +1233,7 @@ function api.sfx(n, channel, offset)
 end
 
 function api.peek(addr)
-	addr = flr(api._tonumber(addr) or 0)
+	addr = flr(api._tonumber(addr) or 0) % 0x10000
 	if addr < 0 then
 		return 0
 	elseif addr < 0x2000 then
@@ -1299,6 +1322,8 @@ function api.peek(addr)
 		local low = api.pget(dx, dy)
 		local high = bit.lshift(api.pget(dx + 1, dy), 4)
 		return bit.bor(low, high)
+	elseif addr < 0x10000  then
+		return pico8.extended_memory[addr - 0x8000] or 0
 	end
 	return 0
 end
@@ -1307,10 +1332,8 @@ function api.poke(addr, val)
 	if api._tonumber(val) == nil then
 		return
 	end
-	addr, val = flr(api._tonumber(addr) or 0), flr(val) % 256
-	if addr < 0 or addr >= 0x8000 then
-		error("bad memory access")
-	elseif addr < 0x1000 then -- luacheck: ignore 542
+	addr, val = flr(api._tonumber(addr) or 0) % 0x10000, flr(val) % 256
+	if addr < 0x1000 then -- luacheck: ignore 542
 		local lo=val%16
 		local hi=flr(val/16)
 		pico8.spritesheet_data:setPixel(addr*2%128, flr(addr/64), lo/15, 0, 0, 1)
@@ -1387,6 +1410,8 @@ function api.poke(addr, val)
 		local dy = flr(addr / 64)
 		api.pset(dx, dy, bit.band(val, 15))
 		api.pset(dx + 1, dy, bit.rshift(val, 4))
+	elseif addr < 0x10000 then
+		pico8.extended_memory[addr - 0x8000] = val
 	end
 end
 
@@ -1595,6 +1620,8 @@ function api.run()
 	for addr = 0x4300, 0x5e00 - 1 do
 		pico8.usermemory[addr - 0x4300] = 0
 	end
+
+	pico8.extended_memory = {}
 
 	for i = 0, 63 do
 		pico8.cartdata[i] = 0
@@ -1928,6 +1955,11 @@ function api.rawlen(table) -- luacheck: no unused
 end
 api.rawequal = rawequal
 api.next = next
+local lua_inext = ipairs{}
+-- pico8 inext converts a missing 2nd argument to 0 - so let's match that behaviour
+api.inext = function(t, k)
+	return lua_inext(t, k or 0)
+end
 api.unpack = unpack
 api.pack = table.pack
 

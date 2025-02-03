@@ -152,6 +152,7 @@ local function fix32_pow(a,b)
 		frac_b=frac_b-1
 		res=fix32_mul(res,a)
 	end
+	return res
 end
 
 local function fix32_from_int(a)
@@ -239,7 +240,7 @@ end
 
 
 local function fix32_sin(x)
-	x=fix32_tonumber(x)*exponent
+	x=fix32_tonumber(x or 0)*exponent
 	local index=bit.band(bit.rshift(x+0x4002,2), 0x3fff)
 	if index > 0x1fff then
 		index = 0x4000 - index
@@ -251,7 +252,7 @@ local function fix32_sin(x)
 end
 
 local function fix32_cos(x)
-	x=fix32_tonumber(x)*exponent
+	x=fix32_tonumber(x or 0)*exponent
 	local index=bit.band(bit.rshift(x+2,2), 0x3fff)
 	if index > 0x1fff then
 		index = 0x4000 - index
@@ -263,6 +264,10 @@ local function fix32_cos(x)
 end
 
 local function fix32_atan2(dx,dy)
+	--handle edge case
+	if dx ==0 and dy ==0 then
+		return 0.25
+	end
 	local quot=fix32_div(-dy,dx)
 	local sign=api.sgn(quot)
 	local abs=fix32_abs(quot)

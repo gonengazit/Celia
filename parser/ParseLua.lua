@@ -310,11 +310,6 @@ local function LexLua(src)
 					if consume('.') then
 						while Digits[peek()] do get() end
 					end
-					if (peek() == 'e' or peek() == 'E') and (peek(1) == '+' or peek(1) == '-') then
-						get()
-						get()
-						while Digits[peek()] do get() end
-					end
 				end
 				toEmit = {Type = 'Number', Data = src:sub(start, p-1)}
 
@@ -1093,7 +1088,7 @@ local function ParseLua(src)
 			repeat
 				local st, nodeCond = ParseExpr(scope)
 				if not st then return false, nodeCond end
-				if tok:ConsumeKeyword('then', tokenList) then
+				if tok:ConsumeKeyword('then', tokenList) or tok:ConsumeKeyword('do', tokenList) then
 					local st, nodeBody = ParseStatementList(scope)
 					if not st then return false, nodeBody end
 					nodeIfStat.Clauses[#nodeIfStat.Clauses+1] = {
