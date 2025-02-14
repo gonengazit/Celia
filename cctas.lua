@@ -46,7 +46,7 @@ function cctas:init()
         	local filename = "TAS" .. (self.cart_type == "vanilla" and self:level_index() + 1 or self:level_index()) .. ".tas"
         	local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
 
-        	local output = io.popen("curl -vs " .. url)
+        	local output = io.popen("curl -s " .. url)
         	if not output then
             		console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
             		return
