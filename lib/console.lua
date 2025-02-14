@@ -105,7 +105,8 @@ console.COMMAND_HELP = {
   quit = "Quit the game.",
   exit = "Quit the game.",
   help = "Print help text.",
-  commands = "List all commands."
+  commands = "List all commands.",
+  getfile = "Load tas file from the DB."
 }
 
 function console.inspect(val)
