@@ -38,6 +38,30 @@ function cctas:init()
 	console.COMMANDS["set_player_env"]=function() print("switched to player environment") self.set_player_env(self) end
 	console.COMMANDS["unset_player_env"]=function() print("switched to global environment") self.unset_player_env(self) end
 
+    console.COMMANDS["getfile"] = function(category, game)
+        if category == "-h" then
+            print("usage: getfile [category] [game]\ncategory defaults to any, game defaults to cartname with a special case for celeste -> classic")
+            return
+        end
+
+        category = category or "any"
+        game = game or cartname == "celeste.p8" and "classic" or cartname:match("(.+).p8")
+
+        local filename = "TAS" .. self:get_file_level_index() .. ".tas"
+        local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
+
+        local output = io.popen("curl -s " .. url)
+        if not output then
+            console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
+            return
+        end
+
+        local file = output:read("*a")
+        output:close()
+        print("loading file " .. filename)
+        self:load_input_str(file)
+    end
+
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
 	self.first_level=self:level_index()
@@ -382,6 +406,15 @@ function cctas:level_index()
 		return pico8.cart.room.x + 8*pico8.cart.room.y
 	end
 end
+
+function cctas:get_file_level_index()
+    if self.cart_type == "vanilla" then
+        return self:level_index() + 1
+    else
+        return self:level_index()
+    end
+end
+
 function cctas:next_level()
 	self:load_level(self:level_index()+1,true)
 end
@@ -644,12 +677,7 @@ function cctas:get_input_file_obj()
 	end
 
 	--evercore is 1 indexed and vanilla is 0 indexed
-	local file_id
-	if self.cart_type == "vanilla" then
-		file_id=self:level_index()+1
-	else
-		file_id=self:level_index()
-	end
+	local file_id = self:get_file_level_index()
 
 	local filename = ("%s/TAS%d.tas"):format(dirname, file_id)
 	return love.filesystem.newFile(filename)
