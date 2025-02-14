@@ -38,6 +38,26 @@ function cctas:init()
 	console.COMMANDS["set_player_env"]=function() print("switched to player environment") self.set_player_env(self) end
 	console.COMMANDS["unset_player_env"]=function() print("switched to global environment") self.unset_player_env(self) end
 
+	console.COMMANDS["getfile"] = function(...)
+        	local args = {...}
+        	local category = args[1] or "any"
+        	local game = args[2] or cartname == "celeste.p8" and "classic" or cartname:match("(.+).p8")
+
+        	local filename = "TAS" .. (self.cart_type == "vanilla" and self:level_index() + 1 or self:level_index()) .. ".tas"
+        	local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
+
+        	local output = io.popen("curl -vs " .. url)
+        	if not output then
+            		console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
+            		return
+        	end
+
+        	local file = output:read("*a")
+        	output:close()
+        	print("loading file " .. filename)
+        	self:load_input_str(file)
+    	end
+
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
 	self.first_level=self:level_index()
