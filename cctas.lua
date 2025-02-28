@@ -56,10 +56,10 @@ function cctas:init()
 			return
 		end
 
-		local file = output:read("*a")
+		local file_data = output:read("*a")
 		output:close()
-		print("loading file " .. filename)
-		self:load_input_str(file)
+		print("loading downloaded file " .. filename)
+		self:load_input_str(file_data)
 	end
 
 	self.prev_obj_count=0
