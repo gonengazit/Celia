@@ -46,4 +46,4 @@ Warning: rng seeding in the middle of a level can cause a desync if it affects p
 * `find_player()` - returns the player object
 * `set_player_env` - sets the environment to include the player. trying to access/modify variable `var` in the console after doing this will first try to access/modify `player.var`, then, if it doesn't exist, it will access/modify the global `var`
 * `unset_player_env` - reverts the effects of the previous command
-* `getfile [category] [game]` - uses curl to load the tas file for the current level from the TAS database. category defaults to `any` and game defaults to the cartridge's name, with a special case for celeste.p8 -> `classic`
+* `downloadtas [category] [game]` - uses curl to download the tas file for the current level from the TAS database. category defaults to `any` and game defaults to the cartridge's name, with a special case for celeste.p8 -> `classic`

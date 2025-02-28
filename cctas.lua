@@ -38,9 +38,9 @@ function cctas:init()
 	console.COMMANDS["set_player_env"]=function() print("switched to player environment") self.set_player_env(self) end
 	console.COMMANDS["unset_player_env"]=function() print("switched to global environment") self.unset_player_env(self) end
 
-	console.COMMANDS["getfile"] = function(category, game)
+	console.COMMANDS["downloadtas"] = function(category, game)
 		if category == "-h" then
-			print("usage: getfile [category] [game]\ncategory defaults to any, game defaults to cartname with a special case for celeste -> classic")
+			print("usage: downloadtas [category] [game]\ncategory defaults to any, game defaults to cartname with a special case for celeste -> classic")
 			return
 		end
 
