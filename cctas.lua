@@ -38,29 +38,29 @@ function cctas:init()
 	console.COMMANDS["set_player_env"]=function() print("switched to player environment") self.set_player_env(self) end
 	console.COMMANDS["unset_player_env"]=function() print("switched to global environment") self.unset_player_env(self) end
 
-    console.COMMANDS["getfile"] = function(category, game)
-        if category == "-h" then
-            print("usage: getfile [category] [game]\ncategory defaults to any, game defaults to cartname with a special case for celeste -> classic")
-            return
-        end
+	console.COMMANDS["getfile"] = function(category, game)
+		if category == "-h" then
+			print("usage: getfile [category] [game]\ncategory defaults to any, game defaults to cartname with a special case for celeste -> classic")
+			return
+		end
 
-        category = category or "any"
-        game = game or cartname == "celeste.p8" and "classic" or cartname:match("(.+).p8")
+		category = category or "any"
+		game = game or cartname == "celeste.p8" and "classic" or cartname:match("(.+).p8")
 
-        local filename = "TAS" .. self:get_file_level_index() .. ".tas"
-        local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
+		local filename = "TAS" .. self:get_file_level_index() .. ".tas"
+		local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
 
-        local output = io.popen("curl -s " .. url)
-        if not output then
-            console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
-            return
-        end
+		local output = io.popen("curl -s " .. url)
+		if not output then
+			console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
+			return
+		end
 
-        local file = output:read("*a")
-        output:close()
-        print("loading file " .. filename)
-        self:load_input_str(file)
-    end
+		local file = output:read("*a")
+		output:close()
+		print("loading file " .. filename)
+		self:load_input_str(file)
+	end
 
 	self.prev_obj_count=0
 	self.modify_loading_jank=false
@@ -370,7 +370,7 @@ function cctas:load_level(idx, reset_changes)
 		-- for the first level, assume no objects get loading janked by default
 		-- also do not apply loading jank if it is disable
 		self.loading_jank_offset =
-		    (self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
+			(self.cart_settings.disable_loading_jank or self:level_index() == self.first_level) and #pico8.cart.objects + 1 or 0
 	end
 
 	for i = self.prev_obj_count+ self.loading_jank_offset, #pico8.cart.objects do
@@ -408,11 +408,12 @@ function cctas:level_index()
 end
 
 function cctas:get_file_level_index()
-    if self.cart_type == "vanilla" then
-        return self:level_index() + 1
-    else
-        return self:level_index()
-    end
+	--evercore is 1 indexed and vanilla is 0 indexed
+	if self.cart_type == "vanilla" then
+		return self:level_index() + 1
+	else
+		return self:level_index()
+	end
 end
 
 function cctas:next_level()
@@ -676,7 +677,6 @@ function cctas:get_input_file_obj()
 		end
 	end
 
-	--evercore is 1 indexed and vanilla is 0 indexed
 	local file_id = self:get_file_level_index()
 
 	local filename = ("%s/TAS%d.tas"):format(dirname, file_id)
