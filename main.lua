@@ -591,6 +591,7 @@ function love.update(_)
 end
 
 function love.draw()
+	love.resize(love.graphics.getWidth(), love.graphics.getHeight())
 
 	love.graphics.setFont(pico8.font)
 	love.graphics.setCanvas(pico8.screen)
