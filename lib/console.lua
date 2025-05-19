@@ -371,15 +371,8 @@ end
 
 function console.textinput(input)
   -- If disabled, ignore the input, otherwise insert at the cursor.
-  local ctrl=love.keyboard.isDown("lctrl","lgui","rctrl","rgui")
   if not enabled then
     return
-  elseif (input == "=" or input=="+") and ctrl then
-      console.FONT_SIZE = console.FONT_SIZE + 1
-      console.FONT = love.graphics.newFont(console.FONT_SIZE)
-  elseif input == "-" and ctrl then
-      console.FONT_SIZE = math.max(console.FONT_SIZE - 1, 1)
-      console.FONT = love.graphics.newFont(console.FONT_SIZE)
   else
     command:insert(input)
   end
@@ -476,6 +469,12 @@ function console.keypressed(key, scancode, isrepeat)
 
   elseif key == "tab" then
     command:complete()
+  elseif (key == "=" or key=="+") and ctrl then
+      console.FONT_SIZE = console.FONT_SIZE + 1
+      console.FONT = love.graphics.newFont(console.FONT_SIZE)
+  elseif key == "-" and ctrl then
+      console.FONT_SIZE = math.max(console.FONT_SIZE - 1, 1)
+      console.FONT = love.graphics.newFont(console.FONT_SIZE)
   end
 end
 
