@@ -77,10 +77,7 @@ local handle_funcs = {
 }
 local err_function = function (orig) error(("can't copy type %q"):format(type(orig))) end
 function deepcopy(orig, seen, upvalues)
-    return (handle_funcs[type(orig) or err_function]) (orig,seen or {}, upvalues or {})
-
-
-
+    return (handle_funcs[type(orig)] or err_function) (orig,seen or {}, upvalues or {})
 end
 
 local function deepcopy_debug(orig, seen, upvalues, path)
