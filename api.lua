@@ -929,7 +929,13 @@ end
 
 function api.pal(c0, c1, p)
 	-- GTODO: 0 vs 1 indexing
-	-- GTODO: support other variants of this func
+	if type(c0) == "table" then
+		for k,v in pairs(c0) do
+			api.pal(k, v, c1)
+		end
+		return
+	end
+
 	local __palette_modified = false
 	local __display_modified = false
 	if type(c0) ~= "number" then

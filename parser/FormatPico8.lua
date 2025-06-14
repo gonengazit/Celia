@@ -119,6 +119,30 @@ local function Format_Identity(ast)
 		return patched
 	end
 
+	local EscapeLookup = {['*'] = '001', ['#'] = '002', ['-'] = '003', ['|'] = '004', ['+'] = '005', ['^'] = '006', ['a'] = '007', ['b'] = '008',}
+
+	local function patch_p8scii_escapes(str)
+		-- don't patch escape codes in long strings
+		if str:sub(1,1)=='[' then
+			return str
+		end
+		local out = str:sub(1,1)
+		local i=2
+		while i<=#str-1 do
+			local c = str:sub(i,i)
+			if c ~= '\\' then
+				out = out .. c
+				i = i + 1
+			else
+				local escaped = str:sub(i+1, i+1)
+				out = out..'\\'..(EscapeLookup[escaped] or escaped)
+				i = i+2
+			end
+		end
+		out = out .. str:sub(-1,-1)
+		return out
+	end
+
 	formatExpr = function(expr, no_leading_white)
 		local tok_it = 1
 		local function appendNextToken(str, no_whitespace)
@@ -218,7 +242,8 @@ local function Format_Identity(ast)
 			appendStr(" "..value.." " , no_leading_white)
 
 		elseif expr.AstType == 'StringExpr' then
-			appendToken( expr.Value , no_leading_white)
+			local p8scii_patched = patch_p8scii_escapes(expr.Value.Data)
+			appendStr(p8scii_patched, no_leading_white)
 
 		elseif expr.AstType == 'BooleanExpr' then
 			appendNextToken( expr.Value and "true" or "false" , no_leading_white)
