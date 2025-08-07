@@ -875,18 +875,43 @@ local function get_line_points(x0 ,y0 ,x1 ,y1)
 	return points
 end
 
-function api.line(x0, y0, x1, y1, col)
+function api.line(...)
+	local x0, y0, x1, y1, col
+	local arg_num = select("#", ...)
+	if arg_num >= 4 then
+		x0, y0, x1, y1, col = ...
+	elseif arg_num >= 2 then
+		x1, y1, col =...
+		if #pico8.line_end == 0 then
+			x1 = flr(api._tonumber(x1) or 0)
+			y1 = flr(api._tonumber(y1) or 0)
+			pico8.line_end = {x1, y1}
+			if col then
+				color(col)
+			end
+			return
+		end
+		x0, y0 = unpack(pico8.line_end)
+	else
+		col = ...
+		if col then
+			color(col)
+		end
+		pico8.line_end = {}
+		return
+	end
 	if col then
 		color(col)
 	end
 
+	x0 = flr(api._tonumber(x0) or 0)
+	y0 = flr(api._tonumber(y0) or 0)
+	x1 = flr(api._tonumber(x1) or 0)
+	y1 = flr(api._tonumber(y1) or 0)
+	pico8.line_end = {x1, y1}
 
-	x0 = flr(api._tonumber(x0) or 0) + 1
-	y0 = flr(api._tonumber(y0) or 0) + 1
-	x1 = flr(api._tonumber(x1) or 0) + 1
-	y1 = flr(api._tonumber(y1) or 0) + 1
 
-	local points = get_line_points(x0, y0, x1, y1)
+	local points = get_line_points(x0 + 1, y0 + 1, x1 + 1, y1 + 1)
 
 	love.graphics.points(points)
 end
