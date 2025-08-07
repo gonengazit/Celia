@@ -100,6 +100,7 @@ pico8 = {
 	},
 	mwheel = 0,
 	cursor = { 0, 0 },
+	line_end = { 0, 0 },
 	camera_x = 0,
 	camera_y = 0,
 	transform_mode = 0,
