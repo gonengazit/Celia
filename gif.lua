@@ -3,7 +3,7 @@
 
 local palmap={}
 
-for i=0, 15 do
+for i=0, 31 do
 	local palette=pico8.palette[i]
 	local value=bit.lshift(palette[1], 16)+bit.lshift(palette[2], 8)+palette[3]
 	palmap[i]=value
@@ -50,14 +50,14 @@ function gif:frame(data)
 		end
 		print("bbox " .. love.timer.getTime() -t)
 	end ]]
-	self.file:write("\44"..num2str(x0)..num2str(y0)..num2str(x1-x0+1)..num2str(y1-y0+1).."\0\4")
+	self.file:write("\44"..num2str(x0)..num2str(y0)..num2str(x1-x0+1)..num2str(y1-y0+1).."\0\5")
 	local trie={}
-	for i=0, 15 do
+	for i=0, 31 do
 		trie[i]={[-1]=i}
 	end
-	local last=17
+	local last=33
 	local trie_ptr=trie
-	local stream={16}
+	local stream={32}
 	for y=y0, y1 do
 		for x=x0, x1 do
 			local r, g, b=data:getPixel(x, y)
@@ -71,22 +71,22 @@ function gif:frame(data)
 				if last<4095 then
 					trie_ptr[index]={[-1]=last}
 				else
-					stream[#stream+1]=16
+					stream[#stream+1]=32
 					trie={}
-					for i=0, 15 do
+					for i=0, 31 do
 						trie[i]={[-1]=i}
 					end
-					last=17
+					last=33
 				end
 				trie_ptr=trie[index]
 			end
 		end
 	end
 	stream[#stream+1]=trie_ptr[-1]
-	stream[#stream+1]=17
+	stream[#stream+1]=33
 
 	local output={}
-	local size=5
+	local size=6
 	local bits=0
 	local pack=0
 	local base=-16
@@ -101,9 +101,9 @@ function gif:frame(data)
 		if i-base>=2^size then
 			size=size+1
 		end
-		if stream[i]==16 then
-			base=i-17
-			size=5
+		if stream[i]==32 then
+			base=i-33
+			size=6
 		end
 	end
 	while bits>0 do
@@ -140,8 +140,8 @@ function giflib.new(filename)
 	if not file then
 		return nil, err
 	end
-	file:write("GIF89a"..num2str(pico8.resolution[1]*2)..num2str(pico8.resolution[2]*2).."\243\0\0")
-	for i=0, 15 do
+	file:write("GIF89a"..num2str(pico8.resolution[1]*2)..num2str(pico8.resolution[2]*2).."\244\0\0")
+	for i=0, 31 do
 		local palette=pico8.palette[i]
 		file:write(string.char(palette[1], palette[2], palette[3]))
 	end

@@ -962,6 +962,11 @@ function api.pal(c0, c1, p)
 	elseif p == 1 and c1 ~= nil then
 		c0 = flr(c0) % 16
 		c1 = flr(c1) % 16
+		-- secret pallete
+		if bit.band(flr(c1), 128) then
+			c1 = c1 + 16
+		end
+
 		pico8.display_palette[c0] = pico8.palette[c1]
 		pico8.display_shader:send("palette", shdr_unpack(pico8.display_palette))
 	elseif c1 ~= nil then
