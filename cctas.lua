@@ -50,14 +50,18 @@ function cctas:init()
 		local filename = "TAS" .. self:get_file_level_index() .. ".tas"
 		local url = "https://celesteclassic.github.io/tasdatabase/" .. game .. "/" .. category .. "/" .. filename
 
-		local output = io.popen("curl -s " .. url)
+		local output = io.popen("curl -fs " .. url)
 		if not output then
 			console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
 			return
 		end
 
 		local file_data = output:read("*a")
-		output:close()
+		local return_code = output:close()
+		if not return_code then
+			console.colorprint({console.ERROR_COLOR, "failed to get tas file"})
+			return
+		end
 		print("loading downloaded file " .. filename)
 		self:load_input_str(file_data)
 	end
