@@ -224,11 +224,11 @@ function cc2tas:unset_player_env()
 	})
 end
 
-function cc2tas:pushstate()
+function cc2tas:pushstate(save_state)
 	if pico8.cart.level_intro == 0 then
 		self.level_time = self.level_time + 1
 	end
-	self.super.pushstate(self)
+	self.super.pushstate(self, save_state)
 end
 
 function cc2tas:popstate()
