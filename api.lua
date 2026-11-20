@@ -989,7 +989,7 @@ function api.pal(c0, c1, p)
 		c0 = flr(c0) % 16
 		c1 = flr(c1) % 16
 		-- secret pallete
-		if bit.band(flr(c1), 128) then
+		if bit.band(flr(c1), 128) ~= 0 then
 			c1 = c1 + 16
 		end
 
