@@ -1398,6 +1398,14 @@ function api.poke(addr, val)
 		local oval=pico8.cartdata[ind]*0x10000
 		local shift=(addr%4)*8
 		pico8.cartdata[ind]=bit.bor(bit.band(oval, bit.bnot(bit.lshift(0xFF, shift))), bit.lshift(val, shift))/0x10000
+	elseif addr < 0x5f10 then
+		local c = addr - 0x5f00
+		api.pal(c, bit.band(val, 7))
+		api.palt(c, bit.band(val, 56) ~= 0)
+	elseif addr < 0x5f20 then
+		local c = addr - 0x5f10
+		api.printh(c,val)
+		api.pal(c, val, 1)
 	elseif addr < 0x5f40 then -- luacheck: ignore 542
 		-- TODO: draw state
 		if addr == 0x5f26 then
